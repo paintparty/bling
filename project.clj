@@ -1,4 +1,4 @@
-(defproject io.github.paintparty/bling "0.1.0-SNAPSHOT"
+(defproject io.github.paintparty/bling "0.1.0"
   :description "Rich text console printing for Clojure(Script)"
   :url "https://github.com/paintparty/bling"
   :license {:name "MIT"}
