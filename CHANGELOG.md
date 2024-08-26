@@ -17,6 +17,14 @@ For a list of breaking changes, check [here](#breaking-changes)
 <br>
 <br>
 
+## 0.1.1
+2024-08-26
+#### Fixed
+- Uncolored bold italic not showing italics - `(bling [:bold.italic "hi"])`
+
+<br>
+<br>
+
 ## 0.1.0
 2024-08-24
 
