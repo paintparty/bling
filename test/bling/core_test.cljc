@@ -8,7 +8,7 @@
 (def printer
   #?(:cljs print-bling :clj println))
 
-(println (bling [:bold.red "HI"]))
+(println (bling [:bold.italic "HI"]))
 
 (defn example-custom-callout
   [{:keys [point-of-interest-opts callout-opts]}]
@@ -26,6 +26,7 @@
 
 
 ;; Default callout w/ poi
+(do
 (example-custom-callout
  {:point-of-interest-opts {:file   "example.ns.core"
                            :line   11
@@ -383,6 +384,7 @@
  {:type :warning
   :label {:a :b}}
  "Example callout, with :type of :warning, and custom :label." )
+)
 
 #_(callout
  {:type           :error

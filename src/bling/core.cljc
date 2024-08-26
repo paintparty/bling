@@ -229,18 +229,12 @@
         bgc    (x->sgr bgc* :bg)
         italic (when (and (not disable-italics?)
                           (contains? #{"italic" :italic} font-style))
-                 "3;")
+                 "3")
         weight (when (and (not disable-font-weights?)
                           (contains? #{"bold" :bold} font-weight))
-                 ";1")
+                 "1")
         ret    (str "\033[" 
-                    italic
-                    fgc
-                    weight
-                    (when (or (and fgc bgc)
-                              (and weight bgc))
-                      ";")
-                    bgc
+                    (string/join ";" (remove nil? [italic fgc weight bgc]))
                     "m")]
     ret))
 
@@ -990,7 +984,6 @@
                 (tagged-str (enriched-text x))
                 (not (coll? x))
                 (as-str x))]
-    ;; (? {:print-with prn} s)
     [(conj coll s)
      (updated-css css x)]))
 
