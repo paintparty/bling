@@ -183,7 +183,7 @@ You can also pass a map (instead of a hiccup-style tag) to style the text:
          :background-color :black
          :font-style       :italic
          :font-weight      :bold}
-         "Negative"])
+        "bold italic green text on black background"])
 ```
 <br>
 
@@ -204,7 +204,7 @@ In other words, every one of the arguments to **`bling.core/bling`** must be eit
 - A two-element vector, with the first element being a keyword or map.<br>
 - A value which is not a collection.
 
-If you want to print `[1 2 3]` in red, you will need to stringify the vector:
+If, for example, you wanted to print `[1 2 3]` in red, you will need to stringify the vector:
 ```Clojure
 (bling [:red (str [1 2 3])])
 ```
@@ -281,10 +281,13 @@ You must provide the relevant `:file`, `:line`, `:column`, and `:form` values.
 ```Clojure
 (defn example-custom-callout
   [{:keys [point-of-interest-opts callout-opts]}]
-  (let [poi-opts     (merge {:header "Your header of your template goes here."
-                             :body   (str "The body of your template goes here."
+  (let [poi-opts     (merge {:header "Your header message goes here."
+                             :body   (str "The body of your message goes here."
                                           "\n"
-                                          "Another line of copy.")}
+                                          "Another line of copy."
+                                          "\n"
+                                          "Another line."
+                                          )}
                             point-of-interest-opts)
         message      (point-of-interest poi-opts)
         callout-opts (merge callout-opts
