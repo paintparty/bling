@@ -15,22 +15,91 @@
 ;; 
 
 
-;; Adds about 10kb to a cljs bundle
+;; Adds about 11kb to a cljs bundle
 (ns bling.core
   (:require [clojure.string :as string]
             #?(:cljs [goog.object])))
 
 ;; Defs -----------------------------------------------------------------------
 
+(def hex-color-re "#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})")
+
+(def colors-ordered
+  ["system-black"   
+   "system-maroon"  
+   "system-green"   
+   "system-olive"   
+   "system-navy"    
+   "system-purple"  
+   "system-teal"    
+   "system-silver"  
+   "system-grey"    
+   "system-red"     
+   "system-lime"     
+   "system-yellow"   
+   "system-blue"     
+   "system-fuchsia"  
+   "system-aqua"     
+   "system-white"   
+   "red"
+   "orange"
+   "yellow"
+   "olive"
+   "green"
+   "blue"
+   "purple"
+   "magenta"
+   "black"
+   "white"
+   "gray"])
+
 (def ^:private xterm-colors-by-id
-  {39  "#00afff"
-   40  "#00d700"
-   178 "#d7af00"
-   247 "#9e9e9e"
-   231 "#ffffff"
-   201 "#ff00ff"
-   202 "#ff5f00"
-   16  "#000000"})
+  {0  "#000000" ;; system-black   
+   1	"#800000" ;; system-maroon  
+   2	"#008000" ;; system-green   
+   3	"#808000" ;; system-olive   
+   4	"#000080" ;; system-navy    
+   5	"#800080" ;; system-purple  
+   6	"#008080" ;; system-teal    
+   7	"#c0c0c0" ;; system-silver  
+   8	"#808080" ;; system-grey    
+   9	"#ff0000" ;; system-red     
+   10 "#00ff00" ;; system-lime     
+   11 "#ffff00" ;; system-yellow   
+   12 "#0000ff" ;; system-blue     
+   13 "#ff00ff" ;; system-fuchsia  
+   14 "#00ffff" ;; system-aqua     
+   15 "#ffffff" ;; system-white   
+   16  "#000000" ;; black
+   39  "#00afff" ;; blue
+   40  "#00d700" ;; green
+   106 "#87af00" ;; olive
+   141 "#af87ff" ;; purple
+   178 "#d7af00" ;; yellow
+   196 "#ff0000" ;; red
+   201 "#ff00ff" ;; magenta
+   208 "#ff8700" ;; orange
+   231 "#ffffff" ;; white
+   247 "#9e9e9e" ;; gray
+   })
+
+{"red"     {:sgr      196
+            :semantic "negative"} 
+          ;; "red"    {:sgr 202 :semantic "negative"} 
+ "orange"  {:sgr 208}
+ "yellow"  {:sgr      178
+            :semantic "warning"}
+ "olive"   {:sgr 106}
+ "green"   {:sgr      40
+            :semantic "positive"}
+ "blue"    {:sgr      39
+            :semantic "accent"}
+ "purple"  {:sgr      141}
+ "magenta" {:sgr 201}
+ "gray"    {:sgr      247
+            :semantic "subtle"}
+ "black"   {:sgr 16}
+ "white"   {:sgr 231}}
 
 (def ^:private browser-dev-console-props 
   [:text-decoration-line      
@@ -67,21 +136,43 @@
    :margin-right
    :margin-left])
 
-(def ^:private colors-source
-  {"red"    {:sgr 202 :semantic "negative"} 
-   "yellow" {:sgr 178 :semantic "warning"}
-   "green"  {:sgr 40 :semantic "positive"}
-   "blue"   {:sgr 39 :semantic "accent"}
-   "magenta"{:sgr 201}
-   "gray"   {:sgr 247 :semantic "subtle"}
-   "black"  {:sgr 16}
-   "white"  {:sgr 231}})
+(def ^:public system-colors-source
+  {"system-black"   {:sgr 0}
+   "system-maroon"  {:sgr 1}
+   "system-green"   {:sgr 2}
+   "system-olive"   {:sgr 3}
+   "system-navy"    {:sgr 4}
+   "system-purple"  {:sgr 5}
+   "system-teal"    {:sgr 6}
+   "system-silver"  {:sgr 7}
+   "system-grey"    {:sgr 8}
+   "system-red"     {:sgr 9}
+   "system-lime"    {:sgr 10} 
+   "system-yellow"  {:sgr 11} 
+   "system-blue"    {:sgr 12} 
+   "system-fuchsia" {:sgr 13} 
+   "system-aqua"    {:sgr 14} 
+   "system-white"   {:sgr 15}})
 
-(select-keys xterm-colors-by-id
-             (->> colors-source
-                  vals
-                  (map :sgr)
-                  (into [])))
+(def ^:private colors-source
+  (merge {"red"     {:sgr 196 :semantic "negative"} 
+          "orange"  {:sgr 208}
+          "yellow"  {:sgr 178 :semantic "warning"}
+          "olive"   {:sgr 106}
+          "green"   {:sgr 40 :semantic "positive"}
+          "blue"    {:sgr 39 :semantic "accent"}
+          "purple"  {:sgr 141}
+          "magenta" {:sgr 201}
+          "gray"    {:sgr 247 :semantic "subtle"}
+          "black"   {:sgr 16}
+          "white"   {:sgr 231}}
+         system-colors-source))
+
+;; (select-keys xterm-colors-by-id
+;;              (->> colors-source
+;;                   vals
+;;                   (map :sgr)
+;;                   (into [])))
 
 (def ^:private semantics-by-callout-type
   {"error"    "negative"
@@ -255,7 +346,7 @@
              m1))
 
 (def ^:private color-codes
-  (let [colors    (assoc-hex-colors colors-source )
+  (let [colors    (assoc-hex-colors colors-source)
         semantics (reduce-colors color-names-by-semantic* colors)
         callouts  (reduce-colors semantics-by-callout-type semantics)]
     {:all              (merge colors semantics callouts)
@@ -274,10 +365,13 @@
   (assoc m
          k 
          (if (contains? #{:background-color :color} k)
-           (when (nameable? v)
+           (cond
+             (nameable? v)
              (get (:all color-codes)
-                  (as-str v)
-                  nil))
+                  (as-str v))
+             
+             (and (int? v) (<= 0 v 257))
+             {:sgr v})
            v)))
 
 (defn- et-vec? [x]

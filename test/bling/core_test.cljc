@@ -8,7 +8,53 @@
 (def printer
   #?(:cljs print-bling :clj println))
 
-(println (bling [:bold.italic "HI"]))
+#_(println (bling [:bold.system-maroon "HI"]))
+
+#_(doseq [[nm] bling.core/system-colors-source]
+  (println (bling [{:color nm :font-weight :bold} nm])))
+
+;; (println (bling [{:color "red" :font-weight :bold} "Clean it all up"]))
+;; (println (bling [{:color "red"} "Clean it all up"]))
+;; (println (bling [{:color "system-red" :font-weight :bold} "Clean it all up"]))
+;; (println (bling [{:color "system-red"} "Clean it all up"]))
+
+;; (println (bling [{:color :red :font-weight :bold} "Clean it all up"]))
+;; (println (bling [{:color :red} "Clean it all up"]))
+
+;; ;; Orange?
+;; (println (bling [{:color 208 :font-weight :bold} "Clean it all up"]))
+;; (println (bling [{:color 208} "Clean it all up"]))
+
+;; (println (bling [{:color :yellow :font-weight :bold} "Clean it all up"]))
+;; (println (bling [{:color :yellow} "Clean it all up"]))
+
+;; ;; Olive?
+;; (println (bling [{:color 106 :font-weight :bold} "Clean it all up"]))
+;; (println (bling [{:color 106} "Clean it all up"]))
+
+;; (println (bling [{:color :green :font-weight :bold} "Clean it all up"]))
+;; (println (bling [{:color :green} "Clean it all up"]))
+
+;; (println (bling [{:color :blue :font-weight :bold} "Clean it all up"]))
+;; (println (bling [{:color :blue} "Clean it all up"]))
+
+;; ;; Purple?
+;; (println (bling [{:color 141 :font-weight :bold} "Clean it all up"]))
+;; (println (bling [{:color 141} "Clean it all up"]))
+
+;; (println (bling [{:color :magenta :font-weight :bold} "Clean it all up"]))
+;; (println (bling [{:color :magenta} "Clean it all up"]))
+
+;; (println (bling [{:color :gray :font-weight :bold} "Clean it all up"]))
+;; (println (bling [{:color :gray} "Clean it all up"]))
+
+
+;; All the colors
+(doseq [nm bling.core/colors-ordered]
+  (println (bling [{:color nm :font-weight :bold} nm])))
+
+
+(println (bling [:bold.info "WTF"]))
 
 (defn example-custom-callout
   [{:keys [point-of-interest-opts callout-opts]}]
@@ -26,7 +72,7 @@
 
 
 ;; Default callout w/ poi
-(do
+#_(do
 (example-custom-callout
  {:point-of-interest-opts {:file   "example.ns.core"
                            :line   11
@@ -225,7 +271,7 @@
           [:red-bg.white.bold "O"]
           [:yellow-bg.white.bold "W"]
           [:blue-bg.white.bold " "])}
- (bling "Example callout, :type of :warning, rainbow-bg label" ))
+ (bling "Example callout, :type of :info, rainbow-bg label" ))
 
 (callout
  {:type :info
@@ -237,7 +283,7 @@
           [:blue.bold "B"]
           [:magenta.bold "O"]
           [:red.bold "W"])}
- (bling "Example callout, :type of :warning, rainbow-bg label" ))
+ (bling "Example callout, :type of :info, rainbow-bg label" ))
 
 (callout
  {:type :info
@@ -250,7 +296,7 @@
           [:blue.bold "B"]
           [:magenta.bold "O"]
           [:red.bold "W"])}
- (bling "Example callout, :type of :warning, rainbow-bg label" ))
+ (bling "Example callout, :type of :info, rainbow-bg label" ))
 
 (callout
  "Example callout, single-arity")
@@ -378,7 +424,7 @@
 (callout
  {:type :info
   :label "My custom label warning"}
- "Example callout, with :type of :warning, and custom :label." )
+ "Example callout, with :type of :info, and custom :label." )
 
 (callout
  {:type :warning
