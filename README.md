@@ -1,5 +1,5 @@
 
-
+<!-- TODO - Update images with new colors -->
 # bling
 
 **Helps you quickly get rich text into your console printing.**  
@@ -23,13 +23,13 @@
 
 - Supports both terminal emulators and browser consoles.
 
-- Simple, accessibility-focused, 8-color pallette.
+- Simple, accessibility-focused, 11-color pallette.
 
 - All colors provide reasonable contrast on both light and dark backgrounds.
 
 - Simple and intuitive hiccup-like markup syntax.
 
-- Sensible templates for callouts warning and error callouts.
+- Sensible templates for warning and error callouts.
 
 
 <br>
@@ -41,7 +41,7 @@ Add as a dependency to your project:
 
 
 ```Clojure
-[io.github.paintparty/bling "0.1.1"]
+[io.github.paintparty/bling "0.2.0"]
 ```
 <br>
 
@@ -66,10 +66,10 @@ of text decorated with tags for colorization, italics, and boldness:
 
 ```Clojure
 (println (bling [:bold "bold"]
-                 ", "
-                 [:italic "italic"]
-                 ", or "
-                 [:blue "colored"]))
+                ", "
+                [:italic "italic"]
+                ", or "
+                [:blue "colored"]))
 ```
 <p align="center">
   <img src="./resources/basics-light.png" width="750px" align="center"/>
@@ -90,10 +90,10 @@ To avoid typing all this out, you can use **`bling.core/print-bling`** to print 
 
 ```Clojure
 (print-bling (bling [:bold "bold"]
-                        ", "
-                        [:italic "italic"]
-                        ", or "
-                        [:blue "colored"]))
+                    ", "
+                    [:italic "italic"]
+                    ", or "
+                    [:blue "colored"]))
 ```
 
 By default, in ClojureScript, **`bling.core/print-bling`** prints with `js/console.log`.
@@ -101,11 +101,11 @@ However, if you would like to print with either `js.console/warn`, or `js/consol
 
 ```Clojure
 (print-bling (bling [:bold "bold"]
-                        ", "
-                        [:italic "italic"]
-                        ", or "
-                        [:blue "colored"])
-                js/console.warn)
+                    ", "
+                    [:italic "italic"]
+                    ", or "
+                    [:blue "colored"])
+             js/console.warn)
 ```
 <br>
 
@@ -114,10 +114,10 @@ However, if you would like to print with either `js.console/warn`, or `js/consol
 You can add multiple decorations with hiccup-style tags (a keyword with dot separators). The order of the things separated by dots doesn't matter.
 ```Clojure
 (println (bling [:bold.italic "bold & italic"]
-                 ", "
-                 [:italic.blue "italic & colored"]
-                 ", "
-                 [:bold.italic.white.blue-bg "bold & italic & colored & colored-bg"]))
+                ", "
+                [:italic.blue "italic & colored"]
+                ", "
+                [:bold.italic.white.blue-bg "bold & italic & colored & colored-bg"]))
 ```
 <p align="center"><img src="resources/combos-light.png" width="750px" /></p>
 <p align="center"><img src="resources/combos-dark.png" width="750px" /></p>
@@ -125,59 +125,8 @@ You can add multiple decorations with hiccup-style tags (a keyword with dot sepa
 <br>
 
 
-### The bling pallette 
-
-Eight carefully selected colors, from the [xterm range 16-255](https://en.m.wikipedia.org/wiki/Xterm#/media/File%3AXterm_256color_chart.svg), are available for use (shown in bold). All of these colors should display consistantly across most consoles on the end-user side. Don't expect all of the colors to pass the [strictest APCA contrast criterion](https://www.myndex.com/APCA/), but you can be sure of reasonably visibility on both light and dark backgrounds:
-
-```Clojure
-(println (bling [:bold.red "Red"]
-                 ", "
-                 [:bold.yellow "Yellow"]
-                 ", "
-                 [:bold.green "Green"]
-                 ", "
-                 [:bold.blue "Blue"]
-                 ", "
-                 [:bold.magenta "Magenta"]
-                 ", "
-                 [:bold.gray "Gray"]
-                 ", "
-                 [:bold.black "Black"]
-                 ", "
-                 [:bold.white "White"] ))
-```
-<p align="center"><img src="resources/colors-light.png" width="750px" /></p>
-<p align="center"><img src="resources/colors-dark.png" width="750px" /></p>
-
-<br>
-
-### Color aliases
-
-You can use the following semantic aliases for some colors (shown in bold):
-```Clojure
-(println (bling [:bold.negative "Negative"]
-                 ", "
-                 [:bold.error "Error"]
-                 ", "
-                 [:bold.warning "Warning"]
-                 ", "
-                 [:bold.positive "Positive"]
-                 ", "
-                 [:bold.info "Info"]
-                 ", "
-                 [:bold.subtle "Subtle"]
-                 ", "
-                 [:bold.neutral "Neutral"] ))
-```
-<br>
-
-<p align="center"><img src="resources/semantic-colors-light.png" width="750px" /></p>
-<p align="center"><img src="resources/semantic-colors-dark.png" width="750px" /></p>
-
-<br>
-
-
 You can also pass a map (instead of a hiccup-style tag) to style the text:
+
 ```Clojure
 (bling [{:color            :green
          :background-color :black
@@ -185,9 +134,11 @@ You can also pass a map (instead of a hiccup-style tag) to style the text:
          :font-weight      :bold}
         "bold italic green text on black background"])
 ```
+
 <br>
 
 Note that all the arguments to **`bling.core/bling`** must satisfy this predicate:
+
 ```Clojure
 (every? (fn [x]
           (or (and (vector? x)
@@ -201,15 +152,113 @@ Note that all the arguments to **`bling.core/bling`** must satisfy this predicat
 ```
 
 In other words, every one of the arguments to **`bling.core/bling`** must be either:<br>
+
 - A two-element vector, with the first element being a keyword or map.<br>
 - A value which is not a collection.
 
 If, for example, you wanted to print `[1 2 3]` in red, you will need to stringify the vector:
+
 ```Clojure
 (bling [:red (str [1 2 3])])
 ```
 
+
+
+
+### The Bling pallette 
+
+Eleven carefully selected colors, from the [xterm range 16-255](https://en.m.wikipedia.org/wiki/Xterm#/media/File%3AXterm_256color_chart.svg), are available for use (shown in bold). All of these colors should display consistantly across most consoles on the end-user side. Don't expect all of the colors to pass the [strictest APCA contrast criterion](https://www.myndex.com/APCA/), but you can be sure of reasonably visibility on both light and dark backgrounds:
+
+```Clojure
+(println (bling [:bold.red "Red"]
+                ", "
+                [:bold.orange "Orange"]
+                ", "
+                [:bold.yellow "Yellow"]
+                ", "
+                [:bold.green "Olive"]
+                ", "
+                [:bold.green "Green"]
+                ", "
+                [:bold.blue "Blue"]
+                ", "
+                [:bold.blue "Purple"]
+                ", "
+                [:bold.magenta "Magenta"]
+                ", "
+                [:bold.gray "Gray"]
+                ", "
+                [:bold.black "Black"]
+                ", "
+                [:bold.white "White"] ))
+```
+<p align="center"><img src="resources/colors-light.png" width="750px" /></p>
+<p align="center"><img src="resources/colors-dark.png" width="750px" /></p>
+
 <br>
+
+### Color aliases
+
+You can use the following semantic aliases for some colors (shown in bold):
+```Clojure
+(println (bling [:bold.negative "Negative"]
+                ", "
+                [:bold.error "Error"]
+                ", "
+                [:bold.warning "Warning"]
+                ", "
+                [:bold.positive "Positive"]
+                ", "
+                [:bold.info "Info"]
+                ", "
+                [:bold.subtle "Subtle"]
+                ", "
+[:bold.neutral "Neutral"]))
+```
+<br>
+
+<p align="center"><img src="resources/semantic-colors-light.png" width="750px" /></p>
+<p align="center"><img src="resources/semantic-colors-dark.png" width="750px" /></p>
+
+<br>
+
+<br>
+
+### Using system colors
+
+Bling also supports named color aliases for system colors (Xterm colors 0-16). Please note that these will not display consistantly across user spaces, as the actual color is dictated by the theme the user has selected in their particular terminal emulator. If your terminal emulator theme is totally dialed-in to your liking and you are using Bling to provide errors, warnings, and messages for code that only you will ever see, then system colors might be preferrable.
+
+```Clojure
+(println (bling [:system-black "black (SYSTEM)"]))
+(println (bling [:system-maroon "maroon (SYSTEM)"]))
+(println (bling [:system-green "green (SYSTEM)"]))
+(println (bling [:system-olive "olive (SYSTEM)"]))
+(println (bling [:system-navy "navy (SYSTEM)"]))
+(println (bling [:system-purple "purple (SYSTEM)"]))
+(println (bling [:system-teal "teal (SYSTEM)"]))
+(println (bling [:system-silver "silver (SYSTEM)"]))
+(println (bling [:system-grey "grey (SYSTEM)"]))
+(println (bling [:system-red "red (SYSTEM)"]))
+(println (bling [:system-lime "lime (SYSTEM)"]))
+(println (bling [:system-yellow "yellow (SYSTEM)"]))
+(println (bling [:system-blue "blue (SYSTEM)"]))
+(println (bling [:system-fuchsia "fuchsia (SYSTEM)"]))
+(println (bling [:system-aqua "aqua (SYSTEM)"]))
+(println (bling [:system-white "white (SYSTEM)"]))
+```
+
+
+
+### Using arbitrary colors
+
+Bling also supports arbitrary colors in the xTerm 0-256 range. They must be provided as integers, so you will need to use an options map instead of a hiccup-style keyword:
+
+```Clojure
+(println (bling [{:color 180} "xTerm color 180, aka Tan"]))
+```
+
+<br>
+
 <br>
 
 ## Printing formatted blocks to the console
