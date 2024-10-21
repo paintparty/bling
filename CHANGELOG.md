@@ -17,6 +17,16 @@ For a list of breaking changes, check [here](#breaking-changes)
 <br>
 <br>
 
+## 0.2.0
+2024-08-26
+#### Added 
+- Orange, Olive, and Purple to the standard Bling pallette
+- [Named color aliases for system colors](https://github.com/paintparty/bling#using-system-colors)
+- [Ability to use arbitrary xTerm (0-256) colors](https://github.com/paintparty/bling#using-arbitrary-colors)
+
+<br>
+<br>
+
 ## 0.1.1
 2024-08-26
 #### Fixed

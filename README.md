@@ -222,8 +222,6 @@ You can use the following semantic aliases for some colors (shown in bold):
 
 <br>
 
-<br>
-
 ### Using system colors
 
 Bling also supports named color aliases for system colors (Xterm colors 0-16). Please note that these will not display consistantly across user spaces, as the actual color is dictated by the theme the user has selected in their particular terminal emulator. If your terminal emulator theme is totally dialed-in to your liking and you are using Bling to provide errors, warnings, and messages for code that only you will ever see, then system colors might be preferrable.
@@ -246,12 +244,15 @@ Bling also supports named color aliases for system colors (Xterm colors 0-16). P
 (println (bling [:system-aqua "aqua (SYSTEM)"]))
 (println (bling [:system-white "white (SYSTEM)"]))
 ```
-
-
+<br>
 
 ### Using arbitrary colors
 
-Bling also supports arbitrary colors in the xTerm 0-256 range. They must be provided as integers, so you will need to use an options map instead of a hiccup-style keyword:
+Bling also supports arbitrary colors in the xTerm 0-256 range. If you are using
+arbitrary colors to construct messages to stdout that other people might have to
+read, you may want to test the appearance with both light and dark terminal
+themes. They must be provided as integers, so you will need to use an options
+map instead of a hiccup-style keyword:
 
 ```Clojure
 (println (bling [{:color 180} "xTerm color 180, aka Tan"]))
