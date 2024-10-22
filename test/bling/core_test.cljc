@@ -50,11 +50,10 @@
 
 
 ;; All the colors
-(doseq [nm bling.core/colors-ordered]
-  (println (bling [{:color nm :font-weight :bold} nm])))
+;; (doseq [nm bling.core/colors-ordered]
+;;   (println (bling [{:color nm :font-weight :bold} nm])))
 
 
-(println (bling [:bold.info "WTF"]))
 
 (defn example-custom-callout
   [{:keys [point-of-interest-opts callout-opts]}]
@@ -222,10 +221,18 @@
 
 ;; ;; Combo
 (printer (bling [:bold.italic "bold & italic"]
-                   ", "
-                   [:italic.blue "italic & colored"]
-                   ", "
-                   [:bold.italic.white.blue-bg "bold & italic & colored & colored-bg"]))
+                ", "
+                [:italic.blue "italic & colored"]
+                ", "
+                [:bold.italic.white.blue-bg
+                 "bold & italic & colored & colored-bg"]
+                ", "
+                [:bold.italic.blue.underline
+                 "bold & italic & colored & colored-bg & underline"]
+                ", "
+                [:bold.italic.blue.strikethrough 
+                 "bold & italic & colored & colored-bg & strikethrough"]))
+
 
 ;; ;; ;; Colors
 (printer (bling [:bold.red "Red"]

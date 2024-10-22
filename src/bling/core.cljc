@@ -313,20 +313,38 @@
     bgc*        :background-color
     :keys       [font-style 
                  font-weight
+                 text-decoration
                  disable-italics?
+                 disable-text-decoration?
                  disable-font-weights?]
     :as         m}]
-  (let [fgc    (x->sgr fgc* :fg)
-        bgc    (x->sgr bgc* :bg)
-        italic (when (and (not disable-italics?)
-                          (contains? #{"italic" :italic} font-style))
-                 "3")
-        weight (when (and (not disable-font-weights?)
-                          (contains? #{"bold" :bold} font-weight))
-                 "1")
-        ret    (str "\033[" 
-                    (string/join ";" (remove nil? [italic fgc weight bgc]))
-                    "m")]
+  (let [fgc             (x->sgr fgc* :fg)
+        bgc             (x->sgr bgc* :bg)
+        italic          (when (and (not disable-italics?)
+                                   (contains? #{"italic" :italic} font-style))
+                          "3")
+        weight          (when (and (not disable-font-weights?)
+                                   (contains? #{"bold" :bold} font-weight))
+                          "1")
+        
+        text-decoration (when-not disable-text-decoration?
+                          (cond 
+                            (contains? #{"underline" :underline}
+                                       text-decoration) 
+                            "4"
+
+                            (contains? #{"line-through" :strikethrough}
+                                       text-decoration)
+                            "9"))
+        ret             (str "\033[" 
+                             (string/join ";"
+                                          (remove nil?
+                                                  [italic
+                                                   fgc
+                                                   weight
+                                                   bgc
+                                                   text-decoration]))
+                             "m")]
     ret))
 
 
@@ -1013,6 +1031,8 @@
   (let [[k m] (case s
                 "bold"   [:font-weight "bold"]
                 "italic" [:font-style "italic"]
+                "underline" [:text-decoration "underline"]
+                "strikethrough" [:text-decoration "line-through"]
                 (let [cs (:all color-codes)
                       m  (get cs s nil)]
                   (if m
@@ -1075,7 +1095,8 @@
 (defn- enriched-data-inner
   [[coll css] x] 
   (let [s (cond (et-vec? x)
-                (tagged-str (enriched-text x))
+                (tagged-str (do (pprint (enriched-text x))
+                                (enriched-text x)))
                 (not (coll? x))
                 (as-str x))]
     [(conj coll s)
