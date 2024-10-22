@@ -5,8 +5,9 @@
 For a list of breaking changes, check [here](#breaking-changes)
 
 
-## Unreleased
-#### Added
+## Unreleased (0.3.0)
+#### Added 
+- Add underline and strikethrough styling
 
 #### Changed
 

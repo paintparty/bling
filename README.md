@@ -117,7 +117,14 @@ You can add multiple decorations with hiccup-style tags (a keyword with dot sepa
                 ", "
                 [:italic.blue "italic & colored"]
                 ", "
-                [:bold.italic.white.blue-bg "bold & italic & colored & colored-bg"]))
+                [:bold.italic.white.blue-bg
+                 "bold & italic & colored & colored-bg"]
+                ", "
+                [:bold.italic.blue.underline
+                 "bold & italic & colored & underline"]
+                ", "
+                [:bold.italic.blue.strikethrough
+                 "bold & italic & colored & strikethrough"]))
 ```
 <p align="center"><img src="resources/combos-light.png" width="750px" /></p>
 <p align="center"><img src="resources/combos-dark.png" width="750px" /></p>

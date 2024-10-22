@@ -998,7 +998,6 @@
                           :data?          data?
                           :color          color}]
 
-      ;;  (pprint callout-opts)
        #?(:cljs
           ;; move to enriched or data
           (browser-callout callout-opts)
@@ -1095,8 +1094,7 @@
 (defn- enriched-data-inner
   [[coll css] x] 
   (let [s (cond (et-vec? x)
-                (tagged-str (do (pprint (enriched-text x))
-                                (enriched-text x)))
+                (tagged-str (enriched-text x))
                 (not (coll? x))
                 (as-str x))]
     [(conj coll s)

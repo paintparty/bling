@@ -228,10 +228,10 @@
                  "bold & italic & colored & colored-bg"]
                 ", "
                 [:bold.italic.blue.underline
-                 "bold & italic & colored & colored-bg & underline"]
+                 "bold & italic & colored & underline"]
                 ", "
                 [:bold.italic.blue.strikethrough 
-                 "bold & italic & colored & colored-bg & strikethrough"]))
+                 "bold & italic & colored & strikethrough"]))
 
 
 ;; ;; ;; Colors
