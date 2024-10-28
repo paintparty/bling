@@ -71,7 +71,7 @@
 
 
 ;; Default callout w/ poi
-#_(do
+(do
 (example-custom-callout
  {:point-of-interest-opts {:file   "example.ns.core"
                            :line   11
