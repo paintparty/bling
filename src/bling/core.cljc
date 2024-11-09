@@ -480,7 +480,7 @@
              trace*      (when last-index
                            (->> mini-strace (take (inc last-index))))
              len         (when trace* (count trace*)) 
-             with-header [(or header "Stacktrace preview:") "\n"]
+             with-header [(or header (bling [:italic "Stacktrace preview:"])) "\n"]
              trace       (some->> trace* (interpose "\n") (into with-header))
              num-dropped (when trace 
                            (let [n (- (or strace-len 0) (or len 0))]
