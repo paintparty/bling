@@ -5,15 +5,21 @@
 For a list of breaking changes, check [here](#breaking-changes)
 
 
-## Unreleased (0.3.0)
+## Unreleased
 #### Added 
-- Add underline and strikethrough styling
 
 #### Changed
 
 #### Fixed
 
 #### Removed
+
+<br>
+<br>
+
+## 0.3.0
+#### Added 
+- Add underline and strikethrough styling
 
 <br>
 <br>

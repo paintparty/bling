@@ -72,66 +72,8 @@
 
 ;; Default callout w/ poi
 (do
-(example-custom-callout
- {:point-of-interest-opts {:file   "example.ns.core"
-                           :line   11
-                           :column 1
-                           :form   '(+ 1 true)
-                           :type   :error}
-  :callout-opts           {:type  :error
-                           :border-weight :medium}})
 
-;; Default callout w/ poi, regex-form
-(example-custom-callout
- {:point-of-interest-opts {:file   "example.ns.core"
-                           :line   11
-                           :column 1
-                           :form   #"dude"
-                           :type   :error}
-  :callout-opts           {:type  :error}})
 
-;; Medium callout w/ poi
-(example-custom-callout
- {:point-of-interest-opts {:file   "example.ns.core"
-                           :line   11
-                           :column 1
-                           :form   '(+ 1 true)
-                           :type   :error}
-  :callout-opts           {:type          :error
-                           :border-weight :medium}})
-
-;; Heavy callout w/ poi
-(example-custom-callout
- {:point-of-interest-opts {:file   "example.ns.core"
-                           :line   11
-                           :column 1
-                           :form   '(+ 1 true)
-                           :type   :error}
-  :callout-opts           {:type          :error
-                           :border-weight :heavy}})
-
-;; Normal callout w/ poi, label enriched
-(example-custom-callout
- {:point-of-interest-opts {:file   "example.ns.core"
-                           :line   11
-                           :column 1
-                           :form   '(+ 1 true)
-                           :type   :error}
-  :callout-opts {:label         (bling [:red-bg.bold.white " ERROR "])
-                 :type          :error}})
-
-;; callout w/ enriched header and body on poi
-(example-custom-callout
- {:point-of-interest-opts {:file   "example.ns.core"
-                           :line   11
-                           :column 1
-                           :form   '(+ 1 true)
-                           :type   :error
-                           :header (bling [:blue.italic "Enriched header."])
-                           :body   (bling [:green.italic "Enriched body."]
-                                             "\n"
-                                             [:yellow.italic "Body line 2."])}
-  :callout-opts           {:type  :error}})
 
 
 (callout "Default callout, no options")
@@ -219,53 +161,8 @@
 ;; ;; ;; Basics
 (printer (bling [:bold "bold"] ", " [:italic "italic"] ", or " [:blue "colored"]))
 
-;; ;; Combo
-(printer (bling [:bold.italic "bold & italic"]
-                ", "
-                [:italic.blue "italic & colored"]
-                ", "
-                [:bold.italic.white.blue-bg
-                 "bold & italic & colored & colored-bg"]
-                ", "
-                [:bold.italic.blue.underline
-                 "bold & italic & colored & underline"]
-                ", "
-                [:bold.italic.blue.strikethrough 
-                 "bold & italic & colored & strikethrough"]))
 
-
-;; ;; ;; Colors
-(printer (bling [:bold.red "Red"]
-                   ", "
-                   [:bold.yellow "Yellow"]
-                   ", "
-                   [:bold.green "Green"]
-                   ", "
-                   [:bold.blue "Blue"]
-                   ", "
-                   [:bold.magenta "Magenta"]
-                   ", "
-                   [:bold.gray "Gray"]
-                   ", "
-                   [:bold.black "Black"]
-                   ", "
-                   [:bold.white "White"] ))
-
-;; ;; Semantic colors
-(printer (bling [:bold.negative "Negative"]
-                   ", "
-                   [:bold.error "Error"]
-                   ", "
-                   [:bold.warning "Warning"]
-                   ", "
-                   [:bold.positive "Positive"]
-                   ", "
-                   [:bold.info "Info"]
-                   ", "
-                   [:bold.subtle "Subtle"]
-                   ", "
-                   [:bold.neutral "Neutral"] ))
-
+;; Callouts
 (callout
  {:type :info
   :label (bling 
@@ -305,24 +202,108 @@
           [:red.bold "W"])}
  (bling "Example callout, :type of :info, rainbow-bg label" ))
 
-(callout
- "Example callout, single-arity")
 
 (callout
- {:label "FOO"}
- "Example callout, custom label")
-
-(callout
- {:label (bling [:magenta-bg.white.bold " WTF "])}
- (bling [:magenta "Example callout, styled-label"]))
-
-(callout
- {:type :info}
- "Example callout, with :type of :info")
+ {:type :warning
+  :label {:a :b}}
+ "Example callout, with :type of :warning, and custom :label." )
 
 
+(println "\n\n\n")
 
-;; ;; ;;; CALLOUT examples with light border -----------------------------------------
+;; PRIMITIVES ------------------------------------------------------------------
+
+(println (bling [:bold "bold "]
+                [:italic "italic "]
+                [:underline "underline "]
+                [:strikethrough "strikethrough"]))
+
+(println)
+
+;; Colors
+(printer (bling [:bold.red "Red"]
+                " "
+                [:bold.orange "Orange"]
+                " "
+                [:bold.yellow "Yellow"]
+                " "
+                [:bold.olive "Olive"]
+                " "
+                [:bold.green "Green"]
+                " "
+                [:bold.blue "Blue"]
+                " "
+                [:bold.purple "Purple"]
+                " "
+                [:bold.magenta "Magenta"]
+                " "
+                [:bold.gray "Gray"]
+                " "
+                [:bold.black "Black"]
+                " "
+                [:bold.white "White"] ))
+
+(println)
+
+;; Background colors
+(printer (bling [:bold.red-bg.white " Red "]
+                " "
+                [:bold.orange-bg.white " Orange "]
+                " "
+                [:bold.yellow-bg.white " Yellow "]
+                " "
+                [:bold.olive-bg.white " Olive "]
+                " "
+                [:bold.green-bg.white " Green "]
+                " "
+                [:bold.blue-bg.white " Blue "]
+                " "
+                [:bold.blue-bg.white " Purple "]
+                " "
+                [:bold.magenta-bg.white " Magenta "]
+                " "
+                [:bold.gray-bg.white " Gray "]
+                ;; " "
+                ;; [:bold.black-bg.white " Black "]
+                ;; " "
+                ;; [:bold.white-bg.black " White "]
+                ))
+
+(println)
+
+;; Semantic colors
+(printer (bling [:bold.negative "Negative"]
+                " "
+                [:bold.error "Error"]
+                " "
+                [:bold.warning "Warning"]
+                " "
+                [:bold.positive "Positive"]
+                " "
+                [:bold.info "Info"]
+                " "
+                [:bold.subtle "Subtle"]
+                " "
+                [:bold.neutral "Neutral"] ))
+
+(println)
+
+;; Combo
+(printer (bling [:bold.italic "bold & italic"]
+                ", "
+                [:italic.blue "italic & colored"]
+                ", "
+                [:bold.italic.white.blue-bg
+                 "bold & italic & colored & colored-bg"]
+                ", "
+                [:bold.italic.blue.underline
+                 "bold & italic & colored & underline"]
+                ", "
+                [:bold.italic.blue.strikethrough 
+                 "bold & italic & colored & strikethrough"]))
+
+
+;; CALLOUT examples with light border ------------------------------------------
 
 (callout {:type :info}
          "Example callout, with :type of :info")
@@ -341,17 +322,27 @@
           :label "SUCCESS!"}
          "Example callout, with :type of :positive, and custom :label")
 
-(callout {:type :subtle}
-         "Example callout, with :type of :subtle (or :gray)")
+;; Off for readme banner
+#_(do 
+  (callout {:type :subtle}
+           "Example callout, with :type of :subtle (or :gray)")
 
-(callout {:type :magenta}
-         "Example callout, with :type of :magenta")
+  (callout {:type :magenta}
+           "Example callout, with :type of :magenta")
 
-(callout "Example callout, default")
+  (callout "Example callout, default")
+
+  (callout
+   {:label "HEY"}
+   "Example callout, default with custom label"))
+
+(callout
+ {:label       (bling [:magenta-bg.white.bold " HEY "])
+  :padding-top 1}
+ (bling "Example callout, styled-label, :padding-top of 1"))
 
 
-
-;; ; CALLOUT examples with medium border ----------------------------------------
+;; CALLOUT examples with medium border ----------------------------------------
 
 (callout {:type          :info
           :border-weight :medium}
@@ -375,19 +366,21 @@
           :border-weight :medium}
          "Example callout, with :type of :positive, and custom :label")
 
-(callout {:type          :subtle
-          :border-weight :medium}
-         "Example callout, with :type of :subtle (or :gray)")
 
-(callout {:type          :magenta
-          :border-weight :medium}
-         "Example callout, with :type of :magenta")
+;; Off for readme banner
+#_(do (callout {:type          :subtle
+              :border-weight :medium}
+             "Example callout, with :type of :subtle (or :gray)")
 
-(callout {:border-weight :medium} "Example callout, default")
+    (callout {:type          :magenta
+              :border-weight :medium}
+             "Example callout, with :type of :magenta")
+
+    (callout {:border-weight :medium} "Example callout, default"))
 
 
 
-;; ;; CALLOUT examples with heavy border ----------------------------------------
+;; CALLOUT examples with heavy border ------------------------------------------
 
 (callout {:type          :info
           :border-weight :heavy}
@@ -411,34 +404,109 @@
           :border-weight :heavy}
          "Example callout, with :type of :positive, and custom :label")
 
-(callout {:type          :subtle
-          :border-weight :heavy}
-         "Example callout, with :type of :subtle (or :gray)")
+;; Off for readme banner
+#_(do (callout {:type          :subtle
+              :border-weight :heavy}
+             "Example callout, with :type of :subtle (or :gray)")
 
-(callout {:type          :magenta
-          :border-weight :heavy}
-         "Example callout, with :type of :magenta")
+    (callout {:type          :magenta
+              :border-weight :heavy}
+             "Example callout, with :type of :magenta")
 
-(callout {:border-weight :heavy} "Example callout, default")
-
+    (callout {:border-weight :heavy} "Example callout, default"))
 
 (callout
  {:type          :warning
   :border-weight :heavy
-  :padding-left  2}
- "Example callout, with :type of :warning, padding-left of 2.")
-
-(callout
- {:type :info
-  :label "My custom label warning"}
- "Example callout, with :type of :info, and custom :label." )
-
-(callout
- {:type :warning
-  :label {:a :b}}
- "Example callout, with :type of :warning, and custom :label." )
+  :padding-left  4}
+ "Example callout, with :type of :warning, padding-left of 4.")
 )
 
+
+
+;; CALLOUTS with poi -----------------------------------------------------------
+
+;; Default callout w/ poi, regex-form
+(example-custom-callout
+ {:point-of-interest-opts {:file   "example.ns.core"
+                           :line   11
+                           :column 1
+                           :form   '(+ 1 true)
+                           :type   :warning}
+  :callout-opts           {:type  :warning}})
+
+;; Medium callout w/ poi
+(example-custom-callout
+ {:point-of-interest-opts {:file   "example.ns.core"
+                           :line   11
+                           :column 1
+                           :form   '(+ 1 true)
+                           :type   :warning}
+  :callout-opts           {:type          :warning
+                           :border-weight :medium}})
+
+;; Heavy callout w/ poi
+(example-custom-callout
+ {:point-of-interest-opts {:file   "example.ns.core"
+                           :line   11
+                           :column 1
+                           :form   '(+ 1 true)
+                           :type   :warning}
+  :callout-opts           {:type          :warning
+                           :border-weight :heavy}})
+
+
+;; Default callout w/ poi, regex-form
+(example-custom-callout
+ {:point-of-interest-opts {:file   "example.ns.core"
+                           :line   11
+                           :column 1
+                           :form   '(+ 1 true)
+                           :type   :error}
+  :callout-opts           {:type  :error}})
+
+;; Medium callout w/ poi
+(example-custom-callout
+ {:point-of-interest-opts {:file   "example.ns.core"
+                           :line   11
+                           :column 1
+                           :form   '(+ 1 true)
+                           :type   :error}
+  :callout-opts           {:type          :error
+                           :border-weight :medium}})
+
+;; Heavy callout w/ poi
+(example-custom-callout
+ {:point-of-interest-opts {:file   "example.ns.core"
+                           :line   11
+                           :column 1
+                           :form   '(+ 1 true)
+                           :type   :error}
+  :callout-opts           {:type          :error
+                           :border-weight :heavy}})
+
+;; Normal callout w/ poi, label enriched and regex form
+(example-custom-callout
+ {:point-of-interest-opts {:file   "example.ns.core"
+                           :line   11
+                           :column 1
+                           :form   #"All of this regex should underlined"
+                           :type   :error}
+  :callout-opts {:label         (bling [:red-bg.bold.white " ERROR "])
+                 :type          :error}})
+
+;; callout w/ enriched header and body on poi
+(example-custom-callout
+ {:point-of-interest-opts {:file   "example.ns.core"
+                           :line   11
+                           :column 1
+                           :form   '(+ 1 true)
+                           :type   :error
+                           :header (bling [:blue.italic "Enriched header."])
+                           :body   (bling [:green.italic "Enriched body."]
+                                             "\n"
+                                             [:yellow.italic "Body line 2."])}
+  :callout-opts           {:type  :error}})
 #_(callout
  {:type           :error
   :margin-top     3 ; default is 1

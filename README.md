@@ -2,24 +2,44 @@
 <!-- TODO - Update images with new colors -->
 # bling
 
-**Helps you quickly get rich text into your console printing.**  
+**Rich text in the console.**  
 
 
 <p align="left">
   <a href="https://clojars.org/io.github.paintparty/bling">
-    <img src="https://img.shields.io/clojars/v/io.github.paintparty/bling.svg?color=0969da&style=flat-square&cacheSeconds=3" alt="bling on Clojars"></img>
+    <img src="https://img.shields.io/clojars/v/io.github.paintparty/bling.svg?color=0969da&style=flat&cacheSeconds=3" alt="bling on Clojars"></img>
   </a>
 </p>
 
+<div align="left">
+
+**[Features]**  &nbsp;•&nbsp; **[Setup]**  &nbsp;•&nbsp;  **[Basic Usage]** &nbsp;•&nbsp; **[Blocks]** &nbsp;•&nbsp; **[Templates]**
+</div>
+
+[Features]: #features
+[Setup]: #setup
+[Basic Usage]: #basic-usage
+[Blocks]: #printing-formatted-blocks
+
+[Templates]: #theming
+[Interop]: #printing-conventions
+[Contributing]: #contributing
+
+<br>
 <br>
 
-<p align="center">
-  <img src="resources/error-with-point-of-interest-light.png" width="750px" />
+<p align="left">
+  <img src="resources/bling-banner-light.png" width="700px" />
+</p>
+
+The same example as above, in a terminal emulator with a dark background.
+<p align="left">
+  <img src="resources/bling-banner-dark.png" width="700px" />
 </p>
 
 ## Features
 
-- Works great for both Clojure and ClojureScript.
+- Works great for Clojure, ClojureScript, and Babashka.
 
 - Supports both terminal emulators and browser consoles.
 
@@ -41,7 +61,7 @@ Add as a dependency to your project:
 
 
 ```Clojure
-[io.github.paintparty/bling "0.2.0"]
+[io.github.paintparty/bling "0.3.0"]
 ```
 <br>
 
@@ -269,7 +289,7 @@ map instead of a hiccup-style keyword:
 
 <br>
 
-## Printing formatted blocks to the console
+## Printing formatted blocks
 **`bling.core/callout`** will print a message "block" to the console with a colored bounding border in the inline-start position.
 
 ```Clojure
