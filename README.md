@@ -21,7 +21,7 @@
 [Basic Usage]: #basic-usage
 [Blocks]: #printing-formatted-blocks
 
-[Templates]: #theming
+[Templates]: #templates-for-errors-and-warnings
 [Interop]: #printing-conventions
 [Contributing]: #contributing
 
