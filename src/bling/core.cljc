@@ -62,6 +62,7 @@
    :text-decoration-color 
    :text-underline-offset     
    :text-decoration-thickness 
+   :text-decoration
    :line-height               
    :font-weight
    :font-style
@@ -716,7 +717,6 @@
                      
                      w-label
                      (with-label-and-border opts* label-line)]
-                 #_(prn w-label)
                  w-label)
 
                ;; light border
@@ -1033,13 +1033,19 @@
                          enriched-text
                          :style)]
 
-    (let [style  (select-keys style browser-dev-console-props) 
-          style  (reduce-colors-to-sgr-or-css :css style)
+    (let [style* (select-keys style browser-dev-console-props) 
+          style  (reduce-colors-to-sgr-or-css :css style*)
           ks     (keys style)
           resets (reduce (fn [acc k]
                            (assoc acc k "initial"))
                          {}
                          ks)]
+
+          ;; (prn {:style* style*
+          ;;       :style  style 
+          ;;       :ks     ks
+          ;;       :resets ks}) 
+
       (conj css-styles
             (css-stylemap->str style)
             (css-stylemap->str resets)))
@@ -1048,6 +1054,13 @@
 
 (defn- enriched-data-inner
   [[coll css] x] 
+  ;; (prn (merge {:coll    coll
+  ;;                :css     css
+  ;;                :x       x
+  ;;                :et-vec? (et-vec? x)}
+  ;;             (when (et-vec? x)
+  ;;               {:enriched-text (tagged-str (enriched-text x))
+  ;;                :updated-css   (updated-css css x)})))
   (let [s (cond (et-vec? x)
                 (tagged-str (enriched-text x))
                 (not (coll? x))
@@ -1109,8 +1122,7 @@
       ;;  (js/console.log "tagged:" tagged)
       ;;  (js/console.log "css:" css)
       ;;  (js/console.log "console-array:" console-array)
-       #_(.apply js/console.log js/console js-arr)
-       #_css
+      ;;  (.apply js/console.log js/console js-arr)
        (Enriched. tagged
                   (into-array css)
                   console-array
