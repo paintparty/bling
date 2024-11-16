@@ -24,34 +24,6 @@
 
 (def hex-color-re "#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})")
 
-(def colors-ordered
-  ["system-black"   
-   "system-maroon"  
-   "system-green"   
-   "system-olive"   
-   "system-navy"    
-   "system-purple"  
-   "system-teal"    
-   "system-silver"  
-   "system-grey"    
-   "system-red"     
-   "system-lime"     
-   "system-yellow"   
-   "system-blue"     
-   "system-fuchsia"  
-   "system-aqua"     
-   "system-white"   
-   "red"
-   "orange"
-   "yellow"
-   "olive"
-   "green"
-   "blue"
-   "purple"
-   "magenta"
-   "black"
-   "white"
-   "gray"])
 
 (def ^:private xterm-colors-by-id
   {0  "#000000" ;; system-black   
@@ -83,23 +55,6 @@
    247 "#9e9e9e" ;; gray
    })
 
-{"red"     {:sgr      196
-            :semantic "negative"} 
-          ;; "red"    {:sgr 202 :semantic "negative"} 
- "orange"  {:sgr 208}
- "yellow"  {:sgr      178
-            :semantic "warning"}
- "olive"   {:sgr 106}
- "green"   {:sgr      40
-            :semantic "positive"}
- "blue"    {:sgr      39
-            :semantic "accent"}
- "purple"  {:sgr      141}
- "magenta" {:sgr 201}
- "gray"    {:sgr      247
-            :semantic "subtle"}
- "black"   {:sgr 16}
- "white"   {:sgr 231}}
 
 (def ^:private browser-dev-console-props 
   [:text-decoration-line      

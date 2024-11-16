@@ -61,7 +61,7 @@ Add as a dependency to your project:
 
 
 ```Clojure
-[io.github.paintparty/bling "0.3.0"]
+[io.github.paintparty/bling "0.4.0"]
 ```
 <br>
 
