@@ -21,6 +21,9 @@ For a list of breaking changes, check [here](#breaking-changes)
 #### Added 
 - Added bling.sample namespace
 
+#### Fixed
+- `:text-decoration` like underline and strikethrough props not working in browser console.
+
 <br>
 <br>
 
