@@ -17,6 +17,13 @@ For a list of breaking changes, check [here](#breaking-changes)
 <br>
 <br>
 
+## 0.4.0
+#### Added 
+- Added bling.sample namespace
+
+<br>
+<br>
+
 ## 0.3.0
 #### Added 
 - Add underline and strikethrough styling
