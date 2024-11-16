@@ -40,7 +40,9 @@
 
 (defn example-custom-callout
   [{:keys [point-of-interest-opts callout-opts]}]
-  (let [poi-opts     (merge {:header "Your header message goes here."
+  (let [poi-opts     (merge {:header (str "This is not a real warning"
+                                          "\n"
+                                          "Your header message goes here.")
                              :body   (str "The body of your template goes here."
                                           "\n"
                                           "Second line of copy."
@@ -52,12 +54,18 @@
                             {:padding-top 1})]
     (callout callout-opts message)))
 
-(defn callout+ [m]
+(defn callout+ [{callout-type :type
+                 callout-label :label
+                :as m}]
   (callout m
            (str "Callout with :type of "
-                (:type m)
-                (when (:label m)
-                  " and custom :label"))))
+                callout-type
+                (when callout-label " and custom :label")
+                (when (contains? #{:warning "warning" :error "error"}
+                                 callout-type)
+                  (str "\n"
+                       "This is not a real "
+                       (name callout-type))) )))
 
 (defn sample []
   ;; CALLOUT examples with default border -------------------------------------
@@ -151,3 +159,4 @@
                         (f {:font-style :italic})
                         " "
                         spaces))))))
+
