@@ -614,23 +614,24 @@
              value)
         
         newlines?                         
-        (re-find #"\n" pt-and-value)
+        (boolean (re-find #"\n" pt-and-value))
 
         pt-and-value-with-border*
-        (string/replace 
-         (if (or (not label)
-                 (not newlines?))
-           (str "\n" pt-and-value)
-           pt-and-value)
-         #"\n"
-         (str "\n"
-              margin-left-str
-              (bling [border-style
-                         border-left-str]
-                        padding-left-str)))
+        (when-not (or (nil? value)
+                      (string/blank? value))
+          (string/replace 
+           (if (or (not label) (not newlines?))
+             (str "\n" pt-and-value)
+             pt-and-value)
+           #"\n"
+           (str "\n"
+                margin-left-str
+                (bling [border-style
+                        border-left-str]
+                       padding-left-str))))
 
         ;; In the case of medium or heavy border,
-        ;; with newlines and but no label,
+        ;; with newlines but no label,
         ;; we need to remove the leading space character.
         pt-and-value-with-border
         (if (or (and newlines?
@@ -644,16 +645,6 @@
 
         pb
         (spacing padding-bottom 0)]
-
-    #_(when (:data? m)
-      (prn 'pt-and-value pt-and-value)
-      (prn 'newlines? newlines?)
-      (prn 'pt-and-value-with-border pt-and-value-with-border)
-      (prn 'pb pb))
-
-    ;; (prn 'pt pt-and-value)
-    ;; (prn 'pt-and-value-with-border* pt-and-value-with-border*)
-    ;; (prn 'pt-and-value-with-border pt-and-value-with-border)
 
     (str
      label-line
@@ -670,7 +661,8 @@
            margin-bottom
            margin-left
            data?
-           color]
+           color
+           value]
     :as m}]
   (let [light-border?      (= border-weight "light")
         light-border-style {:font-weight :bold
@@ -704,7 +696,7 @@
         (str margin-top-str
              (if (contains? #{"heavy" "medium"} border-weight)
 
-               ;; heavy style border
+               ;; medium / heavy style border
                (let [label-line                       
                      (when label
                        (bling 
@@ -722,25 +714,25 @@
                ;; light border
                (let [hrz-edge   (char-repeat (max 0 (dec padding-left))
                                              "━")
+
+                     body?      (not (or (nil? value) (string/blank? value)))
                      label-line (bling [light-border-style
                                            (str margin-left-str
-                                                "┏"
+                                                (if body? "┏" "┃")
                                                 hrz-edge
                                                 (some->> label (str " ")))])]
                  (str
                   (with-label-and-border opts* label-line)
-                  (str "\n"
-                       (bling [light-border-style
-                                  (str margin-left-str
-                                       "┗"
-                                       hrz-edge)])))))
+                  (when body?
+                    (str "\n"
+                         (bling [light-border-style
+                                 (str margin-left-str
+                                      "┗"
+                                      hrz-edge)]))))))
              (char-repeat margin-bottom "\n"))]
     (if (true? data?)
-      (do
-        ;; (prn 'callout-str callout-str)
-        ;; (prn 'margin-top-str margin-top-str)
-        callout-str)
-      (println callout-str))))
+      callout-str
+      (some-> callout-str println))))
 
 
 #?(:cljs
@@ -907,9 +899,7 @@
     value]
    (if-not (map? opts)
      (callout
-      {:type :warning
-       ;; :border-weight :heavy
-       }
+      {:type :warning}
       (point-of-interest
        {:type   :warning
         :header "bling.core/callout"
@@ -952,7 +942,6 @@
                           :margin-left    margin-left
                           :data?          data?
                           :color          color}]
-
        #?(:cljs
           ;; move to enriched or data
           (browser-callout callout-opts)
