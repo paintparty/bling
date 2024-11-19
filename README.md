@@ -9,6 +9,9 @@
   <a href="https://clojars.org/io.github.paintparty/bling">
     <img src="https://img.shields.io/clojars/v/io.github.paintparty/bling.svg?color=0969da&style=flat&cacheSeconds=3" alt="bling on Clojars"></img>
   </a>
+  <a href="https://0dependencies.dev">
+    <img src="https://0dependencies.dev/0dependencies.svg" alt="0 dependencies!"></img>
+  </a>
 </p>
 
 <div align="left">
