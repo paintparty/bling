@@ -14,3 +14,12 @@ pom.xml.asc
 .DS_Store
 .clj-kondo/
 .lsp/
+
+
+out/
+node_modules/
+.shadow-cljs/
+.ls
+.clj-kondo/.cache
+/public/js
+visual_test/public/js
