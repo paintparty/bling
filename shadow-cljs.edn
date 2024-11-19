@@ -1,0 +1,9 @@
+;; shadow-cljs configuration
+{:source-paths ["src/" "test/"]
+ :builds       {:test        {:target    :karma
+                              :output-to "out/test.js"
+                              :ns-regexp "-test$"
+                              :autorun   true}
+                :node-script {:target    :node-script
+                              :main      bling.script-test/main
+                              :output-to "out/bling-in-node-demo-script.js"}}}

@@ -2,10 +2,14 @@
   (:require [clojure.test :as test]
             [clojure.string :as string]
             [bling.core :refer [bling callout point-of-interest]]
-            #?(:cljs [bling.core :refer [print-bling]])))
+            #?(:cljs [bling.core :refer [print-bling]])
+            #?(:cljs [bling.js-env :refer [node?]])))
+
+
+
 
 (def printer
-  #?(:cljs print-bling :clj println))
+  #?(:cljs (if node? println print-bling) :clj println))
 
 #_(println (bling [:bold.system-maroon "HI"]))
 
@@ -58,7 +62,7 @@
   ([extras?]
 
    ;; PRIMITIVES ------------------------------------------------------------------
-   (println (bling [:bold "bold "]
+   (printer (bling [:bold "bold "]
                    [:italic "italic "]
                    [:underline "underline "]
                    [:strikethrough "strikethrough"]))
@@ -285,6 +289,40 @@
 ;; CALLOUTS with poi -----------------------------------------------------------
 
 (defn visual-test-suite []
+
+   (callout {:label "Callout, no body"} "")
+
+   (callout {:border-weight :heavy :label "Callout, no body"} "")
+   
+   (callout {:label "Callout, no body"} nil)
+
+   (callout {:border-weight :heavy :label "Callout, no body"} nil)
+   
+   (callout {:label "Callout, no body"})
+
+   (callout {:border-weight :heavy :label "Callout, no body"})
+   
+   (callout "Callout, only body")
+
+   (callout (bling [:magenta "Callout, only body"]))
+
+   (callout {:border-weight :heavy}  "Callout, only body")
+
+   (callout {:label "Callout, no body"})
+
+   (callout {:label "Callout, blank body"} "")
+
+   (callout {:label ""})
+
+   (callout "")
+
+   (callout "just body")
+
+   ;; This should issue a warning callout with point-of-interest
+   (callout nil)
+
+   ;; This should issue a warning callout with point-of-interest
+   (callout [1 2 3])
 
    (callout "Default callout, no options")
 
@@ -565,8 +603,20 @@
                                     (string/join "\n" (range 10)))
                            "\n"
                            "line 3")))
-  )
 
+  (callout {:type :neutral
+            :border-weight :heavy}
+          (bling [:bold.neutral 
+                  "The following two callouts are issued by"]
+                  "\n"
+                  [:bold.neutral "bling.core/callout, because of malformed args..."]))
+
+  ;; This should issue a warning callout with point-of-interest
+  (callout nil)
+
+  ;; This should issue a warning callout with point-of-interest
+  (callout [1 2 3])
+)
+(bling "HI")
 #_(visual-test-suite)
 #_(bling-basics)
-
