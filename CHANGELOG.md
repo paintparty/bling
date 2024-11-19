@@ -17,6 +17,16 @@ For a list of breaking changes, check [here](#breaking-changes)
 <br>
 <br>
 
+## 0.4.1
+2024-11-19
+#### Fixed
+- Support for terminal printing in node context
+- Prining of callout with label and no body
+
+<br>
+<br>
+
+
 ## 0.4.0
 #### Added 
 - Added bling.sample namespace
