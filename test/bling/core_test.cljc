@@ -286,6 +286,40 @@
 
 (defn visual-test-suite []
 
+   (callout {:label "Callout, no body"} "")
+
+   (callout {:border-weight :heavy :label "Callout, no body"} "")
+   
+   (callout {:label "Callout, no body"} nil)
+
+   (callout {:border-weight :heavy :label "Callout, no body"} nil)
+   
+   (callout {:label "Callout, no body"})
+
+   (callout {:border-weight :heavy :label "Callout, no body"})
+   
+   (callout "Callout, only body")
+
+   (callout (bling [:magenta "Callout, only body"]))
+
+   (callout {:border-weight :heavy}  "Callout, only body")
+
+   (callout {:label "Callout, no body"})
+
+   (callout {:label "Callout, blank body"} "")
+
+   (callout {:label ""})
+
+   (callout "")
+
+   (callout "just body")
+
+   ;; This should issue a warning callout with point-of-interest
+   (callout nil)
+
+   ;; This should issue a warning callout with point-of-interest
+   (callout [1 2 3])
+
    (callout "Default callout, no options")
 
    (callout {:padding-left 2} "Default callout, no label, left padding")
@@ -565,8 +599,20 @@
                                     (string/join "\n" (range 10)))
                            "\n"
                            "line 3")))
-  )
 
-#_(visual-test-suite)
+  (callout {:type :neutral
+            :border-weight :heavy}
+          (bling [:bold.neutral 
+                  "The following two callouts are issued by"]
+                  "\n"
+                  [:bold.neutral "bling.core/callout, because of malformed args..."]))
+
+  ;; This should issue a warning callout with point-of-interest
+  (callout nil)
+
+  ;; This should issue a warning callout with point-of-interest
+  (callout [1 2 3])
+)
+
+(visual-test-suite)
 #_(bling-basics)
-
