@@ -15,10 +15,71 @@
 ;; 
 
 
-;; Adds about 11kb to a cljs bundle
+;; Adds about 12kb to a cljs bundle
+
 (ns bling.core
   (:require [clojure.string :as string]
-            #?(:cljs [goog.object])))
+            #?(:cljs [goog.object])
+            #?(:cljs [bling.js-env :refer [node?]])))
+
+;; Debugging: Uncomment when developing bling itself
+;; Make sure to comment when building jar as we don't want to pull in pprint,
+;; which is very heavy in cljs context.
+#_(ns bling.core
+  (:require [clojure.string :as string]
+            [clojure.pprint :refer [pprint]]
+            #?(:cljs [goog.object]))
+  #?(:cljs
+     (:require-macros [bling.core :refer [? !?]])))
+
+
+
+;; Debugging: Uncomment when developing bling itself ---------------------------
+#_(do 
+  (declare shortened)
+
+  (defn !?
+    ([x]
+     x)
+    ([label x]
+     x))
+
+  #?(:clj
+     (do 
+       (defn- ns-str
+         [form-meta]
+         (let [{:keys [line column]} form-meta
+               ns-str                (some-> *ns*
+                                             ns-name
+                                             str
+                                             (str ":" line ":" column))
+               ns-str                (str "\033[3;38;5;201;1m" ns-str "\033[0m")]
+           ns-str))
+       
+       (defmacro ? 
+         ([x]
+          (let [ns-str (ns-str (meta &form))]
+            `(do
+               (println
+                (str ~ns-str
+                     "\n"
+                     (shortened (quote ~x) 25)
+                     "\n"
+                     (with-out-str (pprint ~x))))
+               ~x)))
+         ([label x]
+          (let [label  (or (:label label) label)
+                ns-str (ns-str (meta &form))]
+            `(do
+               (println
+                (str ~ns-str
+                     "\n"
+                     ~label
+                     "\n"
+                     (with-out-str (pprint ~x))))
+               ~x)))))))
+
+
 
 ;; Defs -----------------------------------------------------------------------
 
@@ -206,8 +267,9 @@
 (defn- spaces [n] (string/join (repeat n " ")))
 
 (defn- readable-sgr [x]
-  #?(:cljs x
-     :clj (str "\\033" (subs x 1))))
+  (let [f #(str "\\033" (subs x 1))]
+    #?(:cljs (if node? (f) x)
+       :clj (f))))
 
 (defn- ns-info-str
   [{:keys [file line column]}]
@@ -399,6 +461,7 @@
 
 ;; Formatting exceptions ----------------------------------------------------------
 
+;; Stack trace preview intended for JVM clojure (no clojurescript)
 (defn stack-trace-preview
   "Creates a user-friendly stack-trace preview, limited to the frames which
    contain a match with the supplied regex, up to the `depth` value, if supplied.
@@ -513,9 +576,11 @@
 ;; Line and point of interest public fns  -------------------------------------
 (defn- enriched-args [o]
   #?(:cljs
-     (if (instance? Enriched o)
-       (goog.object/get o "args")
-       (when o [o]))
+     (if node? 
+       (when o [o])
+       (if (instance? Enriched o)
+         (goog.object/get o "args")
+         (when o [o])))
      :clj
      (when o [o])))
 
@@ -714,13 +779,14 @@
                ;; light border
                (let [hrz-edge   (char-repeat (max 0 (dec padding-left))
                                              "━")
-
-                     body?      (not (or (nil? value) (string/blank? value)))
+                     body?      (and (string? value)
+                                     (not (string/blank? value)))
                      label-line (bling [light-border-style
-                                           (str margin-left-str
-                                                (if body? "┏" "┃")
-                                                hrz-edge
-                                                (some->> label (str " ")))])]
+                                        (str margin-left-str
+                                             (if body? "┏" "┃")
+                                             hrz-edge
+                                             (some->> label (str " ")))])]
+
                  (str
                   (with-label-and-border opts* label-line)
                   (when body?
@@ -883,8 +949,25 @@
 | `:data?`          | `boolean?`              | Returns a data representation of result instead of printing it. |
 "
 
-  ([value]
-   (callout {} value))
+  ([x]
+   (cond (map? x)
+         (callout x nil)
+
+         (string? x)
+         (callout {} x)
+
+         :else
+         (callout
+          {:type :warning}
+          (point-of-interest
+           {:type   :warning
+            :header "bling.core/callout"
+            :form   (cons 'callout (list x))
+            :body   (str "bling-core/callout, if called with a single argument,\n"
+                         "expects either:\n"
+                         "- a map of options\n"
+                         "- a string\n\n"
+                         "Nothing will be printed.")}))))
   ([{:keys [label
             wrap?
             data?
@@ -944,8 +1027,9 @@
                           :color          color}]
        #?(:cljs
           ;; move to enriched or data
-          (browser-callout callout-opts)
-          
+          (if node? 
+            (callout* callout-opts)
+            (browser-callout callout-opts))
 
           :clj
           (callout* callout-opts))))))
@@ -959,16 +1043,16 @@
    printing. In ClojureScript, returns a string wrapped in style escape
    chars (%c)."
   [o]
-  #?(:cljs
-     (str "%c" (:value o) "%c")
-     :clj
-     (do 
-       (str (->> o
-                 :style
-                 (reduce-colors-to-sgr-or-css :sgr)
-                 m->sgr)
-            (:value o)
-            "\033[0;m"))))
+  (let [f #(str (->> %
+                     :style
+                     (reduce-colors-to-sgr-or-css :sgr)
+                     m->sgr)
+                (:value %)
+                "\033[0;m")]
+    #?(:cljs
+       (if node? (f o) (str "%c" (:value o) "%c"))
+       :clj
+       (f o))))
 
 (defn- tag->map [acc s]
   (let [[k m] (case s
@@ -1071,7 +1155,9 @@
 
 (defn ^:public bling-data [coll]
   #?(:cljs
-     (bling-data* coll)
+     (if node? 
+       (-> coll bling-data* :tagged)
+       (bling-data* coll))
      :clj
      (-> coll bling-data* :tagged)))
 
@@ -1106,15 +1192,17 @@
    `(print-bling (bling [:bold.blue \"my blue text\"]))"
 
   [& coll]
-  #?(:cljs
-     (let [{:keys [css tagged console-array args]} (bling-data* coll)]
-      ;;  (js/console.log "tagged:" tagged)
-      ;;  (js/console.log "css:" css)
-      ;;  (js/console.log "console-array:" console-array)
-      ;;  (.apply js/console.log js/console js-arr)
-       (Enriched. tagged
-                  (into-array css)
-                  console-array
-                  args))
-     :clj (:tagged (bling-data* coll))))
-
+  (let [f #(:tagged (bling-data* coll))]
+    #?(:cljs
+          (if node?
+            (f)
+            (let [{:keys [css tagged console-array args]} (bling-data* coll)]
+          ;;  (js/console.log "tagged:" tagged)
+          ;;  (js/console.log "css:" css)
+          ;;  (js/console.log "console-array:" console-array)
+          ;;  (.apply js/console.log js/console js-arr)
+              (Enriched. tagged
+                         (into-array css)
+                         console-array
+                         args)))
+          :clj (f))))
