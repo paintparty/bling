@@ -114,7 +114,7 @@ of text decorated with tags for colorization, italics, and boldness:
 
 <br>
 
-In ClojureScript, **`bling`** returns a js object that needs to be printed like this: <br>
+In ClojureScript (browser context), **`bling`** returns a js object that needs to be printed like this: <br>
 `(.apply js/console.log js/console (goog.object/get o "consoleArray"))`.<br>
 
 To avoid typing all this out, you can use **`bling.core/print-bling`** to print the array returned from **`bling`**:
@@ -127,7 +127,7 @@ To avoid typing all this out, you can use **`bling.core/print-bling`** to print 
                     [:blue "colored"]))
 ```
 
-By default, in ClojureScript, **`bling.core/print-bling`** prints with `js/console.log`.
+By default **`bling.core/print-bling`** prints with `js/console.log`.
 However, if you would like to print with either `js.console/warn`, or `js/console.error`, you can pass either as a second argument.
 
 ```Clojure
@@ -163,7 +163,7 @@ You can add multiple decorations with hiccup-style tags (a keyword with dot sepa
 <br>
 
 
-You can also pass a map (instead of a hiccup-style tag) to style the text:
+You can also pass a map (instead of a hiccup-style keyword tag) to style the text:
 
 ```Clojure
 (bling [{:color            :green
@@ -171,6 +171,21 @@ You can also pass a map (instead of a hiccup-style tag) to style the text:
          :font-style       :italic
          :font-weight      :bold}
         "bold italic green text on black background"])
+```
+Using a map is preferrable if you are doing something like this:
+```Clojure
+(println (string/join (for [c ["red"
+                               "orange"
+                               "yellow"
+                               "olive"
+                               "green"
+                               "blue"
+                               "purple"
+                               "magenta"]]
+                        (bling [{:background-color c
+                                 :color            :white
+                                 :font-weight      :bold}
+                                (str " " c " ")]))))
 ```
 
 <br>
@@ -205,7 +220,7 @@ If, for example, you wanted to print `[1 2 3]` in red, you will need to stringif
 
 ### The Bling pallette 
 
-Eleven carefully selected colors, from the [xterm range 16-255](https://en.m.wikipedia.org/wiki/Xterm#/media/File%3AXterm_256color_chart.svg), are available for use (shown in bold). All of these colors should display consistantly across most consoles on the end-user side. Don't expect all of the colors to pass the [strictest APCA contrast criterion](https://www.myndex.com/APCA/), but you can be sure of reasonably visibility on both light and dark backgrounds:
+Eleven carefully selected colors, from the [xterm range 16-255](https://en.m.wikipedia.org/wiki/Xterm#/media/File%3AXterm_256color_chart.svg), are available for use (shown in bold). All of these colors should display consistantly across most consoles on the end-user side. Don't expect all of the colors to pass the [strictest APCA contrast criterion](https://www.myndex.com/APCA/), but you can be sure of reasonable visibility on both light and dark backgrounds:
 
 ```Clojure
 (println (bling [:bold.red "Red"]
@@ -251,7 +266,7 @@ You can use the following semantic aliases for some colors (shown in bold):
                 ", "
                 [:bold.subtle "Subtle"]
                 ", "
-[:bold.neutral "Neutral"]))
+                [:bold.neutral "Neutral"]))
 ```
 <br>
 

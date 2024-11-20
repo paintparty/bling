@@ -2,6 +2,7 @@
   (:require [clojure.test :as test]
             [clojure.string :as string]
             [bling.core :refer [bling callout point-of-interest]]
+            [bling.sample]
             #?(:cljs [bling.core :refer [print-bling]])
             #?(:cljs [bling.js-env :refer [node?]])))
 
