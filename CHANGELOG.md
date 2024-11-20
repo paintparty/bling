@@ -17,6 +17,14 @@ For a list of breaking changes, check [here](#breaking-changes)
 <br>
 <br>
 
+## 0.4.2
+2024-11-19
+#### Fixed
+- Cljs error when printing only body with enriched text
+
+<br>
+<br>
+
 ## 0.4.1
 2024-11-19
 #### Fixed
