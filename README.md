@@ -86,6 +86,8 @@ If you are a Babashka user, you can view an exhaustive sampling of Bling output 
 bb -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.4.2"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
 ```
 
+<br>
+<br>
 
 
 ## Basic Usage 
@@ -93,6 +95,7 @@ bb -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.4.2"}}}' -e "(req
 > [!NOTE]
 > If you are reading this on github in a light-mode theme, the dark-mode samples in the sections below will appear to have lower contrast than they actually do if you were viewing them in dark-mode. 
 
+<br>
 
 **`bling.core/bling`** takes any number of arguments and returns a string
 of text decorated with tags for colorization, italics, and boldness:
