@@ -953,7 +953,10 @@
    (cond (map? x)
          (callout x nil)
 
-         (string? x)
+         #?(:cljs
+            (or (string? x) (instance? Enriched x))
+            :clj
+            (string? x))
          (callout {} x)
 
          :else
