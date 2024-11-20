@@ -90,7 +90,9 @@ bb -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.4.2"}}}' -e "(req
 
 ## Basic Usage 
 
-Note that if you are reading this on github in a light-mode theme, the dark-mode samples in the sections below will appear to have lower contrast than they actually do if you were viewing them in dark-mode. 
+> [!NOTE]
+> If you are reading this on github in a light-mode theme, the dark-mode samples in the sections below will appear to have lower contrast than they actually do if you were viewing them in dark-mode. 
+
 
 **`bling.core/bling`** takes any number of arguments and returns a string
 of text decorated with tags for colorization, italics, and boldness:
