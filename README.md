@@ -9,9 +9,6 @@
   <a href="https://clojars.org/io.github.paintparty/bling">
     <img src="https://img.shields.io/clojars/v/io.github.paintparty/bling.svg?color=0969da&style=flat&cacheSeconds=3" alt="bling on Clojars"></img>
   </a>
-  <a href="https://0dependencies.dev">
-    <img src="https://0dependencies.dev/0dependencies.svg" alt="0 dependencies!"></img>
-  </a>
 </p>
 
 <div align="left">
@@ -225,7 +222,7 @@ If, for example, you wanted to print `[1 2 3]` in red, you will need to stringif
 
 ### The Bling pallette 
 
-Eleven carefully selected colors, from the [xterm range 16-255](https://en.m.wikipedia.org/wiki/Xterm#/media/File%3AXterm_256color_chart.svg), are available for use (shown in bold). All of these colors should display consistantly across most consoles on the end-user side. Don't expect all of the colors to pass the [strictest APCA contrast criterion](https://www.myndex.com/APCA/), but you can be sure of reasonable visibility on both light and dark backgrounds:
+Eleven carefully selected colors, from the [xterm range 16-255](https://en.m.wikipedia.org/wiki/Xterm#/media/File%3AXterm_256color_chart.svg), are available for use. All of these colors should display consistantly across most consoles on the end-user side. Don't expect all of the colors to pass the [strictest APCA contrast criterion](https://www.myndex.com/APCA/), but you can be sure of reasonable visibility on both light and dark backgrounds:
 
 ```Clojure
 (println (bling [:bold.red "Red"]
@@ -257,7 +254,7 @@ Eleven carefully selected colors, from the [xterm range 16-255](https://en.m.wik
 
 ### Color aliases
 
-You can use the following semantic aliases for some colors (shown in bold):
+You can use the following semantic aliases for some colors:
 ```Clojure
 (println (bling [:bold.negative "Negative"]
                 ", "
@@ -282,7 +279,12 @@ You can use the following semantic aliases for some colors (shown in bold):
 
 ### Using system colors
 
-Bling also supports named color aliases for system colors (Xterm colors 0-16). Please note that these will not display consistantly across user spaces, as the actual color is dictated by the theme the user has selected in their particular terminal emulator. If your terminal emulator theme is totally dialed-in to your liking and you are using Bling to provide errors, warnings, and messages for code that only you will ever see, then system colors might be preferrable.
+Bling also supports named color aliases for system colors (Xterm colors 0-16).
+
+Most likely, you do **not** want to use these. They will not display consistently across user spaces, as the actual color is dictated by the theme the user has selected in their particular terminal emulator.
+
+If, however, you are using Bling to provide errors, warnings, and messages for that only you will ever see (on your own computer), and your terminal emulator theme is totally dialed-in to your liking, then system colors might be an option worth exploring.
+
 
 ```Clojure
 (println (bling [:system-black "black (SYSTEM)"]))
