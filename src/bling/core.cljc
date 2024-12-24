@@ -83,9 +83,6 @@
 
 ;; Defs -----------------------------------------------------------------------
 
-(def hex-color-re "#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})")
-
-
 (def ^:private xterm-colors-by-id
   {0  "#000000" ;; system-black   
    1	"#800000" ;; system-maroon  
@@ -185,11 +182,6 @@
           "white"   {:sgr 231}}
          system-colors-source))
 
-;; (select-keys xterm-colors-by-id
-;;              (->> colors-source
-;;                   vals
-;;                   (map :sgr)
-;;                   (into [])))
 
 (def ^:private semantics-by-callout-type
   {"error"    "negative"
@@ -229,6 +221,8 @@
 
    Returns the value."
   [s]
+  ;; TODO - try to figure out way you can preserve the color in the output,
+  ;; which would help even more for debugging.
   (println (string/replace s
                            #"\u001b\[([0-9;]*)[mK]"
                            (str "\033[38;5;231;48;5;247m"
@@ -266,6 +260,7 @@
 
 (defn- spaces [n] (string/join (repeat n " ")))
 
+;; TODO - confirm we don't need this anymore and delete
 (defn- readable-sgr [x]
   (let [f #(str "\\033" (subs x 1))]
     #?(:cljs (if node? (f) x)
@@ -442,6 +437,7 @@
 (declare print-bling)
 
 
+;; TODO - confirm we don't need this anymore and delete
 (defn- maybe-wrap [x]
   (when (et-vec? x)
     #?(:cljs
@@ -462,6 +458,8 @@
 ;; Formatting exceptions ----------------------------------------------------------
 
 ;; Stack trace preview intended for JVM clojure (no clojurescript)
+;; TODO - put this through the paces and decided whether or not to expose in the
+;; public API.
 (defn stack-trace-preview
   "Creates a user-friendly stack-trace preview, limited to the frames which
    contain a match with the supplied regex, up to the `depth` value, if supplied.
@@ -499,7 +497,8 @@
              trace*      (when last-index
                            (->> mini-strace (take (inc last-index))))
              len         (when trace* (count trace*)) 
-             with-header [(or header (bling [:italic "Stacktrace preview:"])) "\n"]
+             with-header [(or header
+                              (bling [:italic "Stacktrace preview:"])) "\n"]
              trace       (some->> trace* (interpose "\n") (into with-header))
              num-dropped (when trace 
                            (let [n (- (or strace-len 0) (or len 0))]
@@ -531,7 +530,7 @@
 
 
 ;; Race-condition-free version of clojure.core/println,
-;; maybe useful if any weird behavior arises
+;; Maybe useful to keep around if any weird behavior arises.
 #?(:clj
    (defn- safe-println [& more]
      (.write *out* (str (clojure.string/join " " more) "\n"))))
@@ -540,7 +539,6 @@
 ;; Shared cljs fns -------------------------------------------------------------
 #?(:cljs 
    (do
-
      (defn ^:public print-bling
         "For browser usage, sugar for the the following:
          `(.apply js/console.log js/console (goog.object/get o \"consoleArray\"))`
@@ -656,8 +654,6 @@
                                     mb])
                              (when body ["\n"])
                              body))]
-    ;; #?(:cljs (do (js/console.log header)
-    ;;              ))
     ret))
 
 (defn with-label-and-border 
@@ -937,15 +933,15 @@
 
 | Key               | Pred                    | Description                                                  |
 | :---------------  | -----------------       | ------------------------------------------------------------ |
-| `:label`          | `any?`                  | Labels the callout. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string). <br>In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to \"WARNING\", \"ERROR\", or \"INFO\", respectively. |
+| `:label`          | `any?`                  | Labels the callout. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string). <br>In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively. |
 | `:type`           | `keyword?` or `string?` | Controls the color of the border and label.<br />Should be one of: `:error`,  `:warning` , `:info` , `:positive`, or `:subtle`. <br>Can also be any one of the pallete colors such as  `:magenta`, `:green`,  `:negative`, `:neutral`, etc. |
 | `:border-weight`  | `keyword?` or `string?` | Controls the weight of the border. Can be one of `:medium`, `:heavy`, or `:light`. Defaults to `:light`, which renders default border with standard unicode, single-line box-drawing character. |
-| `:padding-top`    | `int?`                  | Amount of padding (in lines) at top of callout (inside callout block).<br/>Defaults to 0. |
-| `:padding-bottom` | `int?`                  | Amount of padding (in lines) at bottom of callout (inside callout block).<br>Defaults to 0. In browser console, defaults to `1` in the case of callouts of type `:warning` or `:error`.|
-| `:padding-left`   | `int?`                  | Amount of padding (in lines) at left of callout (inside callout block).<br>In console emulator, defaults to `1` when `:border-weight` is `:light`, and `2` when `:border-weight` is `:medium` or `:heavy`. In browser console, defaults to `0`.|
-| `:margin-top`     | `int?`                  | Amount of margin (in lines) at top of callout (outside callout block).<br>Defaults to `1`. Only applies to terminal emulator printing. |
-| `:margin-bottom`  | `int?`                  | Amount of margin (in lines) at bottom of callout (outside callout block).<br>Defaults to `0`. Only applies to terminal emulator printing. |
-| `:margin-left`    | `int?`                  | Amount of margin (in lines) at left of callout (outside callout block).<br>Defaults to `0`. Only applies to terminal emulator printing. |
+| `:padding-top`    | `int?`                  | Amount of padding (in newlines) at top, inside callout.<br/>Defaults to `0`. |
+| `:padding-bottom` | `int?`                  | Amount of padding (in newlines) at bottom, inside callout.<br>Defaults to `0`. In browser console, defaults to `1` in the case of callouts of type `:warning` or `:error`.|
+| `:padding-left`   | `int?`                  | Amount of padding (in blank character spaces) at left, inside callout.<br>In console emulator, defaults to `1` when `:border-weight` is `:light`, and `2` when `:border-weight` is `:medium` or `:heavy`. In browser console, defaults to `0`.|
+| `:margin-top`     | `int?`                  | Amount of margin (in newlines) at top, outside callout.<br>Defaults to `1`. Only applies to terminal emulator printing. |
+| `:margin-bottom`  | `int?`                  | Amount of margin (in newlines) at bottom, outside callout.<br>Defaults to `0`. Only applies to terminal emulator printing. |
+| `:margin-left`    | `int?`                  | Amount of margin (in blank character spaces) at left, outside callout.<br>Defaults to `0`. Only applies to terminal emulator printing. |
 | `:data?`          | `boolean?`              | Returns a data representation of result instead of printing it. |
 "
 

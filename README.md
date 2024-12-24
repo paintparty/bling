@@ -130,7 +130,7 @@ To avoid typing all this out, you can use **`bling.core/print-bling`** to print 
 ```
 
 By default **`bling.core/print-bling`** prints with `js/console.log`.
-However, if you would like to print with either `js.console/warn`, or `js/console.error`, you can pass either as a second argument.
+If you would like to print with either `js.console/warn`, or `js/console.error`, you can pass either as a second argument.
 
 ```Clojure
 (print-bling (bling [:bold "bold"]
@@ -362,17 +362,21 @@ The above calls would render the following in your favorite terminal emulator:
 
  **`bling.core/callout`** takes one or two arguments. If two arguments are supplied, the first should be a map with 0 or more of following entries:
 
+
+
 | Key               | Pred                    | Description                                                  |
 | :---------------  | -----------------       | ------------------------------------------------------------ |
-| `:label`          | `any?`                  | <br>Labels the callout. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string). <br>In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to \"WARNING\", \"ERROR\", or \"INFO\", respectively. <br><br> |
-| `:type`           | `keyword?` or `string?` | <br>Controls the color of the border and label.<br />Should be one of: `:error`,  `:warning` , `:info` , `:positive`, or `:subtle`. <br>Can also be any one of the pallete colors such as  `:magenta`, `:green`,  `:negative`, `:neutral`, etc.<br><br> |
-| `:border-weight`  | `keyword?` or `string?` | <br>Controls the weight of the border. Can be one of `:medium`, `:heavy`, or `:light`. Defaults to `:light`, which renders default border with standard unicode, single-line box-drawing character.<br><br> |
-| `:padding-top`    | `int?`                  | <br>Amount of padding (in lines) at top of callout (inside callout block).<br/>Defaults to 0.<br><br> |
-| `:padding-bottom` | `int?`                  | <br>Amount of padding (in lines) at bottom of callout (inside callout block).<br>Defaults to 0. In browser console, defaults to `1` in the case of callouts of type `:warning` or `:error`.<br><br>|
-| `:padding-left`   | `int?`                  | <br>Amount of padding (in lines) at left of callout (inside callout block).<br>In console emulator, defaults to `1` when `:border-weight` is `:light`, and `2` when `:border-weight` is `:medium` or `:heavy`. In browser console, defaults to `0`.<br><br>|
-| `:margin-top`     | `int?`                  | <br>Amount of margin (in lines) at top of callout (outside callout block).<br>Defaults to `1`. Only applies to terminal emulator printing.<br><br> |
-| `:margin-bottom`  | `int?`                  | <br>Amount of margin (in lines) at bottom of callout (outside callout block).<br>Defaults to `0`. Only applies to terminal emulator printing.<br><br> |
-| `:data?`          | `boolean?`              | <br>Returns a data representation of result instead of printing it.<br><br> |
+| `:label`          | `any?`                  | Labels the callout. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string). <br>In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively. |
+| `:type`           | `keyword?` or `string?` | Controls the color of the border and label.<br />Should be one of: `:error`,  `:warning` , `:info` , `:positive`, or `:subtle`. <br>Can also be any one of the pallete colors such as  `:magenta`, `:green`,  `:negative`, `:neutral`, etc. |
+| `:border-weight`  | `keyword?` or `string?` | Controls the weight of the border. Can be one of `:medium`, `:heavy`, or `:light`. Defaults to `:light`, which renders default border with standard unicode, single-line box-drawing character. |
+| `:padding-top`    | `int?`                  | Amount of padding (in newlines) at top, inside callout.<br/>Defaults to `0`. |
+| `:padding-bottom` | `int?`                  | Amount of padding (in newlines) at bottom, inside callout.<br>Defaults to `0`. In browser console, defaults to `1` in the case of callouts of type `:warning` or `:error`.|
+| `:padding-left`   | `int?`                  | Amount of padding (in blank character spaces) at left, inside callout.<br>In console emulator, defaults to `1` when `:border-weight` is `:light`, and `2` when `:border-weight` is `:medium` or `:heavy`. In browser console, defaults to `0`.|
+| `:margin-top`     | `int?`                  | Amount of margin (in newlines) at top, outside callout.<br>Defaults to `1`. Only applies to terminal emulator printing. |
+| `:margin-bottom`  | `int?`                  | Amount of margin (in newlines) at bottom, outside callout.<br>Defaults to `0`. Only applies to terminal emulator printing. |
+| `:margin-left`    | `int?`                  | Amount of margin (in blank character spaces) at left, outside callout.<br>Defaults to `0`. Only applies to terminal emulator printing. |
+| `:data?`          | `boolean?`              | Returns a data representation of result instead of printing it. |
+ 
 
 
 <br>
@@ -433,7 +437,7 @@ The above callout would render like this your terminal emulator:
 | `:type`         | `keyword` or `string?` | <br>Controls the color of the squiggly underline. Should be one of: `:error` `:warning`, or `:neutral`. Defaults to `:neutral`<br><br> |
 | `:header`       | `any?`                 | <br>Typically, a string composed with newlines as desired. In a browser context, can be an instance of `bling.core/Enriched` (produced by using `bling.core/bling`)<br><br>|
 | `:body`         | `any?`                 | <br>Typically, a string composed with newlines as desired. In a browser context, can be an instance of `bling.core/Enriched` (produced by using `bling.core/bling`)<br><br>|
-| `:margin-block` | `int?`                 | <br>Controls the number of blank lines above and below the diagram.<br/>Defaults to 1.<br><br>|
+| `:margin-block` | `int?`                 | <br>Controls the number of blank lines above and below the diagram.<br/>Defaults to `1`.<br><br>|
 
 <br>
 <br>
