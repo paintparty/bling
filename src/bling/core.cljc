@@ -19,9 +19,12 @@
 
 (ns bling.core
   (:require [clojure.string :as string]
+            [bling.macros]
             #?(:cljs [goog.object])
             #?(:cljs [bling.js-env :refer [node?]])))
 
+
+;; TODO remove this and just use from macro ns
 ;; Debugging: Uncomment when developing bling itself
 ;; Make sure to comment when building jar as we don't want to pull in pprint,
 ;; which is very heavy in cljs context.
@@ -33,7 +36,7 @@
      (:require-macros [bling.core :refer [? !?]])))
 
 
-
+;; TODO remove this and just use from macro ns
 ;; Debugging: Uncomment when developing bling itself ---------------------------
 #_(do 
   (declare shortened)

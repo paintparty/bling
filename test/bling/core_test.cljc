@@ -3,9 +3,23 @@
             [clojure.string :as string]
             [bling.core :refer [bling callout point-of-interest]]
             [bling.sample]
+            [bling.macros :refer [blingf]]
             #?(:cljs [bling.core :refer [print-bling]])
             #?(:cljs [bling.js-env :refer [node?]])))
 
+
+;; Experimental template literal
+(let [css-str "\".wtf{color: red;}\""
+      guess   "hihi"
+      flags   ["--minify" "--bundle"]]
+  (println (blingf "
+[The].bold.blue.italic css str is:
+
+[${css-str}].bold.red
+
+${(str (reverse flags))}
+
+Yes!")))
 
 
 
