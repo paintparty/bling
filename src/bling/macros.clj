@@ -114,3 +114,29 @@
              (vars->syms %)))
          (interleave-all splits)
          (cons 'bling.core/bling))))
+
+
+;; v1
+"Error when shelling out to lightningcss.
+
+CSS`italic.subtle.bold`
+${css-str}
+
+Flags passed to lightningcss:`italic.subtle.bold`
+${(with-out-str (fireworks.core/pprint flags))}
+
+The following css will be returned:`italic.subtle.bold` 
+css-str"
+
+
+;; v2
+"Error when shelling out to lightningcss.
+ 
+ CSS:<-italic.subtle.bold
+ ${css-str}
+ 
+ Flags passed to lightningcss:<-italic.subtle.bold
+ ${(with-out-str (fireworks.core/pprint flags))}
+ 
+ The following css will be returned:<-italic.subtle.bold
+ ${css-str}"

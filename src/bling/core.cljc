@@ -28,7 +28,7 @@
 ;; Debugging: Uncomment when developing bling itself
 ;; Make sure to comment when building jar as we don't want to pull in pprint,
 ;; which is very heavy in cljs context.
-#_(ns bling.core
+(ns bling.core
   (:require [clojure.string :as string]
             [clojure.pprint :refer [pprint]]
             #?(:cljs [goog.object]))
@@ -38,7 +38,7 @@
 
 ;; TODO remove this and just use from macro ns
 ;; Debugging: Uncomment when developing bling itself ---------------------------
-#_(do 
+(do 
   (declare shortened)
 
   (defn !?
@@ -241,9 +241,6 @@
   [s]
   s)
 
-(defn- squiggly-underline [s]
-  (string/join (repeat (count s) "^")))
-
 
 (defn- maybe [x pred]
   (when (if (set? pred)
@@ -270,8 +267,10 @@
        :clj (f))))
 
 (defn- ns-info-str
-  [{:keys [file line column]}]
-  (str (some-> file (str ":")) line ":" column))
+  [{:keys [file line column file-line-column]}]
+  (if (not (string/blank? file-line-column))
+    file-line-column
+    (str (some-> file (str ":")) line ":" column)))
 
 (defn- regex? [v]
   #?(:clj (-> v type str (= "class java.util.regex.Pattern"))
@@ -306,6 +305,55 @@
                           "..."))
                    ret*)]
         ret))))
+
+(defn- text-underline-str [n str-index text-decoration-style]
+  (str (string/join (repeat str-index " "))
+       (string/join (repeat n
+                            (case text-decoration-style 
+                              "wavy" "^"
+                              "dashed" "-"
+                              "dotted" "•"
+                              "double" "═"
+                              "^")))))
+
+(def form-limit 33)
+
+(defn text-underline
+  [{:keys [form text-decoration-index text-decoration-style] :as m}]
+  (if (and text-decoration-index
+           (or (pos? text-decoration-index)
+               (zero? text-decoration-index))
+           (coll? form) 
+           (< (count (as-str form)) form-limit))
+    (let [form
+          (into [] form)
+
+          data                       
+          (reverse
+           (for [n (-> form count range reverse)]
+             (let [v            (-> form (nth n nil))
+                   value-as-str (str v)
+                   len          (-> v str count)
+                   sv           (-> form
+                                    (subvec 0 n)
+                                    str
+                                    count)]
+               {:strlen       len
+                :v            v
+                :value-as-str value-as-str
+                :index        n
+                :str-index    sv})))
+
+          {:keys [strlen str-index]} 
+          (nth data text-decoration-index nil)]
+      {:text-underline-str        (text-underline-str
+                                   strlen 
+                                   str-index
+                                   text-decoration-style)})
+   {:text-underline-str        (text-underline-str
+                                (count (as-str form))
+                                0
+                                text-decoration-style)}))
 
 (defn- css-stylemap->str [m]
   (reduce-kv (fn [acc k v]
@@ -361,6 +409,7 @@
                                                    bgc
                                                    text-decoration]))
                              "m")]
+    
     ret))
 
 
@@ -609,6 +658,7 @@
 | `:header`       | `any?`                 | Typically, a string. If multi-line, string should be composed with newlines as desired. In a browser context, can be an instance of `bling.core/Enriched` (produced by using `bling.core/enriched`)|
 | `:body`         | `any?`                 | Typically, a string. If multi-line, string should be composed with newlines as desired. In a browser context, can be an instance of `bling.core/Enriched` (produced by using `bling.core/enriched`)|
 | `:margin-block` | `int?`                 | Controls the number of blank lines above and below the diagram.<br/>Defaults to 1.|
+| `:underline-style`     | `int?`                 | Controls the number of blank lines above and below the diagram.<br/>Defaults to 1.|
 "
 
   [{:keys [line
@@ -617,47 +667,64 @@
            form
            header
            body
-           margin-block]
-    squiggly-color :type
+           margin-block
+           text-decoration-offset
+           text-decoration-length
+           text-decoration-color
+           text-decoration-style]
+    :or {text-decoration-style "wavy"}
     :as opts}]
-  (let [file-info    (ns-info-str opts) 
-        gutter       (some-> line str count spaces)
-        color        (or (some-> squiggly-color
-                                 as-str
-                                 (maybe all-color-names))
-                         "neutral")
-        form-as-str  (shortened form 33)
-        squig        (squiggly-underline form-as-str)
-        bolded-form  [{:font-weight :bold} form-as-str]
-        bolded-squig [{:font-weight :bold
-                       :color       color} squig]
-        header       (enriched-args header)
-        body         (enriched-args body)
-        mb*          (or (some-> margin-block (maybe pos-int?))
-                         (if (some-> margin-block zero?)
-                           0
-                           1))
-        mb           (char-repeat mb* "\n")
-        ret          (apply bling
-                            (concat
-                             header
-                             (when header ["\n"])
-                             (cond (and line column file form)
-                                   [mb
-                                    gutter " ┌─ " file-info "\n"
-                                    gutter " │  \n"
-                                    line   " │ " bolded-form "\n"
-                                    gutter " │ " bolded-squig
-                                    mb]
-                                   
-                                   form
-                                   [mb
-                                    bolded-form "\n"
-                                    bolded-squig
-                                    mb])
-                             (when body ["\n"])
-                             body))]
+  (let [file-info        (ns-info-str opts) 
+        gutter           (some-> line str count spaces)
+        underline-color  (or (some-> text-decoration-color
+                                     as-str
+                                     (maybe all-color-names))
+                             "neutral")
+        form-as-str      (shortened form 33)
+        ;; style        "dotted"
+        ;; squig           (if (pos-int? offset)
+        ;;                   (str (string/join (repeat offset " "))
+        ;;                        (-> form-as-str
+        ;;                            (subs offset)
+        ;;                            (subs 0 (or text-decoration-length
+        ;;                                        (count form-as-str)))
+        ;;                            (text-underline {:text-decoration-style style})))
+        ;;                   (text-underline form-as-str style))
+        underline-str    (-> (text-underline opts) :text-underline-str)
+        bolded-form      [{:font-weight :bold} form-as-str]
+        underline-styled [{:font-weight :bold
+                           :color       underline-color} underline-str]
+        header           (enriched-args header)
+        body             (enriched-args body)
+        mb*              (or (some-> margin-block (maybe pos-int?))
+                             (if (some-> margin-block zero?)
+                               0
+                               1))
+        mb               (char-repeat mb* "\n")
+        bling-tag        :subtle
+        ;; bling-tag    :neutral
+        diagram          (cond
+                           (and line column file form)
+                           [mb
+                            gutter (bling [bling-tag " ┌─ "]) file-info "\n"
+                            gutter (bling [bling-tag " │ "]) "\n"
+                            line   (bling [bling-tag " │ "]) bolded-form "\n"
+                            gutter (bling [bling-tag " │ "]) underline-styled
+                            mb]
+                           
+                           form
+                           [mb
+                            bolded-form "\n"
+                            underline-styled
+                            mb])
+        ret              (apply bling
+                                (concat header
+                                        (when header ["\n"])
+                                        diagram
+                                        (when body ["\n"])
+                                        body))]
     ret))
+
 
 (defn with-label-and-border 
   [{:keys [label
@@ -717,6 +784,11 @@
                   (str "\n"
                        (bling [border-style
                                   border-left-str]))))))
+
+;; TODO - change border weight to :light :bold and :heavy
+;; with :border width applying to :heavy
+;; some koind of dimensional border lift
+
 (defn callout*
   [{:keys [label
            border-weight
@@ -742,8 +814,8 @@
                              thick-border-style)
         border-left-str    (case border-weight
                              "light"   "┃"
-                             "medium"  " "
-                             "heavy"   "  ")
+                             "medium"  ""
+                             "heavy"   " ")
         padding-left       (spacing padding-left
                                     (if light-border? 1 2))
         padding-left-str   (char-repeat padding-left " ")
@@ -780,9 +852,34 @@
                                              "━")
                      body?      (and (string? value)
                                      (not (string/blank? value)))
+                     ;; Maybe try something like this ?
+                     
+;; Try something like this (bold).
+;;     ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓                                              
+;; ┏━━━┫ WARNING: Invalid option value ┃
+;; ┃   ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+;; ┃
+
+;; Or like this (normal).
+;;       ┌───────────────────────────────┐                                              
+;;   ┌───┤ WARNING: Invalid option value │
+;;   │   └───────────────────────────────┘
+;;   │
+                     
+;; Or 3D, with color of lines fading out
+;;     ┌───────────────────────────────
+;; ┌───┘┌───────────────────────────────
+;; │┌───┘┌───────────────────────────────┐
+;; ││┌───┤ WARNING: Invalid option value │
+;; │││   └───────────────────────────────┘
+;; │││
+;;  ││             
+;;   │
                      label-line (bling [light-border-style
                                         (str margin-left-str
-                                             (if body? "┏" "┃")
+                                             (if body? "┏" 
+                                                       "┃"
+                                                 )
                                              hrz-edge
                                              (some->> label (str " ")))])]
 
@@ -799,6 +896,7 @@
       callout-str
       (some-> callout-str println))))
 
+#_(str "\033[1m" "┃" "\033[0;m")
 
 #?(:cljs
 (defn browser-callout
@@ -959,6 +1057,7 @@
          (callout {} x)
 
          :else
+         ;; This is a callout warning the user of bling -- make it different?
          (callout
           {:type :warning}
           (point-of-interest
@@ -992,7 +1091,7 @@
         :body   (str "bling-core/callout expects a map of options,\n"
                      "followed by any number of values (usually strings).\n\n"
                      "Nothing will be printed.")}))
-     (let [pt            (spacing padding-top 0)
+     (let [pt            (spacing padding-top 0)                                ; <- TODO change to padding-top for consistensy
            margin-top    (spacing margin-top 1)
            margin-bottom (spacing margin-bottom 0)
            margin-left   (spacing margin-left 0)
@@ -1012,9 +1111,7 @@
                                   (string/blank? label))
                            nil
                            (or label
-                               (get alert-type->label
-                                    callout-type
-                                    nil)))
+                               (get alert-type->label callout-type nil)))
            callout-opts  {:value          value
                           :label          label
                           :callout-type   callout-type
@@ -1028,8 +1125,7 @@
                           :data?          data?
                           :color          color}]
        #?(:cljs
-          ;; move to enriched or data
-          (if node? 
+          (if node?                                                             ; TODO <- move to enriched or data
             (callout* callout-opts)
             (browser-callout callout-opts))
 
@@ -1051,9 +1147,11 @@
                      m->sgr)
                 (:value %)
                 "\033[0;m")]
+    
     #?(:cljs
        (if node? (f o) (str "%c" (:value o) "%c"))
        :clj
+       #_(?sgr (f o))
        (f o))))
 
 (defn- tag->map [acc s]
@@ -1181,20 +1279,22 @@
    `css`
    An array of styles that sync with the tagged string.
 
+   `args`
+   A ClojureScript vector of the original args.
+
    `consoleArray`
    An array by `Array.unshift`ing the tagged string onto the css array.
    This is the format that is needed for printing in a browser console, e.g.
    `(.apply js/console.log js/console (goog.object/get o \"consoleArray\"))`.
-   
-   `args`
-   A ClojureScript vector of the original args.
 
    For browser usage, sugar for the above `.apply` call is provided with
    `bling.core/print-bling`. You can use it like this:
-   `(print-bling (bling [:bold.blue \"my blue text\"]))"
+   `(print-bling (bling [:bold.blue \"my blue text\"]))`"
 
   [& coll]
-  (let [f #(:tagged (bling-data* coll))]
+
+  (let [coll coll #_(hiccup->coll-of-strs-and-hiccup)
+        f #(:tagged (bling-data* coll))]
     #?(:cljs
           (if node?
             (f)
