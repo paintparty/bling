@@ -38,6 +38,31 @@
                    ret*)]
         ret))))
 
+(defmacro let-map
+  "Equivalent of
+   (let [a 5
+         b (+ a 5)]
+     {:a a :b b})"
+  [kvs]
+  (let [keys (keys (apply hash-map kvs))
+        keyword-symbols (mapcat #(vector (keyword (str %)) %) keys)]
+    `(let [~@kvs]
+       (hash-map ~@keyword-symbols))))
+
+(let [transforms {:keys keyword
+                  :strs str
+                  :syms identity}]
+  (defmacro keyed
+    "Create a map in which, for each symbol S in vars, (keyword S) is a
+     key mapping to the value of S in the current scope. If passed an optional
+     :strs or :syms first argument, use strings or symbols as the keys."
+    ([vars] `(keyed :keys ~vars))
+    ([key-type vars]
+     (let [transform (comp (partial list `quote)
+                           (transforms key-type))]
+       (into {} (map (juxt transform identity) vars))))))
+
+;; macro for debugging bling
 (do 
   (defn- ns-str
     [form-meta]
