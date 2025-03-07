@@ -718,45 +718,54 @@
 
 
 (defn- outline-label
-  [{:keys [padding-left padding-left-str margin-left label theme border-style]}]
-  (let [margin-left-str (char-repeat margin-left " ")
-        b?              (= theme "sideline-bold")
-        hrz             #(char-repeat padding-left %)
-        label-lns       (string/split-lines label)
-        label-length    (->> label-lns (map count) (apply max))
-        bs              border-style]
+  [{:keys [padding-left
+           padding-left-str 
+           margin-left 
+           label 
+           label-string 
+           theme
+           border-style]}]
+  (let [margin-left-str     (char-repeat margin-left " ")
+        b?                  (= theme "sideline-bold")
+        hrz                 #(char-repeat padding-left %)
+        label-lns           (string/split-lines label)
+        label-length        (some->> label-lns (map count) (apply max))
+        label-string-lns    (some-> label-string string/split-lines)
+        label-string-length (some->> label-string-lns (map count) (apply max))
+        label-length        (or label-string-length label-length)
+        bs                  border-style]
     (string/join
-      (interpose
-        "\n"
-        (concat
-          [(bling [bs
-                   (str margin-left-str
-                        padding-left-str
-                        (if b? " ┏━━" " ┌──")
-                        (str++ label-length (if b? "━" "─"))
-                        (if b? "━━┓" "──┐"))])
-           (str (bling [bs
-                        (str margin-left-str
-                             (if b?
-                               (str "┏" (hrz "━") "┫  ")
-                               (str "┌" (hrz "─") "┤  ")))])
-                (bling [:italic.neutral.bold (first label-lns)])
-                (bling [bs (if b? "  ┃" "  │")]))]
-          (for [ln (rest label-lns)]
-            (bling margin-left-str
-                   [border-style (if b? (str "┃" (hrz " ") "┃  ")
-                                        (str "│" (hrz " ") "│  "))]
-                   (bling [:italic.neutral.bold ln])
-                   (bling [bs
-                           (str (char-repeat (max 0 (- label-length (count ln)))
-                                             " ")
-                                (if b? "  ┃" "  │"))])))
-          [(bling [bs
-                   (str margin-left-str
-                        (if b? (str "┃" (hrz " ") "┗━━")
-                               (str "│" (hrz " ") "└──"))
-                        (str++ label-length (if b? "━" "─"))
-                        (if b? "━━┛" "──┘"))])])))))
+     (interpose
+      "\n"
+      (concat
+       [(bling [bs
+                (str margin-left-str
+                     padding-left-str
+                     (if b? " ┏━━" " ┌──")
+                     (str++ label-length (if b? "━" "─"))
+                     (if b? "━━┓" "──┐"))])
+        (str (bling [bs
+                     (str margin-left-str
+                          (if b?
+                            (str "┏" (hrz "━") "┫  ")
+                            (str "┌" (hrz "─") "┤  ")))])
+             (bling [:italic.neutral.bold (first label-lns)])
+             (bling [bs (if b? "  ┃" "  │")]))]
+       (for [ln (rest label-lns)]
+         (bling margin-left-str
+                [border-style (if b? (str "┃" (hrz " ") "┃  ")
+                                  (str "│" (hrz " ") "│  "))]
+                (bling [:italic.neutral.bold ln])
+                (bling [bs
+                        (str (char-repeat (max 0 (- label-length (count ln)))
+                                          " ")
+                             (if b? "  ┃" "  │"))])))
+       [(bling [bs
+                (str margin-left-str
+                     (if b? (str "┃" (hrz " ") "┗━━")
+                         (str "│" (hrz " ") "└──"))
+                     (str++ label-length (if b? "━" "─"))
+                     (if b? "━━┛" "──┘"))])])))))
 
 (defn ln [m s]
   (str (:margin-left-str m)
