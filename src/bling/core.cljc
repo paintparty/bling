@@ -25,20 +25,13 @@
 
 
 ;; TODO remove this and just use from macro ns
-;; Debugging: Uncomment when developing bling itself
-;; Make sure to comment when building jar as we don't want to pull in pprint,
-;; which is very heavy in cljs context.
-(ns bling.core
-  (:require [clojure.string :as string]
-            [clojure.pprint :refer [pprint]]
-            #?(:cljs [goog.object]))
-  #?(:cljs
-     (:require-macros [bling.core :refer [? !?]])))
-
-
-;; TODO remove this and just use from macro ns
 ;; Debugging: Uncomment when developing bling itself ---------------------------
-(do
+#_#?(:cljs
+   (defn ? [x]
+     (pprint x)
+     x))
+
+#_(do
   (declare shortened)
 
   (defn !?
@@ -582,8 +575,6 @@
                   [:bold (str (type error))]
                   )))))
 
-
-
 ;; Race-condition-free version of clojure.core/println,
 ;; Maybe useful to keep around if any weird behavior arises.
 #?(:clj
@@ -671,11 +662,7 @@
            header
            body
            margin-block
-           text-decoration-offset
-           text-decoration-length
-           text-decoration-color
-           text-decoration-style]
-    :or   {text-decoration-style "wavy"}
+           text-decoration-color]
     :as   opts}]
   (let [file-info        (ns-info-str opts)
         gutter           (some-> line str count spaces)
@@ -684,15 +671,6 @@
                                      (maybe all-color-names))
                              "neutral")
         form-as-str      (shortened form 33)
-        ;; style        "dotted"
-        ;; squig           (if (pos-int? offset)
-        ;;                   (str (string/join (repeat offset " "))
-        ;;                        (-> form-as-str
-        ;;                            (subs offset)
-        ;;                            (subs 0 (or text-decoration-length
-        ;;                                        (count form-as-str)))
-        ;;                            (text-underline {:text-decoration-style style})))
-        ;;                   (text-underline form-as-str style))
         underline-str    (-> (text-underline opts) :text-underline-str)
         bolded-form      [{:font-weight :bold} form-as-str]
         underline-styled [{:font-weight :bold
@@ -727,26 +705,20 @@
                                         body))]
     ret))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Enriched text public fns and helpers  --------------------------------------
 
 
 (defn- outline-label
-  [{:keys [color padding-left padding-left-str margin-left label theme border-style]}]
+  [{:keys [padding-left padding-left-str margin-left label theme border-style]}]
   (let [margin-left-str (char-repeat margin-left " ")
         b?              (= theme "sideline-bold")
         hrz             #(char-repeat padding-left %)
@@ -776,8 +748,9 @@
                                         (str "│" (hrz " ") "│  "))]
                    (bling [:italic.neutral.bold ln])
                    (bling [bs
-                           (str (char-repeat (max 0 (- label-length (count ln))) " ")
-                               (if b? "  ┃" "  │"))])))
+                           (str (char-repeat (max 0 (- label-length (count ln)))
+                                             " ")
+                                (if b? "  ┃" "  │"))])))
           [(bling [bs
                    (str margin-left-str
                         (if b? (str "┃" (hrz " ") "┗━━")
@@ -883,72 +856,78 @@
       (some-> s println))))
 
 #?(:cljs
+   (do 
+     (defn enriched->js-arr [value label padding-top padding-bottom-str]
+       (let [rich-value?  (instance? Enriched value)
+             rich-label?  (instance? Enriched label)
+             tagged       (if rich-value?
+                            (goog.object/get value "tagged")
+                            value)
+             css          (if rich-value?
+                            (goog.object/get value "css")
+                            #js[])
+             label-tagged (some-> (if rich-label?
+                                    (goog.object/get label "tagged")
+                                    label)
+                                  (str "\n"))
+             label-css    (if rich-label?
+                            (goog.object/get label "css")
+                            #js[])
+             arr          (.concat #js[(str label-tagged
+                                            padding-top
+                                            tagged
+                                            padding-bottom-str)]
+                                   (.concat label-css css))]
+         arr))
+
+     (defn padding-block [n warning-or-error?]
+       (if (pos-int? n) (char-repeat n "\n") (when warning-or-error? "\n")))))
+
+#?(:cljs
    (defn browser-callout
          [{:keys [value
                   label
-                  warning-or-error
-                  pt
+                  warning?
+                  error?
                   padding-bottom
-                  padding-left
+                  padding-top
                   data?]
            :as   m}]
-         (let [padding-left (spacing padding-left 0)
-               padding-left-str (char-repeat padding-left " ")
-               f (case warning-or-error
-                       "warning" (.-warn js/console)
-                       "error" (.-error js/console)
-                       (.-log js/console))
-               pb (spacing padding-bottom
-                           (if (contains? #{"warning" "error"} warning-or-error) 1 0))
-               pb-str (when (pos-int? pb)
-                            (char-repeat pb "\n"))
-               pt-str (when (pos-int? pt)
-                            (char-repeat pt "\n"))
-               arr (if (or (instance? Enriched value) (instance? Enriched label))
-                     ;; Something is enriched
-                     (let [rich-value? (instance? Enriched value)
-                           rich-label? (instance? Enriched label)
-                           tagged (if rich-value?
-                                    (goog.object/get value "tagged")
-                                    value)
-                           css (if rich-value?
-                                 (goog.object/get value "css")
-                                 #js[])
-                           label-tagged (some-> (if rich-label?
-                                                  (goog.object/get label "tagged")
-                                                  label)
-                                                (str "\n"))
-                           label-css (if rich-label?
-                                       (goog.object/get label "css")
-                                       #js[])
-                           arr (.concat #js[(str label-tagged
-                                                 pt-str
-                                                 tagged
-                                                 pb-str
-                                                 )]
-                                        (.concat label-css css))]
-                          arr)
-
-                     ;; Nothing is enriched
-                     (let [value (str value)
-                           value (if (re-find #"\n" value)
-                                   (string/replace value
-                                                   #"\n"
-                                                   (str "\n" padding-left-str))
-                                   (str padding-left-str value))
-
-                           ;; The empty string in the css slot needs to be there
-                           ;; in order to properly add a single newline
-                           arr #js[(str (some-> label (str "\n"))
-                                        pt-str
-                                        value
-                                        pb-str)
-                                   ""]]
-                          arr))]
-
-              (if (true? data?)
-                arr
-                (.apply f js/console arr)))))
+         (let [f                  (cond warning? 
+                                        (.-warn js/console)
+                                        error?
+                                        (.-error js/console)
+                                        :else
+                                        (.-log js/console))
+               warning-or-error?  (or warning? error?)
+               semantic-type?     (or warning-or-error?)
+               padding-bottom-str (padding-block (? padding-bottom)
+                                                 warning-or-error?)
+               padding-top-str    (padding-block padding-top 
+                                                 semantic-type?)
+               arr                (cond
+                                    (or (instance? Enriched value) 
+                                        (instance? Enriched label))
+                                    ;; Either the label or body is enriched
+                                    (enriched->js-arr value
+                                                      label
+                                                      padding-top-str
+                                                      padding-bottom-str)
+                                    
+                                    ;; Nothing is enriched
+                                    ;; The empty string in the css slot needs to
+                                    ;; be there in order to properly add a
+                                    ;; single newline.
+                                    :else
+                                    #js[(str (some-> label
+                                                     (str "\n"))
+                                             padding-top-str
+                                             (str value)
+                                             padding-bottom-str)
+                                        ""])]
+           (if (true? data?)
+             arr
+             (.apply f js/console arr)))))
 
 (defn- default-opt [m k strs default]
   (or (some-> (:theme m)
@@ -960,18 +939,17 @@
   (let-map
     [sp             (fn [k n] (spacing (get m k) n))
      padding-top    (sp :padding-top 0)
-     padding-bottom (sp :padding-bottom 0)
+     padding-bottom (sp :padding-bottom #?(:cljs 0 :clj 1))
      margin-top     (sp :margin-top 1)
      margin-bottom  (sp :margin-bottom 0)
      margin-left    (sp :margin-left 0)
      padding-left   (let [pl (or (maybe (:padding-left m) pos-int?)
-                                2)]
-                     (spacing pl 2))
-     semantic-type (some->> (:colorway m)
-                            as-str
-                            (get semantics-by-semantic-type))
-     warning?      (= semantic-type "warning")
-     error?        (= semantic-type "error")
+                                 2)]
+                      (spacing pl 2))
+     colorway      (some->> (:colorway m) as-str)
+     semantic-type (get semantics-by-semantic-type colorway)
+     warning?      (= colorway "warning")
+     error?        (= colorway "error")
      color         (if-let [s (some-> (:colorway m) as-str)]
                      (or (get semantics-by-semantic-type s)
                          (maybe s all-color-names) "neutral"))
@@ -984,7 +962,7 @@
 
      ;; TODO maybe see if label is blinged and if not, bold it.
      ;label         (if label-is-blinged? label (bling [:bold label]))
-
+     
      theme         (default-opt m
                                 :theme
                                 #{"sideline" "sideline-bold" "gutter"}
@@ -997,6 +975,7 @@
                          "sideline" "marquee"
                          "sideline-bold" "marquee"
                          "minimal"))]))
+
 
 
 (defn ^:public callout
@@ -1102,6 +1081,14 @@
           (callout* callout-opts))))))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Enriched text public fns and helpers  --------------------------------------
 
 (defn- ^:private tagged-str
