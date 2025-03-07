@@ -19,95 +19,12 @@
 
 (ns bling.core
   (:require [clojure.string :as string]
+            ;; [bling.macros :refer [let-map ?]] ;;<-- ? is just for debugging
             [bling.macros :refer [let-map]]
             #?(:cljs [goog.object])
             #?(:cljs [bling.js-env :refer [node?]])))
 
-
-;; TODO remove this and just use from macro ns
-;; Debugging: Uncomment when developing bling itself ---------------------------
-#_#?(:cljs
-   (defn ? [x]
-     (pprint x)
-     x))
-
-#_(do
-  (declare shortened)
-
-  (defn !?
-    ([x]
-     x)
-    ([label x]
-     x))
-
-  #?(:clj
-     (do
-       (defn- ns-str
-         [form-meta]
-         (let [{:keys [line column]} form-meta
-               ns-str (some-> *ns*
-                              ns-name
-                              str
-                              (str ":" line ":" column))
-               ns-str (str "\033[3;38;5;201;1m" ns-str "\033[0m")]
-           ns-str))
-
-       (defmacro ?
-         ([x]
-          (let [ns-str (ns-str (meta &form))]
-            `(do
-               (println
-                 (str ~ns-str
-                      "\n"
-                      (shortened (quote ~x) 25)
-                      "\n"
-                      (with-out-str (pprint ~x))))
-               ~x)))
-         ([label x]
-          (let [label  (or (:label label) label)
-                ns-str (ns-str (meta &form))]
-            `(do
-               (println
-                 (str ~ns-str
-                      "\n"
-                      ~label
-                      "\n"
-                      (with-out-str (pprint ~x))))
-               ~x)))))))
-
-
-
-;; Defs -----------------------------------------------------------------------
-
-(def ^:private xterm-colors-by-id
-  {0   "#000000"                                            ;; system-black
-   1   "#800000"                                            ;; system-maroon
-   2   "#008000"                                            ;; system-green
-   3   "#808000"                                            ;; system-olive
-   4   "#000080"                                            ;; system-navy
-   5   "#800080"                                            ;; system-purple
-   6   "#008080"                                            ;; system-teal
-   7   "#c0c0c0"                                            ;; system-silver
-   8   "#808080"                                            ;; system-grey
-   9   "#ff0000"                                            ;; system-red
-   10  "#00ff00"                                            ;; system-lime
-   11  "#ffff00"                                            ;; system-yellow
-   12  "#0000ff"                                            ;; system-blue
-   13  "#ff00ff"                                            ;; system-fuchsia
-   14  "#00ffff"                                            ;; system-aqua
-   15  "#ffffff"                                            ;; system-white
-   16  "#000000"                                            ;; black
-   39  "#00afff"                                            ;; blue
-   40  "#00d700"                                            ;; green
-   106 "#87af00"                                            ;; olive
-   141 "#af87ff"                                            ;; purple
-   178 "#d7af00"                                            ;; yellow
-   196 "#ff0000"                                            ;; red
-   201 "#ff00ff"                                            ;; magenta
-   208 "#ff8700"                                            ;; orange
-   231 "#ffffff"                                            ;; white
-   247 "#9e9e9e"                                            ;; gray
-   })
+(declare xterm-colors-by-id)
 
 
 (def ^:private browser-dev-console-props
@@ -189,6 +106,7 @@
    "neutral"  "neutral"})
 
 (def ^:private all-color-names
+  ;; TODO - perf use reduce here?
   (into #{}
         (concat (keys semantics-by-semantic-type)
                 (vals semantics-by-semantic-type)
@@ -209,6 +127,11 @@
 
 
 ;; Helper functions -----------------------------------------------------------
+
+(defn concatv
+  "Concatenate `xs` and return the result as a vector."
+  [& xs]
+  (into [] cat xs))
 
 (defn ^:public ?sgr
   "For debugging of sgr code printing.
@@ -235,7 +158,7 @@
   [s]
   s)
 
-(defn- str++ [n s]
+(defn- char-repeat [n s]
   (string/join (repeat n s)))
 
 (defn- maybe [x pred]
@@ -410,6 +333,36 @@
 
 
 ;; Color-related fns  ---------------------------------------------------------
+(def ^:private xterm-colors-by-id
+  {0   "#000000"                                            ;; system-black
+   1   "#800000"                                            ;; system-maroon
+   2   "#008000"                                            ;; system-green
+   3   "#808000"                                            ;; system-olive
+   4   "#000080"                                            ;; system-navy
+   5   "#800080"                                            ;; system-purple
+   6   "#008080"                                            ;; system-teal
+   7   "#c0c0c0"                                            ;; system-silver
+   8   "#808080"                                            ;; system-grey
+   9   "#ff0000"                                            ;; system-red
+   10  "#00ff00"                                            ;; system-lime
+   11  "#ffff00"                                            ;; system-yellow
+   12  "#0000ff"                                            ;; system-blue
+   13  "#ff00ff"                                            ;; system-fuchsia
+   14  "#00ffff"                                            ;; system-aqua
+   15  "#ffffff"                                            ;; system-white
+   16  "#000000"                                            ;; black
+   39  "#00afff"                                            ;; blue
+   40  "#00d700"                                            ;; green
+   106 "#87af00"                                            ;; olive
+   141 "#af87ff"                                            ;; purple
+   178 "#d7af00"                                            ;; yellow
+   196 "#ff0000"                                            ;; red
+   201 "#ff00ff"                                            ;; magenta
+   208 "#ff8700"                                            ;; orange
+   231 "#ffffff"                                            ;; white
+   247 "#9e9e9e"                                            ;; gray
+   })
+
 (defn- assoc-hex-colors [m]
   (reduce-kv (fn [m color {:keys [sgr]}]
                (let [hex (get xterm-colors-by-id sgr nil)]
@@ -524,13 +477,14 @@
              ;; displayed based on `depth`
              mini-strace (->> strace
                               (take depth)
-                              (map StackTraceElement->vec))
+                              (mapv StackTraceElement->vec))
 
              ;; If regex is legit, get a list of indexes that match the regex
              ;; passed in by user. Regex will match on ns or filename where
              ;; user's their program lives. Then get the last index of a match
              ;; (within the mini-strace). If regex is not legit, use the depth.
              last-index  (if (= java.util.regex.Pattern (type regex))
+                           ;; TODO - perf - use transduction here
                            (some->> mini-strace
                                     (keep-indexed
                                       (fn [i [f]]
@@ -628,6 +582,7 @@
      :clj
      (when o [o])))
 
+
 (defn ^:public point-of-interest
   "A namespace info diagram which identifies a specific form. This provides the
    namespace, column, and line number, and a bolded, potentially truncated,
@@ -642,17 +597,19 @@
    By default, the diagram is created with a leading and trailing newlines.
    This can be set to zero, or increased, with the `:margin-block` option.
    
-| Key             | Pred                   | Description                                                  |
-| :--------       | -----------------      | ------------------------------------------------------------ |
-| `:file`         | `string?`              | File or namespace                                            |
-| `:line`         | `integer?`             | Line number                                                  |
-| `:column`       | `integer?`             | Column number                                                |
-| `:form`         | `any?`                 | The form to draw attention to. Will be cast to string and truncated at 33 chars |
-| `:type`         | `keyword` or `string?` | Controls the color of the squiggly underline. Should be one of: `:error` `:warning`, or `:neutral`. Defaults to `:neutral` |
-| `:header`       | `any?`                 | Typically, a string. If multi-line, string should be composed with newlines as desired. In a browser context, can be an instance of `bling.core/Enriched` (produced by using `bling.core/enriched`)|
-| `:body`         | `any?`                 | Typically, a string. If multi-line, string should be composed with newlines as desired. In a browser context, can be an instance of `bling.core/Enriched` (produced by using `bling.core/enriched`)|
-| `:margin-block` | `int?`                 | Controls the number of blank lines above and below the diagram.<br/>Defaults to 1.|
-| `:underline-style`     | `int?`                 | Controls the number of blank lines above and below the diagram.<br/>Defaults to 1.|
+| Key                | Pred                   | Description                                                  |
+| :--------          | -----------------      | ------------------------------------------------------------ |
+| `:file`            | `string?`              | File or namespace                                            |
+| `:line`            | `integer?`             | Line number                                                  |
+| `:column`          | `integer?`             | Column number                                                |
+| `:form`            | `any?`                 | The form to draw attention to. Will be cast to string and truncated at 33 chars |
+| `:header`          | `any?`                 | Typically, a string. If multi-line, string should be composed with newlines as desired. In a browser context, can be an instance of `bling.core/Enriched` (produced by using `bling.core/enriched`)|
+| `:body`            | `any?`                 | Typically, a string. If multi-line, string should be composed with newlines as desired. In a browser context, can be an instance of `bling.core/Enriched` (produced by using `bling.core/enriched`)|
+| `:margin-block`    | `int?`                 | Controls the number of blank lines above and below the diagram.<br/>Defaults to 1.|
+| `:type`            | #{`:error` `:warning`} | Automatically sets the :text-decoration-color. |
+| `:text-decoration-color` | #{`keyword?``string?`} | Controls the color of the underline. Should be one of: `:error` `:warning`, or `:neutral`.<br>Can also be any one of the pallete colors such as  `:magenta`, `:green`,  `:negative`, `:neutral`, etc. Defaults to `:neutral` |
+| `:text-decoration-style` | #{`:wavy` `:solid` `:dashed` `:dotted` `:double`} | Controls the color of the underline. Should be one of: `:error` `:warning`, or `:neutral`. Can be any Defaults to `:neutral` |
+| `:text-decoration-index` | `pos-int?` | If the value of :form is a collection, this is the index of the item to apply text-decoration (underline). |
 "
 
   [{:keys [line
@@ -662,11 +619,14 @@
            header
            body
            margin-block
-           text-decoration-color]
+           text-decoration-color
+           type]
     :as   opts}]
-  (let [file-info        (ns-info-str opts)
+  (let [type             (some-> type as-str (maybe #{"warning" "error"}))
+        file-info        (ns-info-str opts)
         gutter           (some-> line str count spaces)
-        underline-color  (or (some-> text-decoration-color
+        underline-color  (or (some->> type (get semantics-by-semantic-type))
+                             (some-> text-decoration-color
                                      as-str
                                      (maybe all-color-names))
                              "neutral")
@@ -690,7 +650,7 @@
                             gutter (bling [bling-tag " │ "]) "\n"
                             line (bling [bling-tag " │ "]) bolded-form "\n"
                             gutter (bling [bling-tag " │ "]) underline-styled
-                            mb]
+                            mb gutter]
 
                            form
                            [mb
@@ -716,8 +676,58 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Enriched text public fns and helpers  --------------------------------------
 
+(def gutter-char "█")
 
-(defn- outline-label
+(defn- gutter-marquee-label
+  [{:keys [padding-left
+           margin-left 
+           label 
+           label-string 
+           border-style]}]
+  (let [margin-left-str     (char-repeat margin-left gutter-char)
+        hrz                 #(char-repeat padding-left %)
+        label-lns           (string/split-lines label)
+        label-length        (some->> label-lns (mapv count) (apply max))
+        label-string-lns    (some-> label-string string/split-lines)
+        label-string-length (some->> label-string-lns (mapv count) (apply max))
+        label-length        (or label-string-length label-length)
+        bs                  border-style]
+    (string/join
+     (interpose
+      "\n"
+      (concat
+       [(bling [bs
+                (str
+                 (char-repeat (inc margin-left) "▄")
+                 " "
+                 " ┏━━"
+                 (char-repeat label-length "━")
+                 "━━┓")])
+        (str (bling [bs
+                     (str margin-left-str
+                          gutter-char
+                          (hrz " ")
+                          "┃  ")])
+             (bling [{:font-color :neutral}
+                     (first label-lns)])
+             (bling [bs "  ┃"]))]
+       (for [ln (rest label-lns)]
+         (bling margin-left-str
+                [border-style (str "┃" (hrz " ") "┃  ")]
+                (bling [:italic.neutral.bold ln])
+                (bling [bs
+                        (str (char-repeat (max 0 (- label-length (count ln)))
+                                          " ")
+                             "  ┃")])))
+       [(bling [bs
+                (str margin-left-str
+                     gutter-char
+                     (hrz " ")
+                     "┗━━"
+                     (char-repeat label-length "━")
+                     "━━┛")])])))))
+
+(defn- sideline-marquee-label
   [{:keys [padding-left
            padding-left-str 
            margin-left 
@@ -729,9 +739,9 @@
         b?                  (= theme "sideline-bold")
         hrz                 #(char-repeat padding-left %)
         label-lns           (string/split-lines label)
-        label-length        (some->> label-lns (map count) (apply max))
+        label-length        (some->> label-lns (mapv count) (apply max))
         label-string-lns    (some-> label-string string/split-lines)
-        label-string-length (some->> label-string-lns (map count) (apply max))
+        label-string-length (some->> label-string-lns (mapv count) (apply max))
         label-length        (or label-string-length label-length)
         bs                  border-style]
     (string/join
@@ -742,18 +752,19 @@
                 (str margin-left-str
                      padding-left-str
                      (if b? " ┏━━" " ┌──")
-                     (str++ label-length (if b? "━" "─"))
+                     (char-repeat label-length (if b? "━" "─"))
                      (if b? "━━┓" "──┐"))])
         (str (bling [bs
                      (str margin-left-str
                           (if b?
                             (str "┏" (hrz "━") "┫  ")
                             (str "┌" (hrz "─") "┤  ")))])
-             (bling [:italic.neutral.bold (first label-lns)])
+             (bling [{:font-color :neutral}
+                     (first label-lns)])
              (bling [bs (if b? "  ┃" "  │")]))]
        (for [ln (rest label-lns)]
          (bling margin-left-str
-                [border-style (if b? (str "┃" (hrz " ") "┃  ")
+                [bs (if b? (str "┃" (hrz " ") "┃  ")
                                   (str "│" (hrz " ") "│  "))]
                 (bling [:italic.neutral.bold ln])
                 (bling [bs
@@ -764,7 +775,7 @@
                 (str margin-left-str
                      (if b? (str "┃" (hrz " ") "┗━━")
                          (str "│" (hrz " ") "└──"))
-                     (str++ label-length (if b? "━" "─"))
+                     (char-repeat label-length (if b? "━" "─"))
                      (if b? "━━┛" "──┘"))])])))))
 
 (defn ln [m s]
@@ -774,10 +785,22 @@
        s))
 
 (defn lns [m k]
-  (let [lns (some-> m k string/split-lines)]
+  (let [s             (some-> m k)
+        gutter-label? (boolean (and (= (:theme m) "gutter") (= k :label)))
+        ;; Label gets treated differently here, if gutter-label.
+        gutter-label-with-padding-top? (and gutter-label?
+                                            (not= 0 (:padding-top m)))
+        has-body?     (:value m)
+        s             (if gutter-label-with-padding-top? 
+                        (str (if (:type m) (bling [:bold s]) s)
+                             (if has-body?
+                               (char-repeat (:padding-top m) "\n ")
+                               "\n"))
+                        s)
+        lns           (some-> s string/split-lines)]
     (string/join
-      "\n"
-      (map (partial ln m) lns))))
+     "\n"
+     (mapv (partial ln m) lns))))
 
 (defn body-lines-with-border
   [m]
@@ -786,7 +809,7 @@
       "\n"
       (concat
         (repeat (:padding-top m) (ln m ""))
-        (map (partial ln m) lns)
+        (mapv (partial ln m) lns)
         (repeat (:padding-bottom m) (ln m ""))))))
 
 (defn- sideline-callout
@@ -798,7 +821,7 @@
                            (not (string/blank? (:label m)))
                            (contains? #{"marquee"} (:label-theme m)))
 
-                      (outline-label m)
+                      (sideline-marquee-label m)
                       ; label-theme is just minimal
                       :else
                       (bling (:margin-left-str m)
@@ -818,48 +841,69 @@
       bottom-line)))
 
 (defn ansi-callout-str
-  [m]
-  (let [sideline-variant? (contains? #{"sideline" "sideline-bold"} (:theme m))]
+  [{:keys [label-theme theme value] :as m}]
+  (let [sideline-variant? (contains? #{"sideline" "sideline-bold"} theme)
+        sideline-variant-with-body? (and value sideline-variant?)
+        sideline-variant-just-label? (and (nil? value) sideline-variant?)
+        gutter-theme? (contains? #{"rainbow-gutter" "gutter"} theme)]
     (str (:margin-top-str m)
-         (if (and (:value m) sideline-variant?)
-
-           ;; callout :theme is :sideline or :sideline-bold, with body.
+         (if sideline-variant-with-body?
            (sideline-callout m)
-
-           (if sideline-variant?
-             ;; callout :theme is :sideline or :sideline-bold, with no body, just label.
+           (cond
+             sideline-variant-just-label?
              (lns m :label)
-
-             ;; callout :theme is gutter.
-             (str (lns m :label)
-                  "\n"
+             gutter-theme?
+             (str (when (:label m)
+                    (str (if (= label-theme "marquee")
+                           (gutter-marquee-label m)
+                           (lns m :label))) 
+                    "\n")
                   (lns m :value))))
          (:margin-bottom-str m))))
 
+(def rainbow-colors
+  ["red" "orange" "yellow" "green" "blue" "purple"])
+
 (defn callout*
-  [m]
-  (let [gutter-str "█"
-        style {:color (:color m)}
-        cr         (fn [k sep] (char-repeat (or (k m) 0) sep))
-        s (ansi-callout-str
-            (merge
-              m
-              {:border-style      style
-               :border-left-str   (case (:theme m)
-                                    "sideline"
-                                    "│"
-                                    "sideline-bold"
-                                    "┃"
-                                    "gutter"
-                                    gutter-str
-                                    " ")
-               :padding-left-str  (cr :padding-left " ")
-               :margin-left-str   (cr :margin-left
-                                      (if (= "gutter" (:theme m))
-                                        (bling [style gutter-str])
-                                        " "))
-               :margin-top-str    (cr :margin-top "\n")
-               :margin-bottom-str (cr :margin-bottom "\n")}))]
+  [{:keys [theme] :as m}]
+  (let [char               gutter-char
+        style              {:color (:color m)}
+        rainbow?           (= "rainbow-gutter" theme)
+        gutter-str         (if rainbow? 
+                             (bling [{:color (last rainbow-colors)} char])
+                             (bling [style char]))
+
+        rainbow-gutter-str (apply bling
+                                  (for [s (drop-last rainbow-colors)]
+                                    [{:color s} char]))
+        cr                 (fn [k sep] (char-repeat (or (k m) 0) sep))
+        s                  (ansi-callout-str
+                            (merge
+                             m
+                             {:border-style      style
+                              :border-left-str   (case theme
+                                                   "sideline"
+                                                   "│"
+                                                   "sideline-bold"
+                                                   "┃"
+                                                   "gutter"
+                                                   gutter-str
+                                                   "rainbow-gutter"
+                                                   gutter-str
+                                                   " ")
+                              :padding-left-str  (cr :padding-left " ")
+                              :margin-left-str   (if rainbow?
+                                                   rainbow-gutter-str
+                                                   (cr
+                                                    :margin-left
+                                                    (case theme
+                                                      "gutter"
+                                                      gutter-str
+                                                      "rainbow-gutter"
+                                                      rainbow-gutter-str
+                                                      " ")))
+                              :margin-top-str    (cr :margin-top "\n")
+                              :margin-bottom-str (cr :margin-bottom "\n")}))]
     (if (true? (:data? m))
       s
       (some-> s println))))
@@ -928,8 +972,12 @@
                                     ;; be there in order to properly add a
                                     ;; single newline.
                                     :else
-                                    #js[(str (some-> label
-                                                     (str "\n"))
+                                    #js[(str (if (coll? label)
+                                               (some-> label
+                                                       (shortened 50)
+                                                       (str "\n"))
+                                               (some-> label 
+                                                       (str "\n")))
                                              padding-top-str
                                              (str value)
                                              padding-bottom-str)
@@ -939,15 +987,54 @@
              (.apply f js/console arr)))))
 
 (defn- default-opt [m k strs default]
-  (or (some-> (:theme m)
+  (or (some-> (k m)
               as-str
               (maybe strs))
       default))
 
+(defn- resolve-label [{:keys [label] :as m} type-as-str]
+  (cond
+    ;; Blank string is a force-nil situation (in event a :type is provided) 
+    (string/blank? label)
+    nil
+
+    ;; default to type if :type provided
+    (or (nil? label)
+          (and (string? label) (string/blank? label)))
+    (some-> type-as-str string/upper-case)
+
+    ;; Preserve object state of label for cljs, in case user has passed an
+    ;; instance of bling.core/Enriched for the label.
+    :else
+    (or #?(:cljs
+           nil
+           :clj
+           (some-> m :label (maybe coll?) (shortened 33))) 
+        label
+        ;; TODO add :type back and change this
+        (get alert-type->label (:colorway m)))))
+
+(defn- resolve-padding-top 
+  [theme f]
+  #?(:cljs
+     (f :padding-top 0)
+     :clj
+     (if (contains? #{"gutter" "rainbow-gutter"} theme)
+       (f :padding-top 1)
+       (f :padding-top 0))))
+
 (defn- callout-opts [m]
+  
   (let-map
-    [sp             (fn [k n] (spacing (get m k) n))
-     padding-top    (sp :padding-top 0)
+     [theme         (default-opt m
+                                :theme
+                                #{"sideline"
+                                  "sideline-bold"
+                                  "gutter"
+                                  "rainbow-gutter"}
+                                "sideline")
+     sp             (fn [k n] (spacing (get m k) n))
+     padding-top    (resolve-padding-top theme sp)
      padding-bottom (sp :padding-bottom 0)
      margin-top     (sp :margin-top 1)
      margin-bottom  (sp :margin-bottom 0)
@@ -955,27 +1042,21 @@
      padding-left   (let [pl (or (maybe (:padding-left m) pos-int?)
                                  2)]
                       (spacing pl 2))
-     colorway      (some->> (:colorway m) as-str)
-     semantic-type (get semantics-by-semantic-type colorway)
-     warning?      (= colorway "warning")
-     error?        (= colorway "error")
-     color         (if-let [s (some-> (:colorway m) as-str)]
-                     (or (get semantics-by-semantic-type s)
-                         (maybe s all-color-names) "neutral"))
-     ;; maybe nix?
-     wrap?         (true? (:wrap? m))
-     label         (if (and (string? (:label m)) (string/blank? (:label m)))
-                     nil
-                     (or (:label m)
-                         (get alert-type->label (:colorway m))))
-
+     type          (some-> (:type m) as-str (maybe #{"warning" "error" "info"}))
+     colorway      (or (get semantics-by-semantic-type type)
+                       (some-> (:colorway m) as-str))
+     semantic-type (or (get semantics-by-semantic-type type)
+                       (get semantics-by-semantic-type colorway))
+     warning?      (= type "warning")
+     error?        (= type "error")
+     color         (or (get semantics-by-semantic-type colorway)
+                       (maybe colorway all-color-names)
+                       "neutral")
+     user-label    (:label m)
+     label         (resolve-label m type)
      ;; TODO maybe see if label is blinged and if not, bold it.
      ;label         (if label-is-blinged? label (bling [:bold label]))
      
-     theme         (default-opt m
-                                :theme
-                                #{"sideline" "sideline-bold" "gutter"}
-                                "sideline")
      label-theme   (or (default-opt m
                                     :label-theme
                                     #{"marquee" "minimal"}
@@ -993,13 +1074,13 @@
     
    If the `:data?` option is set to `true`, it does not print anything, and
    returns a data representation of the formatting and styling, which is will be
-   different depending on whether the context is a terminal emulator or a browser
-   dev console.
+   different depending on whether the context is a terminal emulator or a
+   browser dev console.
    
    In terminal emulator consoles, this will print a colored bounding border in
    the inline start position. The color of the border is determined by the value
-   of the `:type` option. The weight/intensity of this border is controlled by
-   the `:border-weight` option.
+   of the `:type` option, or the `:colorway` option. The characteristics of this
+   border are controlled by the `:theme` option.
     
    In browser consoles, a border is not used, as the background and foreground
    text of the message block is automatically colored by the browser dev tools
@@ -1007,13 +1088,13 @@
    this automatic styling only applies to the callout `:type` options of `:error`
    and `:warn`.
         
-   For callouts of the type `:error`, `:warning`, or `:info`, a bolded label is
-   printed, by default, in the same color as the callout styling, in the block
-   start postion. If a :type option is set, the label string will default to an
-   uppercased version of that string, e.g. {:type :INFO} => \"INFO\". If a
-   `:label` option is supplied, that value is used instead. When you want to omit 
-   label for callouts of the type `:error`, `:warning`, or `:info`, you must
-   explicitly set the :label option to an empty string.
+   For callouts of the type `:error`, `:warning`, or `:info`, a label is
+   printed in the block start postion. If a :type option is set, the label
+   string will default to an uppercased version of that string, e.g.
+   {:type :INFO} => \"INFO\". If a `:label` option is supplied, that value is
+   used instead. When you want to omit label for callouts of the type `:error`,
+   `:warning`, or `:info`, you must explicitly set the :label option to an empty
+   string.
         
    The amount of vertical padding (in number of lines) within the bounds of the
    message body can be controlled the `padding-top` and `padding-bottom` options.
@@ -1026,13 +1107,14 @@
 
 | Key               | Pred                    | Description                                                  |
 | :---------------  | -----------------       | ------------------------------------------------------------ |
-| `:theme`          | `keyword?` or `string?  | Theme of callout. Can be one of `:outline`, `:outline-bold`, or `:gutter`. Defaults to `:outline`. |
+| `:type`           | `keyword?` or `string?` | Should be one of: `:error`,  `:warning` , or `:info`. <br>Will set the label text (unless provided via `:label`). Will also set the `:colorway`, and override any provided `:colorway` value. |
+| `:colorway`       | `keyword?` or `string?` | The color of the sideline border, or gutter, depending on the value of :theme.<br />Should be one of: `:error`,  `:warning` , `:info` , `:positive`, or `:subtle`. <br>Can also be any one of the pallete colors such as  `:magenta`, `:green`,  `:negative`, `:neutral`, etc. |
+| `:theme`          | `keyword?` or `string?  | Theme of callout. Can be one of `:sideline`, `:sideline-bold`, or `:gutter`. Defaults to `:sideline`. |
 | `:label`          | `any?`                  | Labels the callout. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string). <br>In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively. |
-| `:label-theme`    | `keyword?` or `string?  | Theme name of label. Can be one of `:outline` or `:minimal. Defaults to `:minimal`. |
-| `:border-weight`  | `keyword?` or `string?` | Controls the weight of the border. Can be one of `:medium`, `:heavy`, or `:light`. Defaults to `:light`, which renders default border with standard unicode, single-line box-drawing character. |
+| `:label-theme`    | `keyword?` or `string?  | Theme of label. Can be one of `:marquee` or `:minimal. Defaults to `:minimal`. |
 | `:padding-top`    | `int?`                  | Amount of padding (in newlines) at top, inside callout.<br/>Defaults to `0`. |
 | `:padding-bottom` | `int?`                  | Amount of padding (in newlines) at bottom, inside callout.<br>Defaults to `0`. In browser console, defaults to `1` in the case of callouts of type `:warning` or `:error`.|
-| `:padding-left`   | `int?`                  | Amount of padding (in blank character spaces) at left, inside callout.<br>In console emulator, defaults to `1` when `:border-weight` is `:light`, and `2` when `:border-weight` is `:medium` or `:heavy`. In browser console, defaults to `0`.|
+| `:padding-left`   | `int?`                  | Amount of padding (in blank character spaces) at left, inside callout.<br>In console emulator, defaults to `2`. In browser console, defaults to `0`.|
 | `:margin-top`     | `int?`                  | Amount of margin (in newlines) at top, outside callout.<br>Defaults to `1`. Only applies to terminal emulator printing. |
 | `:margin-bottom`  | `int?`                  | Amount of margin (in newlines) at bottom, outside callout.<br>Defaults to `0`. Only applies to terminal emulator printing. |
 | `:margin-left`    | `int?`                  | Amount of margin (in blank character spaces) at left, outside callout.<br>Defaults to `0`. Only applies to terminal emulator printing. |
@@ -1082,7 +1164,7 @@
      (let [value         (some-> value (maybe #(not (string/blank? %))))
            callout-opts  (merge {:value value} opts (callout-opts opts))]
        #?(:cljs
-          (if node?                                   ; TODO <- move to enriched or data
+          (if node?                                                             ;; TODO <- move to enriched or data
             (callout* callout-opts)
             (browser-callout callout-opts))
 

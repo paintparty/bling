@@ -628,9 +628,16 @@
   ;; This should issue a warning callout with point-of-interest
   (callout [1 2 3]))
 
-(visual-test-suite)
-(bling-basics)
+#_(visual-test-suite)
+#_(bling-basics)
 
+(callout
+ {:type :info :label ""}
+ "Hi and something\nSomething else")
+
+(callout
+ {:type :info :label "" :theme :gutter}
+ "Hi and something\nSomething else")
 ;; Callouts
 
    #_(callout

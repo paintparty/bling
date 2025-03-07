@@ -11,7 +11,7 @@
 (defn- surround-with-quotes [x]
   (str "\"" x "\""))
 
-(defn- shortened
+(defn shortened
   "Stringifies a collection and truncates the result with ellipsis 
    so that it fits on one line."
   [v limit]
