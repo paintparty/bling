@@ -8,21 +8,6 @@
             #?(:cljs [bling.js-env :refer [node?]])))
 
 
-;; Experimental template literal
-(let [css-str "\".wtf{color: red;}\""
-      guess   "hihi"
-      flags   ["--minify" "--bundle"]]
-  (println (blingf "
-[The].bold.blue.italic css str is:
-
-[${css-str}].bold.red
-
-${(str (reverse flags))}
-
-Yes!")))
-
-
-
 (def printer
   #?(:cljs (if node? println print-bling) :clj println))
 
@@ -169,30 +154,30 @@ Yes!")))
 
    ;; CALLOUT examples with light border ------------------------------------------
    
-   (callout {:type :info}
-            "Example callout, with :type of :info")
+   (callout {:colorway :info}
+            "Example callout, with :colorway of :info")
 
-   (callout {:type  :info
+   (callout {:colorway  :info
              :label "My custom label"}
-            "Example callout, with :type of :info and custom :label")
+            "Example callout, with :colorway of :info and custom :label")
 
-   (callout {:type :warning}
-            "Example callout, with :type of :warning")
+   (callout {:colorway :warning}
+            "Example callout, with :colorway of :warning")
 
-   (callout {:type :error}
-            "Example callout, with :type of :error")
+   (callout {:colorway :error}
+            "Example callout, with :colorway of :error")
 
-   (callout {:type  :positive
+   (callout {:colorway  :positive
              :label "SUCCESS!"}
-            "Example callout, with :type of :positive, and custom :label")
+            "Example callout, with :colorway of :positive, and custom :label")
 
    ;; Off for readme banner
    (when extras? 
-     (callout {:type :subtle}
-              "Example callout, with :type of :subtle (or :gray)")
+     (callout {:colorway :subtle}
+              "Example callout, with :colorway of :subtle (or :gray)")
 
-     (callout {:type :magenta}
-              "Example callout, with :type of :magenta")
+     (callout {:colorway :magenta}
+              "Example callout, with :colorway of :magenta")
 
      (callout "Example callout, default")
 
@@ -202,39 +187,40 @@ Yes!")))
 
    (callout
     {:label       (bling [:magenta-bg.white.bold " HEY "])
+     :label-string " HEY "
      :padding-top 1}
     (bling "Example callout, styled-label, :padding-top of 1"))
 
 
    ;; CALLOUT examples with medium border ----------------------------------------
    
-   (callout {:type          :info
+   (callout {:colorway          :info
              :border-weight :medium}
-            "Example callout, with :type of :info")
+            "Example callout, with :colorway of :info")
 
-   (callout {:type          :warning
+   (callout {:colorway          :warning
              :border-weight :medium}
-            "Example callout, with :type of :warning")
+            "Example callout, with :colorway of :warning")
 
-   (callout {:type          :error
+   (callout {:colorway          :error
              :border-weight :medium}
-            "Example callout, with :type of :error")
+            "Example callout, with :colorway of :error")
 
-   (callout {:type          :positive
+   (callout {:colorway          :positive
              :label         "SUCCESS!"
              :border-weight :medium}
-            "Example callout, with :type of :positive, and custom :label")
+            "Example callout, with :colorway of :positive, and custom :label")
 
 
    ;; Off for readme banner
    (when extras?
-     (callout {:type          :subtle
+     (callout {:colorway          :subtle
                :border-weight :medium}
-              "Example callout, with :type of :subtle (or :gray)")
+              "Example callout, with :colorway of :subtle (or :gray)")
 
-     (callout {:type          :magenta
+     (callout {:colorway          :magenta
                :border-weight :medium}
-              "Example callout, with :type of :magenta")
+              "Example callout, with :colorway of :magenta")
 
      (callout {:border-weight :medium} "Example callout, default"))
 
@@ -242,45 +228,45 @@ Yes!")))
 
    ;; CALLOUT examples with heavy border ------------------------------------------
    
-   (callout {:type          :info
+   (callout {:colorway          :info
              :border-weight :heavy}
-            "Example callout, with :type of :info")
+            "Example callout, with :colorway of :info")
 
-   (callout {:type          :info
+   (callout {:colorway          :info
              :border-weight :heavy
              :label         "My custom label"}
-            "Example callout, with :type of :info and custom :label")
+            "Example callout, with :colorway of :info and custom :label")
 
-   (callout {:type          :warning
+   (callout {:colorway          :warning
              :border-weight :heavy}
-            "Example callout, with :type of :warning")
+            "Example callout, with :colorway of :warning")
 
-   (callout {:type          :error
+   (callout {:colorway          :error
              :border-weight :heavy}
-            "Example callout, with :type of :error")
+            "Example callout, with :colorway of :error")
 
-   (callout {:type          :positive
+   (callout {:colorway          :positive
              :label         "SUCCESS!"
              :border-weight :heavy}
-            "Example callout, with :type of :positive, and custom :label")
+            "Example callout, with :colorway of :positive, and custom :label")
 
    ;; Off for readme banner
    (when extras?
-     (callout {:type          :subtle
+     (callout {:colorway          :subtle
                :border-weight :heavy}
-              "Example callout, with :type of :subtle (or :gray)")
+              "Example callout, with :colorway of :subtle (or :gray)")
 
-     (callout {:type          :magenta
+     (callout {:colorway          :magenta
                :border-weight :heavy}
-              "Example callout, with :type of :magenta")
+              "Example callout, with :colorway of :magenta")
 
      (callout {:border-weight :heavy} "Example callout, default"))
 
    (callout
-    {:type          :warning
+    {:colorway          :warning
      :border-weight :heavy
      :padding-left  4}
-    "Example callout, with :type of :warning, padding-left of 4.")))
+    "Example callout, with :colorway of :warning, padding-left of 4.")))
 
 
 
@@ -345,78 +331,80 @@ Yes!")))
 
    (callout {:label "My label"} "Default callout, custom label")
 
-   (callout {:type :warning} "Callout, type :warning, default label")
+   (callout {:colorway :warning} "Callout, type :warning, default label")
 
-   (callout {:type  :warning
+   (callout {:colorway  :warning
              :label "My warning"}
             "Callout, type :warning, custom label")
 
-   (callout {:type  :warning
-             :label (bling [:bold.yellow-bg.black " My warning "])}
+   (callout {:colorway     :warning
+             :label-string " My warning "
+             :label        (bling [:bold.yellow-bg.black " My warning "])}
             "Callout, type :warning, custom enriched label")
 
-   (callout {:type           :warning
+   (callout {:colorway       :warning
              :padding-top    1
              :padding-bottom 1
              :padding-left   2} 
             "Callout, type :warning, default label, custom padding")
 
-   (callout {:type  :positive
-             :label (bling [:positive-bg.white.bold " YES "])}
+   (callout {:colorway     :positive
+             :label-string " YES "
+             :label        (bling [:positive-bg.white.bold " YES "])}
             "Callout, type :positve, enriched label")
 
    (callout {:label "YES"
-             :type  "positive"}
+             :colorway  "positive"}
             "Callout, type :positve, user label")
 
-   (callout {:type :warning}
+   (callout {:colorway :warning}
             (point-of-interest {:line   11
                                 :column 2
                                 :form   '(+ 1 1)
                                 :file   "myfile.cljs"
-                                :type   :warning}))
+                                :colorway   :warning}))
 
 
-   (callout {:type :magenta}
+   (callout {:colorway :magenta}
             (point-of-interest {:line   11
                                 :column 2
                                 :form   '(+ 1 1)
                                 :file   "myfile.cljs"
-                                :type   :magenta}))
+                                :colorway   :magenta}))
 
 ;; poi with (default) :margin-block of 1
-   (callout {:type :error}
+   (callout {:colorway :error}
             (point-of-interest {:line   11
                                 :column 2
                                 :form   '(+ 1 1)
                                 :file   "myfile.cljs"
-                                :type   :error}))
-   (callout {:type          :magenta
-             :border-weight :heavy}
+                                :colorway   :error}))
+   (callout {:colorway          :magenta}
             (point-of-interest {:line   11
                                 :column 2
                                 :form   '(+ 1 1)
                                 :file   "myfile.cljs"
-                                :type   :magenta}))
+                                :colorway   :magenta}))
 
 ;; poi with :margin-block of 0
-   (callout {:type          :magenta
+   (callout {:colorway          :magenta
              :border-weight :heavy}
             (point-of-interest {:line         11
                                 :column       2
                                 :form         '(+ 1 1)
                                 :file         "myfile.cljs"
-                                :type         :magenta
+                                :colorway     :magenta
+                                ;; TODO explore this
                                 :margin-block 0}))
 
 
-   (callout {:type          :magenta
+   (callout {:colorway          :magenta
              :border-weight :heavy}
             (bling [:blue "One line."]
                    #_"\n"
                    #_[:red "red"]))
 
-   (callout {:type          :magenta
+   (callout {:colorway          :magenta
              :border-weight :heavy
           ;; :label "foo"
              }
@@ -430,7 +418,8 @@ Yes!")))
 
 ;; Callouts
    (callout
-    {:type  :info
+    {:colorway  :info
+     :label-string " RAINBOW "
      :label (bling 
              [:magenta-bg.white.bold " "]
              [:red-bg.white.bold "R"]
@@ -441,10 +430,11 @@ Yes!")))
              [:red-bg.white.bold "O"]
              [:yellow-bg.white.bold "W"]
              [:blue-bg.white.bold " "])}
-    (bling "Example callout, :type of :info, rainbow-bg label" ))
+    (bling "Example callout, :colorway of :info, rainbow-bg label" ))
 
    (callout
-    {:type  :info
+    {:colorway  :info
+     :label-string "RAINBOW"
      :label (bling 
              [:magenta.bold "R"]
              [:red.bold "A"]
@@ -453,11 +443,12 @@ Yes!")))
              [:blue.bold "B"]
              [:magenta.bold "O"]
              [:red.bold "W"])}
-    (bling "Example callout, :type of :info, rainbow-bg label" ))
+    (bling "Example callout, :colorway of :info, rainbow-bg label" ))
 
    (callout
-    {:type          :info
+    {:colorway      :info
      :border-weight :heavy
+     :label-string  "RAINBOW"
      :label         (bling 
                      [:magenta.bold "R"]
                      [:red.bold "A"]
@@ -466,13 +457,13 @@ Yes!")))
                      [:blue.bold "B"]
                      [:magenta.bold "O"]
                      [:red.bold "W"])}
-    (bling "Example callout, :type of :info, rainbow-bg label" ))
+    (bling "Example callout, :colorway of :info, rainbow-bg label" ))
 
 
    (callout
-    {:type  :warning
+    {:colorway  :warning
      :label {:a :b}}
-    "Example callout, with :type of :warning, and custom :label." )
+    "Example callout, with :colorway of :warning, and custom :label." )
 
 
    (println "\n\n\n")
@@ -485,8 +476,8 @@ Yes!")))
                              :line   11
                              :column 1
                              :form   '(+ 1 true)
-                             :type   :warning}
-    :callout-opts           {:type :warning}})
+                             :colorway   :warning}
+    :callout-opts           {:colorway :warning}})
 
 ;; Medium callout w/ poi
   (example-custom-callout
@@ -494,8 +485,8 @@ Yes!")))
                              :line   11
                              :column 1
                              :form   '(+ 1 true)
-                             :type   :warning}
-    :callout-opts           {:type          :warning
+                             :colorway   :warning}
+    :callout-opts           {:colorway          :warning
                              :border-weight :medium}})
 
 ;; Heavy callout w/ poi
@@ -504,8 +495,8 @@ Yes!")))
                              :line   11
                              :column 1
                              :form   '(+ 1 true)
-                             :type   :warning}
-    :callout-opts           {:type          :warning
+                             :colorway   :warning}
+    :callout-opts           {:colorway          :warning
                              :border-weight :heavy}})
 
 
@@ -515,8 +506,8 @@ Yes!")))
                              :line   11
                              :column 1
                              :form   '(+ 1 true)
-                             :type   :error}
-    :callout-opts           {:type :error}})
+                             :colorway   :error}
+    :callout-opts           {:colorway :error}})
 
 ;; Medium callout w/ poi
   (example-custom-callout
@@ -524,8 +515,8 @@ Yes!")))
                              :line   11
                              :column 1
                              :form   '(+ 1 true)
-                             :type   :error}
-    :callout-opts           {:type          :error
+                             :colorway   :error}
+    :callout-opts           {:colorway          :error
                              :border-weight :medium}})
 
 ;; Heavy callout w/ poi
@@ -534,8 +525,8 @@ Yes!")))
                              :line   11
                              :column 1
                              :form   '(+ 1 true)
-                             :type   :error}
-    :callout-opts           {:type          :error
+                             :colorway   :error}
+    :callout-opts           {:colorway          :error
                              :border-weight :heavy}})
 
 ;; Normal callout w/ poi, label enriched and regex form
@@ -544,9 +535,9 @@ Yes!")))
                              :line   11
                              :column 1
                              :form   #"All of this regex should underlined"
-                             :type   :error}
+                             :colorway   :error}
     :callout-opts           {:label (bling [:red-bg.bold.white " ERROR "])
-                             :type  :error}})
+                             :colorway  :error}})
 
 ;; callout w/ enriched header and body on poi
   (example-custom-callout
@@ -554,20 +545,20 @@ Yes!")))
                              :line   11
                              :column 1
                              :form   '(+ 1 true)
-                             :type   :error
+                             :colorway   :error
                              :header (bling [:blue.italic "Enriched header."])
                              :body   (bling [:green.italic "Enriched body."]
                                             "\n"
                                             [:yellow.italic "Body line 2."])}
-    :callout-opts           {:type :error}})
+    :callout-opts           {:colorway :error}})
   #_(callout
-     {:type           :error
+     {:colorway           :error
       :margin-top     3 ; default is 1
       :margin-bottom  3 ; default is 1
       :padding-top    2 ; default is 0
       :padding-bottom 2 ; default is 0
       }
-     "Example callout, with :type of :error, and custom spacing")
+     "Example callout, with :colorway of :error, and custom spacing")
 
   #_(callout {
           ;; :border-weight :medium
@@ -584,7 +575,7 @@ Yes!")))
 
 
   #_(callout {:border-weight :medium
-              :type          :positive
+              :colorway          :positive
               :margin-top    0
               :data?         true}
              (str "line 1"
@@ -594,7 +585,7 @@ Yes!")))
                   "line 3"))
 
   #_(callout {:border-weight :medium
-              :type          :blue
+              :colorway          :blue
               :margin-top    0
               :data?         true}
              (string/join "\n" (range 10)))
@@ -605,21 +596,21 @@ Yes!")))
               :label         "my label"}
              (callout {
                        :border-weight :medium
-                       :type          :positive
+                       :colorway          :positive
                        :margin-top    0
                        :data?         true}
                       (str "line 1"
                            "\n"
                            (callout {
                                      :border-weight :medium
-                                     :type          :blue
+                                     :colorway          :blue
                                      :margin-top    0
                                      :data?         true}
                                     (string/join "\n" (range 10)))
                            "\n"
                            "line 3")))
 
-  (callout {:type :neutral
+  (callout {:colorway :neutral
             :border-weight :heavy}
           (bling [:bold.neutral 
                   "The following two callouts are issued by"]
@@ -632,5 +623,11 @@ Yes!")))
   ;; This should issue a warning callout with point-of-interest
   (callout [1 2 3])
 )
-#_(visual-test-suite)
+(visual-test-suite)
 #_(bling-basics)
+
+#_(callout
+    {:label       (bling [:magenta-bg.white.bold " HEY "])
+     :label-string " HEY "
+     :padding-top 1}
+    (bling "Example callout, styled-label, :padding-top of 1"))
