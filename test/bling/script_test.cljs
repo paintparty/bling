@@ -1,3 +1,4 @@
+;; This is for testing in node
 (ns bling.script-test
   (:require [bling.core-test]))
 
