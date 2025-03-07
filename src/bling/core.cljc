@@ -901,7 +901,7 @@
                                         (.-log js/console))
                warning-or-error?  (or warning? error?)
                semantic-type?     (or warning-or-error?)
-               padding-bottom-str (padding-block (? padding-bottom)
+               padding-bottom-str (padding-block padding-bottom
                                                  warning-or-error?)
                padding-top-str    (padding-block padding-top 
                                                  semantic-type?)
