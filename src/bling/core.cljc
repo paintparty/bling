@@ -948,7 +948,7 @@
   (let-map
     [sp             (fn [k n] (spacing (get m k) n))
      padding-top    (sp :padding-top 0)
-     padding-bottom (sp :padding-bottom #?(:cljs 0 :clj 1))
+     padding-bottom (sp :padding-bottom 0)
      margin-top     (sp :margin-top 1)
      margin-bottom  (sp :margin-bottom 0)
      margin-left    (sp :margin-left 0)
