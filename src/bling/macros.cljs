@@ -1,1 +1,2 @@
-(ns bling.macros)
+(ns bling.macros
+  (:require-macros [bling.macros]))
