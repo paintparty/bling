@@ -793,8 +793,8 @@
         s)))
 
 (defn lns [m k]
-  (when (= k :label)
-    m)
+  ;; (when (= k :label)
+  ;;   (? m))
   (let [s             (some-> m k)
         gutter-label? (boolean (and (= (:theme m) "gutter") (= k :label)))
         ;; Label gets treated differently here, if gutter-label.
@@ -804,11 +804,13 @@
         s             (if gutter-label-with-padding-top? 
                         (str (if (:type m)
                                (bling [:bold s])
-                               s)
+                               (bling [:bold s]))
                              (if has-body?
                                (str (char-repeat (:padding-top m) "\n "))
                                "\n"))
-                        s)
+                        (if (= k :label)
+                          (bling [:bold s])
+                          s))
         lns           (some-> s string/split-lines)
         ret           (string/join "\n" (map-indexed (partial ln m) lns))]
     #_(when (= k :label) (? ret))
@@ -1044,34 +1046,53 @@
 
 
 (defn- resolve-label
-  [{:keys [label] :as m}
+  [{:keys [label label-str] :as m}
    type-as-str]
-  (if (and (string? label) (string/blank? label))
-    nil
-    (or (when (nil? label) (some-> type-as-str string/upper-case))
-        (some-> m :label (maybe coll?) (shortened 33)) 
-        label))
+  (let [blank-string-supplied?              (and (string? label) (string/blank? label))
+        nothing-supplied?                   (nil? label)
+        supplied-label                      label
+        supplied-label-str                  label-str
+        supplied-coll-label-shortened       (some-> m
+                                                    :label
+                                                    (maybe coll?)
+                                                    (shortened 33))
+        default-label-based-on-callout-type (some-> type-as-str
+                                                    string/upper-case)]
+    ;; (? (keyed [blank-string-supplied? 
+    ;;            supplied-label 
+    ;;            supplied-label-str 
+    ;;            supplied-coll-label-shortened
+    ;;            default-label-based-on-callout-type]))
 
-  #_(cond
-    ;; Blank string is a force-nil situation (in event a :type is provided) 
-    (? (nil? label))
-    nil
+    ;; TODO confirm this
+    (if blank-string-supplied?
+      ;; Blank string is a force-nil situation (in event a :type is provided) 
+      nil
+      (or 
+       ;; default to type if no label supplied, but :type provided
+       (when nothing-supplied? default-label-based-on-callout-type)
+       supplied-coll-label-shortened 
+       label))
 
-    ;; default to type if :type provided
-    (? (or (nil? label)
-       (and (string? label) (string/blank? label))))
-    (some-> type-as-str string/upper-case)
+    #_(cond
+      nothing-supplied?
+      nil
 
-    ;; Preserve object state of label for cljs, in case user has passed an
-    ;; instance of bling.core/Enriched for the label.
-    :else
-    (or #?(:cljs
-           nil
-           :clj
-           (some-> m :label (maybe coll?) (shortened 33))) 
-        label
-        ;; TODO add :type back and change this
-        (get alert-type->label (:colorway m)))))
+      ;; Blank string is a force-nil situation (in event a :type is provided) 
+      blank-string-supplied?
+      default-label-based-on-callout-type
+
+      ;; Preserve object state of label for cljs, in case user has passed an
+      ;; instance of bling.core/Enriched for the label.
+      :else
+      (or #?(:cljs
+             nil
+             :clj
+             supplied-coll-label-shortened) 
+          label
+          ;; TODO add :type back and change this
+          (get alert-type->label (:type m))))))
+
 
 (defn- resolve-padding-left [m sideline-theme? label-theme]
   (let [default (if (and sideline-theme?
@@ -1086,7 +1107,7 @@
   [theme f]
   #?(:cljs (f :padding-top 0)
      :clj  (if (contains? #{"gutter" "rainbow-gutter"} theme)
-             (f :padding-top 1)
+             (f :padding-top 0)
              (f :padding-top 0))))
 
 (defn- callout-opts* [m]
