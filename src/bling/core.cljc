@@ -19,7 +19,7 @@
 
 (ns bling.core
   (:require [clojure.string :as string]
-            [bling.macros :refer [let-map ?]] ;;<-- ? is just for debugging
+            [bling.macros :refer [let-map keyed ?]] ;;<-- ? is just for debugging
             ;; [bling.macros :refer [let-map]]
             #?(:cljs [goog.object])
             #?(:cljs [bling.js-env :refer [node?]])))
@@ -83,8 +83,8 @@
 
 (def ^:private colors-source
   (merge {"red"     {:sgr 196 :semantic "negative"}
-          "orange"  {:sgr 208}
-          "yellow"  {:sgr 178 :semantic "warning"}
+          "orange"  {:sgr 208 :semantic "warning"}
+          "yellow"  {:sgr 178}
           "olive"   {:sgr 106}
           "green"   {:sgr 40 :semantic "positive"}
           "blue"    {:sgr 39 :semantic "accent"}
@@ -790,14 +790,19 @@
         ;; Label gets treated differently here, if gutter-label.
         gutter-label-with-padding-top? (and gutter-label?
                                             (not= 0 (:padding-top m)))
-        has-body?     (:value m)
-        s             (if gutter-label-with-padding-top? 
+        has-body?     (boolean (:value m))
+        s             (if (? gutter-label-with-padding-top?) 
                         (str (if (:type m) (bling [:bold s]) s)
                              (if has-body?
                                (char-repeat (:padding-top m) "\n ")
                                "\n"))
                         s)
-        lns           (some-> s string/split-lines)]
+        lns           (let [lns (some-> s string/split-lines)
+                            lns (if (= (first lns) " ") (subvec lns 1) lns)
+                            lns (if (= (last lns) " ")
+                                  (subvec lns 0 (-> lns count dec))
+                                  lns)]
+                        lns)]
     (string/join
      "\n"
      (mapv (partial ln m) lns))))
@@ -820,8 +825,8 @@
                       (and (:label m)
                            (not (string/blank? (:label m)))
                            (contains? #{"marquee"} (:label-theme m)))
-
                       (sideline-marquee-label m)
+
                       ; label-theme is just minimal
                       :else
                       (bling (:margin-left-str m)
@@ -843,15 +848,20 @@
 (defn ansi-callout-str
   [{:keys [label-theme theme value] :as m}]
   (let [sideline-variant? (contains? #{"sideline" "sideline-bold"} theme)
-        sideline-variant-with-body? (and value sideline-variant?)
+        sideline-variant-with-body? (boolean (and value sideline-variant?))
         sideline-variant-just-label? (and (nil? value) sideline-variant?)
         gutter-theme? (contains? #{"rainbow-gutter" "gutter"} theme)]
+(? (keyed [sideline-variant?
+           sideline-variant-with-body?
+           sideline-variant-just-label?]))
     (str (:margin-top-str m)
          (if sideline-variant-with-body?
            (sideline-callout m)
            (cond
+
              sideline-variant-just-label?
-             (lns m :label)
+             (do (prn (lns m :label)) (lns m :label))
+
              gutter-theme?
              (str (when (:label m)
                     (str (if (= label-theme "marquee")

@@ -628,14 +628,81 @@
   ;; This should issue a warning callout with point-of-interest
   (callout [1 2 3]))
 
-(bling.sample/sample)
+#_(bling.sample/sample)
 
 #_(visual-test-suite)
 #_(bling-basics)
 
-;; (callout
-;;  {:type :info :label ""}
-;;  "Hi and something\nSomething else")
+
+(callout {
+          :colorway      :magenta
+          :margin-bottom 0
+          :label-string  "foocore, wtf"
+          :label         (bling [:italic.neutral "foo"]
+                                [:orange.italic "core"]
+                                ", "
+                                [:blue.italic "wtf"]
+                                "\n ")
+          })
+
+;; (callout {
+;;           :colorway      :magenta
+;;           :margin-bottom 0
+;;           :label-string  "foocore, wtf"
+;;           :label         (bling [:italic.neutral "foo"]
+;;                                 [:orange.italic "core"]
+;;                                 ", "
+;;                                 [:blue.italic "wtf"]
+;;                                 "\n ")
+;;           }
+;;          "body")
+
+;; (callout {
+;;           :theme :gutter
+;;           :colorway      :magenta
+;;           :margin-bottom 0
+;;           :label         (bling [:italic.neutral "foo"]
+;;                                 [:orange.italic "core"]
+;;                                 ", "
+;;                                 [:blue.italic "wtf"]
+;;                                 "\n ")})
+
+;; (callout {
+;;           :theme :gutter
+;;           :colorway      :magenta
+;;           :margin-bottom 0
+;;           :label         (bling [:italic.neutral "foo"]
+;;                                 [:orange.italic "core"]
+;;                                 ", "
+;;                                 [:blue.italic "wtf"]
+;;                                 "\n ")}
+;;          "body")
+
+
+;; (callout {
+;;           :theme :gutter
+;;           :colorway      :magenta
+;;           :margin-bottom 0
+;;           :label         "hi" #_(bling [:italic.neutral "foo"]
+;;                                 [:orange.italic "core"]
+;;                                 ", "
+;;                                 [:blue.italic "wtf"]
+;;                                 "\n ")})
+
+;; (callout {
+;;           :theme :gutter
+;;           :colorway      :magenta
+;;           :margin-bottom 0
+;;           :label         "hi" #_(bling [:italic.neutral "foo"]
+;;                                 [:orange.italic "core"]
+;;                                 ", "
+;;                                 [:blue.italic "wtf"]
+;;                                 "\n ")}
+;;          "body")
+
+#_(callout
+ {:type :info :label ""}
+ "Hi and something\nSomething else")
 
 ;; (callout
 ;;  {:type :info}
@@ -667,7 +734,8 @@
     {:type        :info
      :theme       :gutter
      :margin-left 5
-     :label-theme :marquee}
+     :label-theme :marquee
+     :label "hi"}
     "Hi and something\nSomething else")
 
   ;;  (callout

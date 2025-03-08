@@ -41,7 +41,7 @@
 
 (defn example-custom-callout
   [{:keys [point-of-interest-opts callout-opts]}]
-  (let [poi-opts     (merge {:header (str "This is not a real error"
+  (let [poi-opts     (merge {:header (str "This is not a real error or warning"
                                           "\n"
                                           "Your header message goes here.")
                              :body   (str "The body of your template goes here."
@@ -163,7 +163,27 @@
                              :form   '(+ 1 true)
                              :type   :error}
     :callout-opts           {:type :error}})
-  
+
+
+  (println)
+  (println)
+  (println)
+  (println 
+   (bling 
+    [:italic.subtle
+     ";; Below is an example of a custom warning template with"]))
+  (println 
+   (bling 
+    [:italic.subtle
+     ";; a point-of-interest diagram. See readme for more details."]))
+  (example-custom-callout
+   {:point-of-interest-opts {:file   "example.ns.core"
+                             :line   11
+                             :column 1
+                             :form   '(+ 1 true)
+                             :type   :warning}
+    :callout-opts           {:type :warning}})
+
 
   ;; Combo styles ------------------------------------------------------------
   (println)
