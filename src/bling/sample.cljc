@@ -1,6 +1,7 @@
 (ns bling.sample
   (:require 
    [clojure.string :as string]
+   [clojure.pprint :as pprint]
    #?(:cljs
       [bling.core :refer [bling callout print-bling point-of-interest]]
       :clj
@@ -40,7 +41,7 @@
 
 (defn example-custom-callout
   [{:keys [point-of-interest-opts callout-opts]}]
-  (let [poi-opts     (merge {:header (str "This is not a real warning"
+  (let [poi-opts     (merge {:header (str "This is not a real error"
                                           "\n"
                                           "Your header message goes here.")
                              :body   (str "The body of your template goes here."
@@ -54,53 +55,114 @@
                             {:padding-top 1})]
     (callout callout-opts message)))
 
-(defn callout+ [{callout-type :type
-                 callout-label :label
-                :as m}]
-  (callout m
-           (str "Callout with :type of "
-                callout-type
-                (when callout-label " and custom :label")
-                (when (contains? #{:warning "warning" :error "error"}
-                                 callout-type)
-                  (str "\n"
-                       "This is not a real "
-                       (name callout-type))) )))
+(defn callout+
+  [{callout-type  :type
+    callout-colorway  :colorway
+    callout-label :label
+    :as           m}]
+  (let [body (str "Callout with "
+                  (if callout-type "type" "colorway")
+                  " of "
+                  (or callout-type callout-colorway)
+                  (when callout-label " and custom :label")
+                  (when (contains? #{:warning "warning" :error "error"}
+                                   callout-type)
+                    (str "\n"
+                         "This is not a real "
+                         (name callout-type))))
+        k :italic.subtle]
+    (println 
+     (str
+      "\n\n\n"
+      (bling [k ";; (callout "])
+      (string/join
+       (bling [k "\n;; "]) 
+       (map-indexed (fn [i s]
+                      (bling [k
+                              (str (if (zero? i)
+                                     ""
+                                     "         ")
+                                   s)])) 
+                    (string/split (string/replace 
+                                   (with-out-str (pprint/pprint m))
+                                   #"\n$"
+                                   "")
+                                  #",")))
+      "\n"
+      (bling [k (str ";;          \"" (string/replace body #"\n" "\\\\n"))])
+      #_(string/join
+       (bling [k "\\n\n"]) 
+       (map-indexed (fn [i s]
+                      (bling [k
+                              (str "         "
+                                   (when (zero? i) "\"")
+                                   s)])) 
+                    (string/split body #"\n")))
+      (bling [k "\""])
+      (bling [k "\n;; =>"])))
+
+    (callout (assoc m :margin-top 0 :margin-bottom 0)
+             body)))
 
 (defn sample []
-  ;; CALLOUT examples with default border -------------------------------------
+  (println)
+  (println (bling [:italic.subtle ";; Below are some samples using bling.core/callout"]))
+  (println (bling [:italic.subtle ";; https://github.com/paintparty/bling"]))
+
+  ;; CALLOUT examples with default :sideline theme -------------------------------------
   (callout+ {:type :info})
   (callout+ {:type  :info :label "My custom label"})
   (callout+ {:type :warning})
   (callout+ {:type :error})
-  (callout+ {:type  :positive :label "SUCCESS!"})
+  (callout+ {:colorway :positive :label "SUCCESS!"})
   
   (println)
-  ;; CALLOUT examples with medium border --------------------------------------
-  (callout+ {:type :info :border-weight :medium})
-  (callout+ {:type :warning :border-weight :medium})
-  (callout+ {:type :error :border-weight :medium})
-  (callout+ {:type          :positive
+  ;; CALLOUT examples with :sideline-bold theme--------------------------------------
+  (callout+ {:type :info :theme :sideline-bold })
+  (callout+ {:type :warning :theme :sideline-bold})
+  (callout+ {:type :error :theme :sideline-bold})
+  (callout+ {:colorway          :positive
              :label         "SUCCESS!"
-             :border-weight :medium})
+             :theme :sideline-bold})
 
   (println)
-  ;; CALLOUT examples with heavy border ---------------------------------------
-  (callout+ {:type          :info :border-weight :heavy})
-  (callout+ {:type :warning :border-weight :heavy})
-  (callout+ {:type :error :border-weight :heavy})
-  (callout+ {:type          :positive
+  ;; CALLOUT examples with :gutter theme ---------------------------------------
+  (callout+ {:type          :info :theme :gutter})
+  (callout+ {:type :warning :theme :gutter})
+  (callout+ {:type :error :theme :gutter})
+  (callout+ {:colorway          :positive
              :label         "SUCCESS!"
-             :border-weight :heavy})
-  
+             :theme :gutter})
+
   (println)
+  ;; CALLOUT examples with :gutter theme ---------------------------------------
+  (callout+ {:type :info :theme :gutter :margin-left 3})
+  (callout+ {:type :warning :theme :gutter :margin-left 3})
+  (callout+ {:type :error :theme :gutter :margin-left 3})
+  (callout+ {:colorway    :positive
+             :label       "SUCCESS!"
+             :theme       :gutter
+             :margin-left 3})
+  
+
+  (println)
+  (println)
+  (println)
+  (println 
+   (bling 
+    [:italic.subtle
+     ";; Below is an example of a custom error template with"]))
+  (println 
+   (bling 
+    [:italic.subtle
+     ";; a point-of-interest diagram. See readme for more details."]))
   (example-custom-callout
    {:point-of-interest-opts {:file   "example.ns.core"
                              :line   11
                              :column 1
                              :form   '(+ 1 true)
-                             :type   :warning}
-    :callout-opts           {:type :warning}})
+                             :type   :error}
+    :callout-opts           {:type :error}})
   
 
   ;; Combo styles ------------------------------------------------------------

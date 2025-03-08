@@ -19,8 +19,8 @@
 
 (ns bling.core
   (:require [clojure.string :as string]
-            ;; [bling.macros :refer [let-map ?]] ;;<-- ? is just for debugging
-            [bling.macros :refer [let-map]]
+            [bling.macros :refer [let-map ?]] ;;<-- ? is just for debugging
+            ;; [bling.macros :refer [let-map]]
             #?(:cljs [goog.object])
             #?(:cljs [bling.js-env :refer [node?]])))
 
@@ -866,6 +866,7 @@
 
 (defn callout*
   [{:keys [theme] :as m}]
+  ;; (? m)
   (let [char               gutter-char
         style              {:color (:color m)}
         rainbow?           (= "rainbow-gutter" theme)
@@ -992,15 +993,22 @@
               (maybe strs))
       default))
 
-(defn- resolve-label [{:keys [label] :as m} type-as-str]
-  (cond
+(defn- resolve-label
+  [{:keys [label] :as m}
+   type-as-str]
+  (if (and (string? label) (string/blank? label))
+    nil
+    (or (when (nil? label) (some-> type-as-str string/upper-case))
+        (some-> m :label (maybe coll?) (shortened 33)) 
+        label))
+  #_(cond
     ;; Blank string is a force-nil situation (in event a :type is provided) 
-    (string/blank? label)
+    (? (nil? label))
     nil
 
     ;; default to type if :type provided
-    (or (nil? label)
-          (and (string? label) (string/blank? label)))
+    (? (or (nil? label)
+       (and (string? label) (string/blank? label))))
     (some-> type-as-str string/upper-case)
 
     ;; Preserve object state of label for cljs, in case user has passed an
@@ -1023,10 +1031,9 @@
        (f :padding-top 1)
        (f :padding-top 0))))
 
-(defn- callout-opts [m]
-  
+(defn- callout-opts* [m]
   (let-map
-     [theme         (default-opt m
+    [theme         (default-opt m
                                 :theme
                                 #{"sideline"
                                   "sideline-bold"
@@ -1042,29 +1049,28 @@
      padding-left   (let [pl (or (maybe (:padding-left m) pos-int?)
                                  2)]
                       (spacing pl 2))
-     type          (some-> (:type m) as-str (maybe #{"warning" "error" "info"}))
-     colorway      (or (get semantics-by-semantic-type type)
-                       (some-> (:colorway m) as-str))
-     semantic-type (or (get semantics-by-semantic-type type)
-                       (get semantics-by-semantic-type colorway))
-     warning?      (= type "warning")
-     error?        (= type "error")
-     color         (or (get semantics-by-semantic-type colorway)
-                       (maybe colorway all-color-names)
-                       "neutral")
-     user-label    (:label m)
-     label         (resolve-label m type)
+     type           (some-> (:type m) as-str (maybe #{"warning" "error" "info"}))
+     colorway       (or (get semantics-by-semantic-type type)
+                        (some-> (:colorway m) as-str))
+     semantic-type  (or (get semantics-by-semantic-type type)
+                        (get semantics-by-semantic-type colorway))
+     warning?       (= type "warning")
+     error?         (= type "error")
+     color          (or (get semantics-by-semantic-type colorway)
+                        (maybe colorway all-color-names)
+                        "neutral")
+     user-label     (:label m)
+     label          (resolve-label m type)
      ;; TODO maybe see if label is blinged and if not, bold it.
      ;label         (if label-is-blinged? label (bling [:bold label]))
-     
-     label-theme   (or (default-opt m
-                                    :label-theme
-                                    #{"marquee" "minimal"}
-                                    nil)
-                       (case theme
-                         "sideline" "marquee"
-                         "sideline-bold" "marquee"
-                         "minimal"))]))
+     label-theme    (or (default-opt m
+                                     :label-theme
+                                     #{"marquee" "minimal"}
+                                     nil)
+                        (case theme
+                          "sideline" "marquee"
+                          "sideline-bold" "marquee"
+                          "minimal"))]))
 
 
 
@@ -1162,14 +1168,17 @@
                        "followed by any number of values (usually strings).\n\n"
                        "Nothing will be printed.")}))
      (let [value         (some-> value (maybe #(not (string/blank? %))))
-           callout-opts  (merge {:value value} opts (callout-opts opts))]
+           callout-opts  (callout-opts* opts)
+           callout-opts+  (merge {:value value}
+                                opts
+                                callout-opts)]
        #?(:cljs
           (if node?                                                             ;; TODO <- move to enriched or data
-            (callout* callout-opts)
-            (browser-callout callout-opts))
+            (callout* callout-opts+)
+            (browser-callout callout-opts+))
 
           :clj
-          (callout* callout-opts))))))
+          (callout* callout-opts+))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

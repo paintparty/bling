@@ -628,16 +628,26 @@
   ;; This should issue a warning callout with point-of-interest
   (callout [1 2 3]))
 
+(bling.sample/sample)
+
 #_(visual-test-suite)
 #_(bling-basics)
 
-(callout
- {:type :info :label ""}
- "Hi and something\nSomething else")
+;; (callout
+;;  {:type :info :label ""}
+;;  "Hi and something\nSomething else")
 
-(callout
- {:type :info :label "" :theme :gutter}
- "Hi and something\nSomething else")
+;; (callout
+;;  {:type :info}
+;;  "Hi and something\nSomething else")
+
+;; (callout
+;;  {:type :info :label "" :theme :gutter}
+;;  "Hi and something\nSomething else")
+;; (callout
+;;  {:type :info :label "" :theme :gutter :margin-top 0}
+;;  "Hi and something\nSomething else")
+
 ;; Callouts
 
    #_(callout
