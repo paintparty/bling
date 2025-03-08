@@ -291,23 +291,23 @@
 
 (defn visual-test-suite []
 
-   (callout {:label "Callout, no body"} "")
+   (callout {:label "Callout, no body, body is \"\""} "")
 
-   (callout {:theme :gutter :label "Callout, no body"} "")
+   (callout {:theme :gutter :label "Callout, no body, body is \"\""} "")
    
    (callout {:label "Callout, no body"} nil)
 
-   (callout {:theme :gutter :label "Callout, no body"} nil)
+   (callout {:theme :gutter :label "Callout, no body, body is nil"} nil)
    
-   (callout {:label "Callout, no body"})
+   (callout {:label "Callout, no body, body is not supplied"})
 
-   (callout {:theme :gutter :label "Callout, no body"})
+   (callout {:theme :gutter :label "Callout, no body, body is not supplied"})
    
    (callout "Callout, only body")
 
    (callout (bling [:magenta "Callout, only body"]))
 
-   (callout {:theme :gutter}  "Callout, only body")
+   (callout {:theme :gutter}  "Callout, only body, body is nil")
 
    (callout {:label "Callout, no body"})
 
@@ -630,10 +630,25 @@
 
 #_(bling.sample/sample)
 
-#_(visual-test-suite)
-#_(bling-basics)
+(visual-test-suite)
+(bling-basics)
 
 
+  #_(callout {:colorway :neutral
+            :theme    :rainbow-gutter }
+          (bling [:bold.neutral 
+                  "The following two callouts are issued by"]
+                  "\n"
+                  [:bold.neutral "bling.core/callout, because of malformed args..."]))
+
+
+#_
+#_
+#_
+#_
+#_
+#_
+#_
 (callout {
           :colorway      :magenta
           :margin-bottom 0
@@ -645,62 +660,62 @@
                                 "\n ")
           })
 
-;; (callout {
-;;           :colorway      :magenta
-;;           :margin-bottom 0
-;;           :label-string  "foocore, wtf"
-;;           :label         (bling [:italic.neutral "foo"]
-;;                                 [:orange.italic "core"]
-;;                                 ", "
-;;                                 [:blue.italic "wtf"]
-;;                                 "\n ")
-;;           }
-;;          "body")
+(callout {
+          :colorway      :magenta
+          :margin-bottom 0
+          :label-string  "foocore, wtf "
+          :label         (bling [:italic.neutral "foo"]
+                                [:orange.italic "core"]
+                                ", "
+                                [:blue.italic "wtf"]
+                                "\n ")
+          }
+         "body")
 
-;; (callout {
-;;           :theme :gutter
-;;           :colorway      :magenta
-;;           :margin-bottom 0
-;;           :label         (bling [:italic.neutral "foo"]
-;;                                 [:orange.italic "core"]
-;;                                 ", "
-;;                                 [:blue.italic "wtf"]
-;;                                 "\n ")})
+(callout {
+          :theme         :gutter
+          :colorway      :magenta
+          :margin-bottom 0
+          :label         (bling [:italic.neutral "foo"]
+                                [:orange.italic "core"]
+                                ", "
+                                [:blue.italic "wtf"]
+                                "\n ")})
 
-;; (callout {
-;;           :theme :gutter
-;;           :colorway      :magenta
-;;           :margin-bottom 0
-;;           :label         (bling [:italic.neutral "foo"]
-;;                                 [:orange.italic "core"]
-;;                                 ", "
-;;                                 [:blue.italic "wtf"]
-;;                                 "\n ")}
-;;          "body")
+(callout {
+          :theme         :gutter
+          :colorway      :magenta
+          :margin-bottom 0
+          :label         (bling [:italic.neutral "foo"]
+                                [:orange.italic "core"]
+                                ", "
+                                [:blue.italic "wtf"]
+                                "\n ")}
+         "body")
 
 
-;; (callout {
-;;           :theme :gutter
-;;           :colorway      :magenta
-;;           :margin-bottom 0
-;;           :label         "hi" #_(bling [:italic.neutral "foo"]
-;;                                 [:orange.italic "core"]
-;;                                 ", "
-;;                                 [:blue.italic "wtf"]
-;;                                 "\n ")})
+(callout {
+          :theme :gutter
+          :colorway      :magenta
+          :margin-bottom 0
+          :label         "hi" #_(bling [:italic.neutral "foo"]
+                                [:orange.italic "core"]
+                                ", "
+                                [:blue.italic "wtf"]
+                                "\n ")})
 
-;; (callout {
-;;           :theme :gutter
-;;           :colorway      :magenta
-;;           :margin-bottom 0
-;;           :label         "hi" #_(bling [:italic.neutral "foo"]
-;;                                 [:orange.italic "core"]
-;;                                 ", "
-;;                                 [:blue.italic "wtf"]
-;;                                 "\n ")}
-;;          "body")
+(callout {
+          :theme :gutter
+          :colorway      :magenta
+          :margin-bottom 0
+          :label         "hi" #_(bling [:italic.neutral "foo"]
+                                [:orange.italic "core"]
+                                ", "
+                                [:blue.italic "wtf"]
+                                "\n ")}
+         "body")
 
-#_(callout
+(callout
  {:type :info :label ""}
  "Hi and something\nSomething else")
 

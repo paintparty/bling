@@ -727,6 +727,7 @@
                      (char-repeat label-length "━")
                      "━━┛")])])))))
 
+
 (defn- sideline-marquee-label
   [{:keys [padding-left
            padding-left-str 
@@ -738,7 +739,7 @@
   (let [margin-left-str     (char-repeat margin-left " ")
         b?                  (= theme "sideline-bold")
         hrz                 #(char-repeat padding-left %)
-        label-lns           (string/split-lines label)
+        label-lns           (some-> label string/split-lines)
         label-length        (some->> label-lns (mapv count) (apply max))
         label-string-lns    (some-> label-string string/split-lines)
         label-string-length (some->> label-string-lns (mapv count) (apply max))
@@ -777,44 +778,49 @@
                          (str "│" (hrz " ") "└──"))
                      (char-repeat label-length (if b? "━" "─"))
                      (if b? "━━┛" "──┘"))])])))))
-
-(defn ln [m s]
-  (str (:margin-left-str m)
-       (bling [(:border-style m) (:border-left-str m)])
-       (:padding-left-str m)
-       s))
+;; 
+(defn ln 
+  ([m s]
+   (ln m nil s))
+  ([m i s]
+   (str ((if (and i (odd? i))
+           :margin-left-str-odd 
+           :margin-left-str)
+         m)
+        (bling [(:border-style m) (:border-left-str m)])
+        (:padding-left-str m)
+        s)))
 
 (defn lns [m k]
+  (when (= k :label)
+    m)
   (let [s             (some-> m k)
         gutter-label? (boolean (and (= (:theme m) "gutter") (= k :label)))
         ;; Label gets treated differently here, if gutter-label.
         gutter-label-with-padding-top? (and gutter-label?
                                             (not= 0 (:padding-top m)))
         has-body?     (boolean (:value m))
-        s             (if (? gutter-label-with-padding-top?) 
-                        (str (if (:type m) (bling [:bold s]) s)
+        s             (if gutter-label-with-padding-top? 
+                        (str (if (:type m)
+                               (bling [:bold s])
+                               s)
                              (if has-body?
-                               (char-repeat (:padding-top m) "\n ")
+                               (str (char-repeat (:padding-top m) "\n "))
                                "\n"))
                         s)
-        lns           (let [lns (some-> s string/split-lines)
-                            lns (if (= (first lns) " ") (subvec lns 1) lns)
-                            lns (if (= (last lns) " ")
-                                  (subvec lns 0 (-> lns count dec))
-                                  lns)]
-                        lns)]
-    (string/join
-     "\n"
-     (mapv (partial ln m) lns))))
+        lns           (some-> s string/split-lines)
+        ret           (string/join "\n" (map-indexed (partial ln m) lns))]
+    #_(when (= k :label) (? ret))
+    ret))
 
 (defn body-lines-with-border
   [m]
-  (let [lns (string/split-lines (:value m))]
+  (let [body-lns (string/split-lines (:value m))]
     (string/join
       "\n"
       (concat
         (repeat (:padding-top m) (ln m ""))
-        (mapv (partial ln m) lns)
+        (mapv (partial ln m) body-lns)
         (repeat (:padding-bottom m) (ln m ""))))))
 
 (defn- sideline-callout
@@ -851,28 +857,51 @@
         sideline-variant-with-body? (boolean (and value sideline-variant?))
         sideline-variant-just-label? (and (nil? value) sideline-variant?)
         gutter-theme? (contains? #{"rainbow-gutter" "gutter"} theme)]
-(? (keyed [sideline-variant?
-           sideline-variant-with-body?
-           sideline-variant-just-label?]))
+;; (? (keyed [sideline-variant?
+;;            sideline-variant-with-body?
+;;            sideline-variant-just-label?]))
     (str (:margin-top-str m)
          (if sideline-variant-with-body?
            (sideline-callout m)
            (cond
-
              sideline-variant-just-label?
-             (do (prn (lns m :label)) (lns m :label))
+             (lns m :label)
 
              gutter-theme?
              (str (when (:label m)
-                    (str (if (= label-theme "marquee")
-                           (gutter-marquee-label m)
-                           (lns m :label))) 
-                    "\n")
+                    (if (= label-theme "marquee")
+                      (gutter-marquee-label m)
+                      (lns m :label)))
+                  "\n"
                   (lns m :value))))
          (:margin-bottom-str m))))
 
 (def rainbow-colors
-  ["red" "orange" "yellow" "green" "blue" "purple"])
+  ["red" "orange" "yellow" "green" "black" "white" "blue" "purple" "magenta"])
+
+(def rainbow-colors-system
+  (reverse [
+            "system-maroon"
+  ;;  "system-red"
+            "system-yellow"
+            "system-olive"
+            "system-lime"
+            "system-black"
+            "system-white"
+  ;;  "system-green"
+            ;; "system-blue"
+    "system-aqua"
+            "system-purple"
+            "system-fuchsia"
+  ;;  "system-black"
+  ;;  "system-olive"
+  ;;  "system-navy"
+  ;;  "system-teal"
+  ;;  "system-silver"
+  ;;  "system-grey"
+  ;;  "system-aqua"
+  ;;  "system-white"
+            ]))
 
 (defn callout*
   [{:keys [theme] :as m}]
@@ -883,9 +912,14 @@
         gutter-str         (if rainbow? 
                              (bling [{:color (last rainbow-colors)} char])
                              (bling [style char]))
-
+        ;; gutter-str-odd     (if rainbow? 
+        ;;                      (bling [{:color (last rainbow-colors-system)} char])
+        ;;                      (bling [style char]))
         rainbow-gutter-str (apply bling
                                   (for [s (drop-last rainbow-colors)]
+                                    [{:color s} char]))
+        rainbow-gutter-str-odd (apply bling
+                                  (for [s (drop-last rainbow-colors-system)]
                                     [{:color s} char]))
         cr                 (fn [k sep] (char-repeat (or (k m) 0) sep))
         s                  (ansi-callout-str
@@ -913,8 +947,12 @@
                                                       "rainbow-gutter"
                                                       rainbow-gutter-str
                                                       " ")))
+
                               :margin-top-str    (cr :margin-top "\n")
-                              :margin-bottom-str (cr :margin-bottom "\n")}))]
+                              :margin-bottom-str (cr :margin-bottom "\n")}
+                              
+                              (when rainbow?
+                                {:margin-left-str-odd rainbow-gutter-str-odd})))]
     (if (true? (:data? m))
       s
       (some-> s println))))
@@ -1003,6 +1041,7 @@
               (maybe strs))
       default))
 
+
 (defn- resolve-label
   [{:keys [label] :as m}
    type-as-str]
@@ -1011,6 +1050,7 @@
     (or (when (nil? label) (some-> type-as-str string/upper-case))
         (some-> m :label (maybe coll?) (shortened 33)) 
         label))
+
   #_(cond
     ;; Blank string is a force-nil situation (in event a :type is provided) 
     (? (nil? label))
@@ -1070,7 +1110,12 @@
                         (maybe colorway all-color-names)
                         "neutral")
      user-label     (:label m)
-     label          (resolve-label m type)
+     label*         (resolve-label m type)
+     label          (if (string? label*)
+                      (-> label*
+                          (string/replace #"\n+( +)$" #(second %))
+                          (string/replace #"^( +)\n+" #(second %)))
+                      label*)
      ;; TODO maybe see if label is blinged and if not, bold it.
      ;label         (if label-is-blinged? label (bling [:bold label]))
      label-theme    (or (default-opt m
