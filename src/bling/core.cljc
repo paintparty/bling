@@ -105,10 +105,16 @@
    "subtle"   "subtle"
    "neutral"  "neutral"})
 
+(defn concatv
+  "Concatenate `xs` and return the result as a vector."
+  [& xs]
+  (into [] cat xs))
+
+
 (def ^:private all-color-names
   ;; TODO - perf use reduce here?
   (into #{}
-        (concat (keys semantics-by-semantic-type)
+        (concatv (keys semantics-by-semantic-type)
                 (vals semantics-by-semantic-type)
                 (keys colors-source))))
 
@@ -127,11 +133,6 @@
 
 
 ;; Helper functions -----------------------------------------------------------
-
-(defn concatv
-  "Concatenate `xs` and return the result as a vector."
-  [& xs]
-  (into [] cat xs))
 
 (defn ^:public ?sgr
   "For debugging of sgr code printing.
@@ -658,11 +659,11 @@
                             underline-styled
                             mb])
         ret              (apply bling
-                                (concat header
-                                        (when header ["\n"])
-                                        diagram
-                                        (when body ["\n"])
-                                        body))]
+                                (concatv header
+                                         (when header ["\n"])
+                                         diagram
+                                         (when body ["\n"])
+                                         body))]
     ret))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -695,7 +696,7 @@
     (string/join
      (interpose
       "\n"
-      (concat
+      (concatv
        [(bling [bs
                 (str
                  (char-repeat (inc margin-left) "▄")
@@ -748,7 +749,7 @@
     (string/join
      (interpose
       "\n"
-      (concat
+      (concatv
        [(bling [bs
                 (str margin-left-str
                      padding-left-str
@@ -818,7 +819,7 @@
   (let [body-lns (string/split-lines (:value m))]
     (string/join
       "\n"
-      (concat
+      (concatv
         (repeat (:padding-top m) (ln m ""))
         (mapv (partial ln m) body-lns)
         (repeat (:padding-bottom m) (ln m ""))))))
@@ -838,7 +839,7 @@
                       (bling (:margin-left-str m)
                            [(:border-style m) (if bold? "┏" "┌")]
                            (when (:label m)
-                             (char-repeat (max 0 (dec (:padding-left m)))
+                             (char-repeat 0 #_(max 0 (dec (:padding-left m)))
                                           (if bold? "━" "─")))
                            (bling [:bold (some->> (:label m) (str " "))])))
         bottom-line (bling [(:border-style m)
@@ -1072,60 +1073,67 @@
         ;; TODO add :type back and change this
         (get alert-type->label (:colorway m)))))
 
+(defn- resolve-padding-left [m sideline-theme? label-theme]
+  (let [default (if (and sideline-theme?
+                         (= label-theme "minimal"))
+                  1
+                  2)
+        pl      (or (maybe (:padding-left m) pos-int?)
+                    default)]
+    (spacing pl default)))
+
 (defn- resolve-padding-top 
   [theme f]
-  #?(:cljs
-     (f :padding-top 0)
-     :clj
-     (if (contains? #{"gutter" "rainbow-gutter"} theme)
-       (f :padding-top 1)
-       (f :padding-top 0))))
+  #?(:cljs (f :padding-top 0)
+     :clj  (if (contains? #{"gutter" "rainbow-gutter"} theme)
+             (f :padding-top 1)
+             (f :padding-top 0))))
 
 (defn- callout-opts* [m]
   (let-map
-    [theme         (default-opt m
+   [theme          (default-opt m
                                 :theme
                                 #{"sideline"
                                   "sideline-bold"
                                   "gutter"
                                   "rainbow-gutter"}
                                 "sideline")
-     sp             (fn [k n] (spacing (get m k) n))
-     padding-top    (resolve-padding-top theme sp)
-     padding-bottom (sp :padding-bottom 0)
-     margin-top     (sp :margin-top 1)
-     margin-bottom  (sp :margin-bottom 0)
-     margin-left    (sp :margin-left 0)
-     padding-left   (let [pl (or (maybe (:padding-left m) pos-int?)
-                                 2)]
-                      (spacing pl 2))
-     type           (some-> (:type m) as-str (maybe #{"warning" "error" "info"}))
-     colorway       (or (get semantics-by-semantic-type type)
-                        (some-> (:colorway m) as-str))
-     semantic-type  (or (get semantics-by-semantic-type type)
-                        (get semantics-by-semantic-type colorway))
-     warning?       (= type "warning")
-     error?         (= type "error")
-     color          (or (get semantics-by-semantic-type colorway)
-                        (maybe colorway all-color-names)
-                        "neutral")
-     user-label     (:label m)
-     label*         (resolve-label m type)
-     label          (if (string? label*)
-                      (-> label*
-                          (string/replace #"\n+( +)$" #(second %))
-                          (string/replace #"^( +)\n+" #(second %)))
-                      label*)
+    sideline-theme? (contains? #{"sideline" "sideline-bold"} theme)
+    label-theme    (or (default-opt m
+                                    :label-theme
+                                    #{"marquee" "minimal"}
+                                    nil)
+                       (case theme
+                         "sideline" "marquee"
+                         "sideline-bold" "marquee"
+                         "minimal"))
+    sp             (fn [k n] (spacing (get m k) n))
+    padding-top    (resolve-padding-top theme sp)
+    padding-bottom (sp :padding-bottom 0)
+    margin-top     (sp :margin-top 1)
+    margin-bottom  (sp :margin-bottom 0)
+    margin-left    (sp :margin-left 0)
+    padding-left   (resolve-padding-left m theme label-theme)
+    type           (some-> (:type m) as-str (maybe #{"warning" "error" "info"}))
+    colorway       (or (get semantics-by-semantic-type type)
+                       (some-> (:colorway m) as-str))
+    semantic-type  (or (get semantics-by-semantic-type type)
+                       (get semantics-by-semantic-type colorway))
+    warning?       (= type "warning")
+    error?         (= type "error")
+    color          (or (get semantics-by-semantic-type colorway)
+                       (maybe colorway all-color-names)
+                       "neutral")
+    user-label     (:label m)
+    label*         (resolve-label m type)
+    label          (if (string? label*)
+                     (-> label*
+                         (string/replace #"\n+( +)$" #(second %))
+                         (string/replace #"^( +)\n+" #(second %)))
+                     label*)
      ;; TODO maybe see if label is blinged and if not, bold it.
      ;label         (if label-is-blinged? label (bling [:bold label]))
-     label-theme    (or (default-opt m
-                                     :label-theme
-                                     #{"marquee" "minimal"}
-                                     nil)
-                        (case theme
-                          "sideline" "marquee"
-                          "sideline-bold" "marquee"
-                          "minimal"))]))
+    ]))
 
 
 
@@ -1358,7 +1366,7 @@
                            [[] []]
                            args)
         tagged (string/join coll)]
-    {:console-array (into-array (concat [tagged] css))
+    {:console-array (into-array (concatv [tagged] css))
      :tagged        tagged
      :css           css
      :args          args}))
