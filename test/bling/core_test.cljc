@@ -826,9 +826,11 @@
   (callout {:colorway :neutral
             :theme    :rainbow-gutter }
           (bling [:bold.neutral 
-                  "The following two callouts are issued by"]
+                  "The following two callouts would be"]
                   "\n"
-                  [:bold.neutral "bling.core/callout, because of malformed args..."]))
+                  [:bold.neutral "issued by bling.core/callout, if the"]
+                                  "\n"
+                  [:bold.neutral "user were to supply malformed args."]))
 
   ;; This should issue a warning callout with point-of-interest
   (callout nil)
@@ -845,9 +847,9 @@
 (println)
 (println)
 #_(bling.sample/sample)
-#_(visual-test-suite)
+(visual-test-suite)
 #_(bling-basics)
-(bling.sample/sample)
+#_(bling.sample/sample)
 (println)
 (println)
 (println)
@@ -867,7 +869,7 @@
 
 #_(callout {:colorway :positive
           :label    "SUCCESS!"
-          :padding-top 1
+          :margin-left 3
           :theme    :gutter}
          "Example callout, with :colorway of :positive, and custom :label")
 

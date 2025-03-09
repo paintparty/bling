@@ -671,6 +671,7 @@
 ;; Enriched text public fns and helpers  --------------------------------------
 
 (def gutter-char "█")
+(def gutter-char-lower-seven-eighths "▆")
 
 (declare ln)
 (declare lns)
@@ -792,57 +793,83 @@
                          (str "│" (hrz " ") "└──"))
                      (char-repeat label-length (if b? "━" "─"))
                      (if b? "━━┛" "──┘"))])])))))
-;; 
-(defn ln 
+
+(defn- gutter-label-line-zero? [m i]
+  (and (= (:theme m) "gutter")
+       (= (:current-line-type m) :label)
+       i
+       (zero? i)))
+
+(defn- current-margin-left-str-key
+  [m i gutter-label-line-zero?]
+  (cond
+    (and (= (:theme m) "rainbow-gutter") 
+         i
+         (odd? i))
+    :margin-left-str-odd 
+
+    gutter-label-line-zero?
+    :margin-left-str-zero
+
+    :else
+    :margin-left-str))
+
+(defn- ln 
   ([m s]
    (ln m nil s))
   ([m i s]
-   (let [k                       (if (and (= (:theme m) :rainbow-gutter)
-                                          i
-                                          (odd? i))
-                                   :margin-left-str-odd 
-                                   :margin-left-str)
-         current-margin-left-str (k m)]
-    ;;  (when (= s "asfdsadfasdfas")
-    ;;    (? (keyed [m i s k current-margin-left-str])))
+   (let [gutter-label-line-zero? (gutter-label-line-zero? m i)
+         current-margin-left-str (get m
+                                      (current-margin-left-str-key
+                                       m 
+                                       i
+                                       gutter-label-line-zero?))]
      (str current-margin-left-str
-          (bling [(:border-style m) (:border-left-str m)])
+          (bling [(:border-style m) 
+                  (get m (if gutter-label-line-zero?
+                           :border-left-str-zero
+                           :border-left-str))])
           (:padding-left-str m)
           s))))
 
-(defn lns [m k]
+(defn- lns [m k]
   ;; (when (= k :label)
   ;;   (? m))
-  (let [s                         (some-> m k)
-        label-lines?              (= k :label)
-        body-lines?               (= k :value)
-        gttr-label-lines?         (boolean (and (= (:theme m) "gutter")
-                                                (= k :label)))
-        gttr-label-lines-with-pt? (and gttr-label-lines?
-                                       (not= 0 (:padding-top m)))
-        padding-lines             #(char-repeat (% m) "\n ")
-        callout-has-body?         (boolean (:value m))
-        s                         (cond
-                                    gttr-label-lines-with-pt? 
-                                    (str (bling [:bold s])
-                                         (if callout-has-body?
-                                           (str (padding-lines :padding-top))
-                                           "\n"))
+  (let [s                           (some-> m k)
+        label-lines?                (= k :label)
+        body-lines?                 (= k :value)
+        gutter-label-lines?         (boolean (and (= (:theme m) "gutter")
+                                                  (= k :label)))
+        gutter-label-lines-with-pt? (and gutter-label-lines?
+                                         (not= 0 (:padding-top m)))
+        padding-lines               #(char-repeat (% m) "\n ")
+        callout-has-body?           (boolean (:value m))
+        s                           (cond
+                                      gutter-label-lines-with-pt? 
+                                      (str (bling [:bold s])
+                                           (if callout-has-body?
+                                             (str (padding-lines :padding-top))
+                                             "\n"))
 
-                                    label-lines?
-                                    (bling [:bold s])
+                                      label-lines?
+                                      (bling [:bold s])
 
-                                    body-lines?
-                                    (str s
-                                         (padding-lines :padding-bottom))
+                                      body-lines?
+                                      (str s
+                                           (padding-lines :padding-bottom))
 
-                                    :else
-                                    s)
-        lns-coll                  (some-> s string/split-lines)
-        ret                       (string/join "\n" 
-                                               (map-indexed (partial ln m) 
-                                                            lns-coll))]
-    ;; (when (= k :label) (? ret))
+                                      :else
+                                      s)
+        lns-coll                    (some-> s string/split-lines)
+        ret                         (string/join
+                                     "\n" 
+                                     (map-indexed
+                                      (partial ln
+                                               (assoc m
+                                                      :current-line-type k)) 
+                                      lns-coll))]
+    ;;  (when (= k :label) (? lns-coll))
+    ;;  (when (= k :label) (? ret))
     ret))
 
 (defn body-lines-with-border
@@ -941,6 +968,7 @@
   ;; (? m)
   (let [char               gutter-char
         style              {:color (:color m)}
+        gutter?            (= "gutter" theme)
         rainbow?           (= "rainbow-gutter" theme)
         gutter-str         (if rainbow? 
                              (bling [{:color (last rainbow-colors)} char])
@@ -954,7 +982,13 @@
         rainbow-gutter-str-odd (apply bling
                                   (for [s (drop-last rainbow-colors-system)]
                                     [{:color s} char]))
-        cr                 (fn [k sep] (char-repeat (or (k m) 0) sep))
+
+        cr                 (fn [k ch] (char-repeat (or (k m) 0) ch))
+        gutter-str-zero    (bling [style (string/join 
+                                          (cr :margin-left
+                                              gutter-char-lower-seven-eighths))])
+        margin-left-str-zero gutter-str-zero
+        border-left-str-zero gutter-char-lower-seven-eighths
         s                  (ansi-callout-str
                             (merge
                              m
@@ -985,7 +1019,10 @@
                               :margin-bottom-str (cr :margin-bottom "\n")}
                               
                               (when rainbow?
-                                {:margin-left-str-odd rainbow-gutter-str-odd})))]
+                                {:margin-left-str-odd rainbow-gutter-str-odd})
+                              (when gutter?
+                                (keyed [margin-left-str-zero
+                                        border-left-str-zero]))))]
     (if (true? (:data? m))
       s
       (some-> s println))))

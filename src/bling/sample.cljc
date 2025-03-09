@@ -114,11 +114,17 @@
 ;;                   ;; :padding-bottom 1
 ;;                   )
 ;;            (str "afadsfsdfsadf\nasfdsadfasdf" "as")))
+(defn print-comment [s]
+  (println (bling [:italic.subtle s])))
 
 (defn sample []
   (println)
-  (println (bling [:italic.subtle ";; Below are some samples using bling.core/callout"]))
-  (println (bling [:italic.subtle ";; https://github.com/paintparty/bling"]))
+  (print-comment ";; Below are some samples using bling.core/callout")
+  (print-comment ";; https://github.com/paintparty/bling")
+
+  (println)
+  (print-comment ";; You need to require the following things to make this work:")
+  (print-comment ";; (require '[bling.core :refer [bling callout point-of-interest]])")
 
   ;; CALLOUT examples with default :sideline theme -------------------------------------
   (callout+ {:type :info})
@@ -159,14 +165,10 @@
   (println)
   (println)
   (println)
-  (println 
-   (bling 
-    [:italic.subtle
-     ";; Below is an example of a custom error template with"]))
-  (println 
-   (bling 
-    [:italic.subtle
-     ";; a point-of-interest diagram. See readme for more details."]))
+  (print-comment
+     ";; Below is an example of a custom error template with")
+  (print-comment
+     ";; a point-of-interest diagram. See readme for more details.")
   (example-custom-callout
    {:point-of-interest-opts {:file   "example.ns.core"
                              :line   11
@@ -179,14 +181,10 @@
   (println)
   (println)
   (println)
-  (println 
-   (bling 
-    [:italic.subtle
-     ";; Below is an example of a custom warning template with"]))
-  (println 
-   (bling 
-    [:italic.subtle
-     ";; a point-of-interest diagram. See readme for more details."]))
+  (print-comment
+     ";; Below is an example of a custom warning template with")
+  (print-comment
+     ";; a point-of-interest diagram. See readme for more details.")
   (example-custom-callout
    {:point-of-interest-opts {:file                  "example.ns.core"
                              :line                  11
