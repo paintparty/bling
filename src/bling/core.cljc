@@ -797,35 +797,51 @@
   ([m s]
    (ln m nil s))
   ([m i s]
-   (str ((if (and i (odd? i))
-           :margin-left-str-odd 
-           :margin-left-str)
-         m)
-        (bling [(:border-style m) (:border-left-str m)])
-        (:padding-left-str m)
-        s)))
+   (let [k                       (if (and (= (:theme m) :rainbow-gutter)
+                                          i
+                                          (odd? i))
+                                   :margin-left-str-odd 
+                                   :margin-left-str)
+         current-margin-left-str (k m)]
+    ;;  (when (= s "asfdsadfasdfas")
+    ;;    (? (keyed [m i s k current-margin-left-str])))
+     (str current-margin-left-str
+          (bling [(:border-style m) (:border-left-str m)])
+          (:padding-left-str m)
+          s))))
 
 (defn lns [m k]
   ;; (when (= k :label)
   ;;   (? m))
-  (let [s             (some-> m k)
-        gutter-label? (boolean (and (= (:theme m) "gutter") (= k :label)))
-        ;; Label gets treated differently here, if gutter-label.
-        gutter-label-with-padding-top? (and gutter-label?
-                                            (not= 0 (:padding-top m)))
-        has-body?     (boolean (:value m))
-        s             (if gutter-label-with-padding-top? 
-                        (str (if (:type m)
-                               (bling [:bold s])
-                               (bling [:bold s]))
-                             (if has-body?
-                               (str (char-repeat (:padding-top m) "\n "))
-                               "\n"))
-                        (if (= k :label)
-                          (bling [:bold s])
-                          s))
-        lns           (some-> s string/split-lines)
-        ret           (string/join "\n" (map-indexed (partial ln m) lns))]
+  (let [s                         (some-> m k)
+        label-lines?              (= k :label)
+        body-lines?               (= k :value)
+        gttr-label-lines?         (boolean (and (= (:theme m) "gutter")
+                                                (= k :label)))
+        gttr-label-lines-with-pt? (and gttr-label-lines?
+                                       (not= 0 (:padding-top m)))
+        padding-lines             #(char-repeat (% m) "\n ")
+        callout-has-body?         (boolean (:value m))
+        s                         (cond
+                                    gttr-label-lines-with-pt? 
+                                    (str (bling [:bold s])
+                                         (if callout-has-body?
+                                           (str (padding-lines :padding-top))
+                                           "\n"))
+
+                                    label-lines?
+                                    (bling [:bold s])
+
+                                    body-lines?
+                                    (str s
+                                         (padding-lines :padding-bottom))
+
+                                    :else
+                                    s)
+        lns-coll                  (some-> s string/split-lines)
+        ret                       (string/join "\n" 
+                                               (map-indexed (partial ln m) 
+                                                            lns-coll))]
     ;; (when (= k :label) (? ret))
     ret))
 
@@ -873,10 +889,10 @@
         sideline-variant-with-body? (boolean (and value sideline-variant?))
         sideline-variant-just-label? (and (nil? value) sideline-variant?)
         gutter-theme? (contains? #{"rainbow-gutter" "gutter"} theme)]
-;; (? (keyed [sideline-variant?
-;;            sideline-variant-with-body?
-;;            sideline-variant-just-label?
-;;            gutter-theme?]))
+    ;; (? (keyed [sideline-variant?
+    ;;            sideline-variant-with-body?
+    ;;            sideline-variant-just-label?
+    ;;            gutter-theme?]))
     (str (:margin-top-str m)
          (if sideline-variant-with-body?
            (sideline-callout m)
