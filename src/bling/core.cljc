@@ -12,9 +12,10 @@
 ;;     ns at those lines.
 
 ;; - Should additional file-info (string), which would override the gen option
+;; 
 
 
-;; Currently adds about ~12kb to a cljs bundle
+;; Adds about 12kb to a cljs bundle
 
 (ns bling.core
   (:require [clojure.string :as string]
@@ -730,8 +731,8 @@
                         (str margin-left-str
                              gutter-char
                              (hrz " "))]))
-         (range padding-top)))
-       
+         (range padding-top)))))))
+
 
 (defn- sideline-marquee-label
   [{:keys [padding-left
@@ -887,7 +888,8 @@
                       (bling (:margin-left-str m)
                            [(:border-style m) (if bold? "┏" "┌")]
                            (when (:label m)
-                             (char-repeat 0 (if bold? "━" "─")))
+                             (char-repeat 0 
+                                          (if bold? "━" "─")))
                            (bling [:bold (some->> (:label m) (str " "))])))
         bottom-line (bling [(:border-style m)
                             (str (:margin-left-str m)
@@ -962,9 +964,6 @@
         gutter-str         (if rainbow? 
                              (bling [{:color (last rainbow-colors)} char])
                              (bling [style char]))
-        ;; gutter-str-odd     (if rainbow? 
-        ;;                      (bling [{:color (last rainbow-colors-system)} char])
-        ;;                      (bling [style char]))
         rainbow-gutter-str (apply bling
                                   (for [s (drop-last rainbow-colors)]
                                     [{:color s} char]))
