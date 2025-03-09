@@ -4,7 +4,6 @@
   "description": "ClojureScript tests for bling",
   "main": "index.js",
   "scripts": {
-    "test": "shadow-cljs compile test && karma start --single-run",
     "node-script": "shadow-cljs compile node-script"
   },
   "keywords": [],
