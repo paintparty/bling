@@ -1,5 +1,5 @@
 # Changelog
-[bling](https://github.com/paintparty/bling): Helps you quickly get rich text into your console printing. 
+[Bling](https://github.com/paintparty/bling): Helps you quickly get rich text into your console printing. 
 
 
 For a list of breaking changes, check [here](#breaking-changes)
@@ -13,6 +13,27 @@ For a list of breaking changes, check [here](#breaking-changes)
 #### Fixed
 
 #### Removed
+
+<br>
+<br>
+
+## 0.5.0
+2025-03-09
+#### Fixed
+- [Dynamic underline length in point-of-interest diagram](https://github.com/paintparty/bling/issues/4)
+
+#### Added 
+- [Theming system](https://github.com/paintparty/bling/issues/13)
+- New "marquee" style labels for callouts
+- New `:gutter` theme allows for arbitrarily large styled gutters, controlled by `:margin-left` value
+- `:text-decoration-*` options added to `point-of-interest` options. 
+
+#### Changed
+- [Redesigned `point-of-interest` interface](https://github.com/paintparty/bling/issues/14)
+- Many internal refactors
+
+#### Removed
+- `:border-weight` options (now irrelevent with new theming system).
 
 <br>
 <br>
