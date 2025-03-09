@@ -159,9 +159,6 @@
   [s]
   s)
 
-(defn- char-repeat [n s]
-  (string/join (repeat n s)))
-
 (defn- maybe [x pred]
   (when (if (set? pred)
           (contains? pred x)
@@ -639,21 +636,21 @@
                                0
                                1))
         mb               (char-repeat mb* "\n")
-        bling-tag        :subtle
+        diagram-char     #?(:cljs (fn [s] s) :clj #(bling [:subtle %]))   
         diagram          (cond
                            (and line column file form)
                            [mb
-                            gutter (bling [bling-tag " ┌─ "]) file-info "\n"
-                            gutter (bling [bling-tag " │ "]) "\n"
-                            line (bling [bling-tag " │ "]) bolded-form "\n"
-                            gutter (bling [bling-tag " │ "]) underline-styled
+                            gutter (diagram-char " ┌─ ") file-info "\n"
+                            gutter (diagram-char " │ ") "\n"
+                            line (diagram-char " │ ") bolded-form "\n"
+                            gutter (diagram-char " │ ") underline-styled
                             mb gutter]
 
                            form
                            [mb
                             bolded-form "\n"
                             underline-styled
-                            mb])
+                            mb]) 
         ret              (apply bling
                                 (concatv header
                                          (when header ["\n"])
