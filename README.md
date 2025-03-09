@@ -65,7 +65,17 @@ Add as a dependency to your project:
 ```
 <br>
 
-Import into your namespace:
+Require:
+
+```Clojure
+(require '[bling.core :refer [bling callout point-of-interest]])
+
+;; In ClojureScript, you may also want :refer bling.core/print-bling.
+```
+
+<br>
+
+Or, import into your namespace:
 
 ```Clojure
 (ns myns.core
@@ -360,6 +370,16 @@ The above calls would render the following in your favorite terminal emulator:
 
 <p align="center"><img src="resources/callouts-dark.png" width="750px" /></p>
 
+<br>
+
+Callout accepts a `:theme` option. Supplying a value of `:sideline`, will render
+a `marquee` label: 
+
+<p align="center"><img src="resources/callouts-sideline-light.png" width="750px" /></p>
+
+<p align="center"><img src="resources/callouts-sideline-dark.png" width="750px" /></p>
+
+
  **`bling.core/callout`** takes one or two arguments. If two arguments are supplied, the first should be a map with 0 or more of following entries:
 
 
@@ -426,6 +446,12 @@ The above callout would render like this your terminal emulator:
 <p align="center"><img src="resources/error-with-point-of-interest-light.png" width="750px" /></p>
 
 <p align="center"><img src="resources/error-with-point-of-interest-dark.png" width="750px" /></p>
+
+You can also render such warning and error callouts using a `:label-theme` value of `:marquee` : 
+
+<p align="center"><img src="resources/error-with-point-of-interest-marquee-light.png" width="750px" /></p>
+
+<p align="center"><img src="resources/error-with-point-of-interest-marquee-dark.png" width="750px" /></p>
 
 **`bling.core/point-of-interest`** takes a single map with the following options:
 
