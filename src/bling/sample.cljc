@@ -101,14 +101,14 @@
 (defn print-comment [s]
   (printer (bling [:italic.subtle s])))
 
-(defn sample []
+#_(defn sample []
   (callout+ {:theme       :gutter #_:sideline-bold
              :colorway    :positive
              :label       [1 2 3 4 5]
              :label-theme :marquee
              }))
 
-#_(defn sample []
+(defn sample []
   (println)
   (print-comment ";; Below are some samples using bling.core/callout")
   (print-comment ";; https://github.com/paintparty/bling")
@@ -201,6 +201,36 @@
                              :type                  :error}
     :callout-opts           {:type :error
                              :label "ERROR: ClassCastException"}})
+
+
+  (println)
+  (println)
+  (println)
+  (print-comment
+     ";; Below is an example of a custom warning template with")
+  (print-comment
+     ";; a point-of-interest diagram. See readme for more details.")
+  (example-custom-callout
+   {:point-of-interest-opts {:file                  "example.ns.core"
+                             :line                  11
+                             :column                1
+                             :form                  '(myfun foo baz)
+                             :type                  :warning
+                             :text-decoration-index 2}
+    :callout-opts           {:type        :warning
+                             :label-theme :marquee
+                             :label       "WARNING: Invalid arg value"}})
+
+  (example-custom-callout
+   {:point-of-interest-opts {:file                  "example.ns.core"
+                             :line                  11
+                             :column                1
+                             :form                  '(+ foo baz)
+                             :text-decoration-index 2
+                             :type                  :error}
+    :callout-opts           {:type        :error
+                             :label-theme :marquee
+                             :label       "ERROR: ClassCastException"}})
 
 
   ;; Combo styles ------------------------------------------------------------
