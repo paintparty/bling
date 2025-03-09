@@ -303,25 +303,20 @@
             "Example callout, with :colorway of :positive, and custom :label")
 
    ;; Off for readme banner
-   #_#_
-       (when extras? 
-         (callout {:colorway :subtle}
-                  "Example callout, with :colorway of :subtle (or :gray)")
+   (do
+       (callout {:colorway :subtle}
+                "Example callout, with :colorway of :subtle (or :gray)")
 
-         (callout {:colorway :magenta}
-                  "Example callout, with :colorway of :magenta")
+       (callout {:colorway :magenta}
+                "Example callout, with :colorway of :magenta")
 
-         (callout "Example callout, default")
+       (callout "Example callout, default")
 
-         (callout
-          {:label "HEY"}
-          "Example callout, default with custom label"))
-
-     (callout
-      {:label        (bling [:magenta-bg.white.bold " HEY "])
-       :label-string " HEY "
-       :padding-top  1}
-      (bling "Example callout, styled-label, :padding-top of 1"))
+       (callout
+        {:label        (bling [:magenta-bg.white.bold " HEY "])
+         :label-string " HEY "
+         :padding-top  1}
+        (bling "Example callout, styled-label, :padding-top of 1")))
 
 
    ;; CALLOUT examples {:theme :sideline-bold} ---------------------------------
@@ -847,9 +842,9 @@
 (println)
 (println)
 #_(bling.sample/sample)
-(visual-test-suite)
+#_(visual-test-suite)
 #_(bling-basics)
-#_(bling.sample/sample)
+(bling.sample/sample)
 (println)
 (println)
 (println)
@@ -869,8 +864,9 @@
 
 #_(callout {:colorway :positive
           :label    "SUCCESS!"
-          :margin-left 3
-          :theme    :gutter}
+          ;; :margin-left 3
+          ;; :theme    :gutter
+          }
          "Example callout, with :colorway of :positive, and custom :label")
 
 #_(callout {

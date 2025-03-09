@@ -686,7 +686,7 @@
     :as m}]
   (let [margin-left-str     (char-repeat margin-left gutter-char)
         hrz                 #(char-repeat padding-left %)
-        label-lns           (string/split-lines label)
+        label-lns           (-> label as-str string/split-lines)
         label-length        (some->> label-lns (mapv count) (apply max))
         label-string-lns    (some-> label-string string/split-lines)
         label-string-length (some->> label-string-lns (mapv count) (apply max))
@@ -754,7 +754,7 @@
   (let [margin-left-str     (char-repeat margin-left " ")
         b?                  (= theme "sideline-bold")
         hrz                 #(char-repeat padding-left %)
-        label-lns           (some-> label string/split-lines)
+        label-lns           (some-> label as-str string/split-lines)
         label-length        (some->> label-lns (mapv count) (apply max))
         label-string-lns    (some-> label-string string/split-lines)
         label-string-length (some->> label-string-lns (mapv count) (apply max))
@@ -888,7 +888,7 @@
         label-line  (cond
                       ; label-theme is marquee
                       (and (:label m)
-                           (not (string/blank? (:label m)))
+                           (-> m :label as-str string/blank? not)
                            (contains? #{"marquee"} (:label-theme m)))
                       (sideline-marquee-label m)
 
@@ -1139,26 +1139,7 @@
        ;; default to type if no label supplied, but :type provided
        (when nothing-supplied? default-label-based-on-callout-type)
        supplied-coll-label-shortened 
-       label))
-
-    #_(cond
-      nothing-supplied?
-      nil
-
-      ;; Blank string is a force-nil situation (in event a :type is provided) 
-      blank-string-supplied?
-      default-label-based-on-callout-type
-
-      ;; Preserve object state of label for cljs, in case user has passed an
-      ;; instance of bling.core/Enriched for the label.
-      :else
-      (or #?(:cljs
-             nil
-             :clj
-             supplied-coll-label-shortened) 
-          label
-          ;; TODO add :type back and change this
-          (get alert-type->label (:type m))))))
+       label))))
 
 
 (defn- spacing [n default]
@@ -1195,10 +1176,7 @@
                                     :label-theme
                                     #{"marquee" "minimal"}
                                     nil)
-                       (case theme
-                         "sideline" "marquee"
-                         "sideline-bold" "marquee"
-                         "minimal"))
+                       "minimal")
     sp             (fn [k n] (spacing (get m k) n))
     padding-top    (resolve-padding-top theme sp)
     padding-bottom (sp :padding-bottom 0)

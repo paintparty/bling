@@ -55,6 +55,30 @@
                             {:padding-top 1})]
     (callout callout-opts message)))
 
+#?(:clj
+   (defn print-commented-example-call! [m k body]
+     (println 
+      (str
+       "\n\n\n"
+       (bling [k ";; (callout "])
+       (string/join
+        (bling [k "\n;; "]) 
+        (map-indexed (fn [i s]
+                       (bling [k
+                               (str (if (zero? i)
+                                      ""
+                                      "         ")
+                                    s)])) 
+                     (string/split (string/replace 
+                                    (with-out-str (pprint/pprint m))
+                                    #"\n$"
+                                    "")
+                                   #",")))
+       "\n"
+       (bling [k (str ";;          \"" (string/replace body #"\n" "\\\\n"))])
+       (bling [k "\""])
+       (bling [k "\n;; =>\n"])))))
+
 (defn callout+
   [{callout-type  :type
     callout-colorway  :colorway
@@ -71,53 +95,20 @@
                          "This is not a real "
                          (name callout-type))))
         k :italic.subtle]
-    (println 
-     (str
-      "\n\n\n"
-      (bling [k ";; (callout "])
-      (string/join
-       (bling [k "\n;; "]) 
-       (map-indexed (fn [i s]
-                      (bling [k
-                              (str (if (zero? i)
-                                     ""
-                                     "         ")
-                                   s)])) 
-                    (string/split (string/replace 
-                                   (with-out-str (pprint/pprint m))
-                                   #"\n$"
-                                   "")
-                                  #",")))
-      "\n"
-      (bling [k (str ";;          \"" (string/replace body #"\n" "\\\\n"))])
-      #_(string/join
-       (bling [k "\\n\n"]) 
-       (map-indexed (fn [i s]
-                      (bling [k
-                              (str "         "
-                                   (when (zero? i) "\"")
-                                   s)])) 
-                    (string/split body #"\n")))
-      (bling [k "\""])
-      (bling [k "\n;; =>\n"])))
+      #?(:clj (print-commented-example-call! m k body))
+      (callout (assoc m :margin-top 0 :margin-bottom 0) body)))
 
-    (callout (assoc m :margin-top 0 :margin-bottom 0)
-             body)))
-
-;; (defn sample []
-;;   (callout (assoc {:type        :error
-;;                    :theme       :gutter
-;;                    :margin-left 3}
-;;                   :margin-top 0
-;;                   :margin-bottom 0
-;;                   :padding-top 1
-;;                   ;; :padding-bottom 1
-;;                   )
-;;            (str "afadsfsdfsadf\nasfdsadfasdf" "as")))
 (defn print-comment [s]
-  (println (bling [:italic.subtle s])))
+  (printer (bling [:italic.subtle s])))
 
 (defn sample []
+  (callout+ {:theme       :gutter #_:sideline-bold
+             :colorway    :positive
+             :label       [1 2 3 4 5]
+             :label-theme :marquee
+             }))
+
+#_(defn sample []
   (println)
   (print-comment ";; Below are some samples using bling.core/callout")
   (print-comment ";; https://github.com/paintparty/bling")
@@ -126,24 +117,30 @@
   (print-comment ";; You need to require the following things to make this work:")
   (print-comment ";; (require '[bling.core :refer [bling callout point-of-interest]])")
 
-  ;; CALLOUT examples with default :sideline theme -------------------------------------
+  ;; CALLOUT examples with default :sideline theme, minimal label --------------
   (callout+ {:type :info})
   (callout+ {:type  :info :label "My custom label"})
   (callout+ {:type :warning})
   (callout+ {:type :error})
   (callout+ {:colorway :positive :label "SUCCESS!"})
   
+
   (println)
-  ;; CALLOUT examples with :sideline-bold theme--------------------------------------
+  ;; CALLOUT examples with :sideline-bold theme, minimal label -----------------
   (callout+ {:type :info :theme :sideline-bold })
   (callout+ {:type :warning :theme :sideline-bold})
   (callout+ {:type :error :theme :sideline-bold})
-  (callout+ {:colorway          :positive
-             :label         "SUCCESS!"
-             :theme :sideline-bold})
+  (callout+ {:colorway :positive :label "SUCCESS!" :theme :sideline-bold})
+  (println)
+
+  ;; CALLOUT examples with :sideline-bold theme, marquee label  ----------------
+  (callout+ {:type :info :theme :sideline-bold :label-theme :marquee})
+  (callout+ {:type :warning :theme :sideline-bold :label-theme :marquee})
+  (callout+ {:type :error :theme :sideline-bold :label-theme :marquee})
+  (callout+ {:theme :sideline-bold :colorway :positive :label "SUCCESS!" :label-theme :marquee})
 
   (println)
-  ;; CALLOUT examples with :gutter theme ---------------------------------------
+  ;; CALLOUT examples with :gutter theme  --------------------------------------
   (callout+ {:type          :info :theme :gutter})
   (callout+ {:type :warning :theme :gutter})
   (callout+ {:type :error :theme :gutter})
@@ -152,7 +149,7 @@
              :theme :gutter})
 
   (println)
-  ;; CALLOUT examples with :gutter theme ---------------------------------------
+  ;; CALLOUT examples with :gutter theme, thicker gutter -----------------------
   (callout+ {:type :info :theme :gutter :margin-left 3})
   (callout+ {:type :warning :theme :gutter :margin-left 3})
   (callout+ {:type :error :theme :gutter :margin-left 3})
