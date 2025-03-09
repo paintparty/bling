@@ -29,12 +29,12 @@
 <br>
 
 <p align="left">
-  <img src="resources/bling-banner-light.png" width="700px" />
+  <img src="resources/bling-banner-light-0.5.0.png" width="700px" />
 </p>
 
 The same example as above, in a terminal emulator with a dark background.
 <p align="left">
-  <img src="resources/bling-banner-dark.png" width="700px" />
+  <img src="resources/bling-banner-dark-0.5.0.png" width="700px" />
 </p>
 
 ## Features
@@ -61,7 +61,7 @@ Add as a dependency to your project:
 
 
 ```Clojure
-[io.github.paintparty/bling "0.4.2"]
+[io.github.paintparty/bling "0.5.0"]
 ```
 <br>
 
@@ -80,7 +80,7 @@ Import into your namespace:
 If you are a Babashka user, you can view an exhaustive sampling of Bling output by pasting this snippet into your terminal:
 
 ```clojure
-bb -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.4.2"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
+bb -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.5.0"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
 ```
 
 <br>
@@ -366,17 +366,18 @@ The above calls would render the following in your favorite terminal emulator:
 
 | Key               | Pred                    | Description                                                  |
 | :---------------  | -----------------       | ------------------------------------------------------------ |
+| `:type`           | #{`keyword?` `string?`} | Should be one of: `:error`,  `:warning` , or `:info`. <br>Will set the label text (unless provided via `:label`). Will also set the `:colorway`, and override any provided `:colorway` value. |
+| `:colorway`       | #{`keyword?` `string?`} | The color of the sideline border, or gutter, depending on the value of `:theme`.<br />Should be one of: `:error`,  `:warning` , `:info` , `:positive`, or `:subtle`. <br>Can also be any one of the pallete colors such as  `:magenta`, `:green`,  `:negative`, `:neutral`, etc. |
+| `:theme`          | #{`keyword?` `string?`} | Theme of callout. Can be one of `:sideline`, `:sideline-bold`, or `:gutter`. Defaults to `:sideline`. |
 | `:label`          | `any?`                  | Labels the callout. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string). <br>In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively. |
-| `:type`           | `keyword?` or `string?` | Controls the color of the border and label.<br />Should be one of: `:error`,  `:warning` , `:info` , `:positive`, or `:subtle`. <br>Can also be any one of the pallete colors such as  `:magenta`, `:green`,  `:negative`, `:neutral`, etc. |
-| `:border-weight`  | `keyword?` or `string?` | Controls the weight of the border. Can be one of `:medium`, `:heavy`, or `:light`. Defaults to `:light`, which renders default border with standard unicode, single-line box-drawing character. |
+| `:label-theme`    | #{`keyword?` `string?`} | Theme of label. Can be one of `:marquee` or `:minimal`. Defaults to `:minimal`. |
 | `:padding-top`    | `int?`                  | Amount of padding (in newlines) at top, inside callout.<br/>Defaults to `0`. |
 | `:padding-bottom` | `int?`                  | Amount of padding (in newlines) at bottom, inside callout.<br>Defaults to `0`. In browser console, defaults to `1` in the case of callouts of type `:warning` or `:error`.|
-| `:padding-left`   | `int?`                  | Amount of padding (in blank character spaces) at left, inside callout.<br>In console emulator, defaults to `1` when `:border-weight` is `:light`, and `2` when `:border-weight` is `:medium` or `:heavy`. In browser console, defaults to `0`.|
+| `:padding-left`   | `int?`                  | Amount of padding (in blank character spaces) at left, inside callout.<br>In console emulator, defaults to `2`. In browser console, defaults to `0`.|
 | `:margin-top`     | `int?`                  | Amount of margin (in newlines) at top, outside callout.<br>Defaults to `1`. Only applies to terminal emulator printing. |
 | `:margin-bottom`  | `int?`                  | Amount of margin (in newlines) at bottom, outside callout.<br>Defaults to `0`. Only applies to terminal emulator printing. |
 | `:margin-left`    | `int?`                  | Amount of margin (in blank character spaces) at left, outside callout.<br>Defaults to `0`. Only applies to terminal emulator printing. |
 | `:data?`          | `boolean?`              | Returns a data representation of result instead of printing it. |
- 
 
 
 <br>
@@ -428,16 +429,20 @@ The above callout would render like this your terminal emulator:
 
 **`bling.core/point-of-interest`** takes a single map with the following options:
 
-| Key             | Pred                   | Description                                                  |
-| :--------       | -----------------      | ------------------------------------------------------------ |
-| `:file`         | `string?`              | <br>File or namespace<br><br>                                        |
-| `:line`         | `integer?`             | <br>Line number<br><br>                                                  |
-| `:column`       | `integer?`             | <br>Column number<br><br>                                                |
-| `:form`         | `any?`                 | <br>The form to draw attention to. Will be cast to string and truncated at 33 chars<br><br> |
-| `:type`         | `keyword` or `string?` | <br>Controls the color of the squiggly underline. Should be one of: `:error` `:warning`, or `:neutral`. Defaults to `:neutral`<br><br> |
-| `:header`       | `any?`                 | <br>Typically, a string composed with newlines as desired. In a browser context, can be an instance of `bling.core/Enriched` (produced by using `bling.core/bling`)<br><br>|
-| `:body`         | `any?`                 | <br>Typically, a string composed with newlines as desired. In a browser context, can be an instance of `bling.core/Enriched` (produced by using `bling.core/bling`)<br><br>|
-| `:margin-block` | `int?`                 | <br>Controls the number of blank lines above and below the diagram.<br/>Defaults to `1`.<br><br>|
+
+| Key                | Pred                   | Description                                                  |
+| :--------          | -----------------      | ------------------------------------------------------------ |
+| `:file`            | `string?`              | File or namespace                                            |
+| `:line`            | `integer?`             | Line number                                                  |
+| `:column`          | `integer?`             | Column number                                                |
+| `:form`            | `any?`                 | The form to draw attention to. Will be cast to string and truncated at 33 chars |
+| `:header`          | `any?`                 | Typically, a string. If multi-line, string should be composed with newlines as desired. In a browser context, can be an instance of `bling.core/Enriched` (produced by using `bling.core/enriched`)|
+| `:body`            | `any?`                 | Typically, a string. If multi-line, string should be composed with newlines as desired. In a browser context, can be an instance of `bling.core/Enriched` (produced by using `bling.core/enriched`)|
+| `:margin-block`    | `int?`                 | Controls the number of blank lines above and below the diagram.<br/>Defaults to `1`.|
+| `:type`            | #{`:error` `:warning`} | Automatically sets the `:text-decoration-color`. |
+| `:text-decoration-color` | #{`keyword?` `string?`} | Controls the color of the underline. Should be one of: `:error` `:warning`, or `:neutral`.<br>Can also be any one of the pallete colors such as  `:magenta`, `:green`,  `:negative`, `:neutral`, etc. Defaults to `:neutral` |
+| `:text-decoration-style` | #{`:wavy` `:solid` `:dashed` `:dotted` `:double`} | Controls the color of the underline. Should be one of: `:error` `:warning`, or `:neutral`. Can be any Defaults to `:neutral` |
+| `:text-decoration-index` | `pos-int?` | If the value of `:form` is a collection, this is the index of the item to apply text-decoration (underline). |
 
 <br>
 <br>
@@ -445,9 +450,10 @@ The above callout would render like this your terminal emulator:
 ## Go heavy
 
 If you want to place more emphasis on your callouts you can pass
-**`bling.core/callout`** a `:border-weight` option with a value of `:medium` 
-or `:heavy`. Here is an example using the `example-custom-callout` function 
-we defined above:
+**`bling.core/callout`** a `:theme` option with a value of `:gutter`. With the
+`:gutter` theme, the thickness of the colored border is controlled by the value of
+`:margin-left`. Here is an example using the `example-custom-callout` function we
+defined above:
 
 ```Clojure
 (example-custom-callout
@@ -456,36 +462,38 @@ we defined above:
   :column        1
   :form          '(+ 1 true)
   :type          :error
-  :border-weight :heavy})
-```
-
-<p align="center"><img src="resources/error-with-point-of-interest-heavy-light.png" width="750px" /></p>
-<p align="center"><img src="resources/error-with-point-of-interest-heavy-dark.png" width="750px" /></p>
-
-Example of a value of `:medium` for `:border-weight`:
-
-```Clojure
-(example-custom-callout
- {:file          "example.ns.core"
-  :line          11
-  :column        1
-  :form          '(+ 1 true)
-  :type          :error
-  :border-weight :medium})
+  :theme         :gutter})
 ```
 
 <p align="center"><img src="resources/error-with-point-of-interest-medium-light.png" width="750px" /></p>
 <p align="center"><img src="resources/error-with-point-of-interest-medium-dark.png" width="750px" /></p>
 
-More callout examples of `:heavy` for `:border-weight`:
+Example value of `2` for `:margin-left`, to increase the weight:
+
+```Clojure
+(example-custom-callout
+ {:file          "example.ns.core"
+  :line          11
+  :column        1
+  :form          '(+ 1 true)
+  :type          :error
+  :margin-left   2
+  :theme         :gutter})
+```
+<p align="center"><img src="resources/error-with-point-of-interest-heavy-light.png" width="750px" /></p>
+<p align="center"><img src="resources/error-with-point-of-interest-heavy-dark.png" width="750px" /></p>
+
+More callout examples of the `:gutter` theme:
+
+<p align="center"><img src="resources/callouts-medium-light.png" width="750px" /></p>
+<p align="center"><img src="resources/callouts-medium-dark.png"  width="750px" /></p>
+
+
+More example values of `2` for `:margin-left`, to increase the weight:
 
 <p align="center"><img src="resources/callouts-heavy-light.png" width="750px" /></p>
 <p align="center"><img src="resources/callouts-heavy-dark.png"  width="750px" /></p>
 
-More callout examples of `:medium` for `:border-weight`:
-
-<p align="center"><img src="resources/callouts-medium-light.png" width="750px" /></p>
-<p align="center"><img src="resources/callouts-medium-dark.png"  width="750px" /></p>
 
 <br>
 
