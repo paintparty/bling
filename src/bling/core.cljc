@@ -430,10 +430,6 @@
               (maybe nameable?)
               name))))
 
-(defn- spacing [n default]
-  (if (and (int? n) (<= 0 n)) n default))
-
-
 (declare callout)
 (declare bling)
 (declare print-bling)
@@ -598,21 +594,21 @@
    By default, the diagram is created with a leading and trailing newlines.
    This can be set to zero, or increased, with the `:margin-block` option.
    
-| Key                | Pred                   | Description                                                  |
-| :--------          | -----------------      | ------------------------------------------------------------ |
-| `:file`            | `string?`              | File or namespace                                            |
-| `:line`            | `integer?`             | Line number                                                  |
-| `:column`          | `integer?`             | Column number                                                |
-| `:form`            | `any?`                 | The form to draw attention to. Will be cast to string and truncated at 33 chars |
-| `:header`          | `any?`                 | Typically, a string. If multi-line, string should be composed with newlines as desired. In a browser context, can be an instance of `bling.core/Enriched` (produced by using `bling.core/enriched`)|
-| `:body`            | `any?`                 | Typically, a string. If multi-line, string should be composed with newlines as desired. In a browser context, can be an instance of `bling.core/Enriched` (produced by using `bling.core/enriched`)|
-| `:margin-block`    | `int?`                 | Controls the number of blank lines above and below the diagram.<br/>Defaults to 1.|
-| `:type`            | #{`:error` `:warning`} | Automatically sets the :text-decoration-color. |
-| `:text-decoration-color` | #{`keyword?``string?`} | Controls the color of the underline. Should be one of: `:error` `:warning`, or `:neutral`.<br>Can also be any one of the pallete colors such as  `:magenta`, `:green`,  `:negative`, `:neutral`, etc. Defaults to `:neutral` |
-| `:text-decoration-style` | #{`:wavy` `:solid` `:dashed` `:dotted` `:double`} | Controls the color of the underline. Should be one of: `:error` `:warning`, or `:neutral`. Can be any Defaults to `:neutral` |
-| `:text-decoration-index` | `pos-int?` | If the value of :form is a collection, this is the index of the item to apply text-decoration (underline). |
+| Key               | Pred                    | Description                                                  |
+| :---------------  | -----------------       | ------------------------------------------------------------ |
+| `:type`           | #{`keyword?` `string?`} | Should be one of: `:error`,  `:warning` , or `:info`. <br>Will set the label text (unless provided via `:label`). Will also set the `:colorway`, and override any provided `:colorway` value. |
+| `:colorway`       | #{`keyword?` `string?`} | The color of the sideline border, or gutter, depending on the value of `:theme`.<br />Should be one of: `:error`,  `:warning` , `:info` , `:positive`, or `:subtle`. <br>Can also be any one of the pallete colors such as  `:magenta`, `:green`,  `:negative`, `:neutral`, etc. |
+| `:theme`          | #{`keyword?` `string?`} | Theme of callout. Can be one of `:sideline`, `:sideline-bold`, or `:gutter`. Defaults to `:sideline`. |
+| `:label`          | `any?`                  | Labels the callout. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string). <br>In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively. |
+| `:label-theme`    | #{`keyword?` `string?`} | Theme of label. Can be one of `:marquee` or `:minimal`. Defaults to `:minimal`. |
+| `:padding-top`    | `int?`                  | Amount of padding (in newlines) at top, inside callout.<br/>Defaults to `0`. |
+| `:padding-bottom` | `int?`                  | Amount of padding (in newlines) at bottom, inside callout.<br>Defaults to `0`. In browser console, defaults to `1` in the case of callouts of type `:warning` or `:error`.|
+| `:padding-left`   | `int?`                  | Amount of padding (in blank character spaces) at left, inside callout.<br>In console emulator, defaults to `2`. In browser console, defaults to `0`.|
+| `:margin-top`     | `int?`                  | Amount of margin (in newlines) at top, outside callout.<br>Defaults to `1`. Only applies to terminal emulator printing. |
+| `:margin-bottom`  | `int?`                  | Amount of margin (in newlines) at bottom, outside callout.<br>Defaults to `0`. Only applies to terminal emulator printing. |
+| `:margin-left`    | `int?`                  | Amount of margin (in blank character spaces) at left, outside callout.<br>Defaults to `0`. Only applies to terminal emulator printing. |
+| `:data?`          | `boolean?`              | Returns a data representation of result instead of printing it. |
 "
-
   [{:keys [line
            file
            column
@@ -679,12 +675,17 @@
 
 (def gutter-char "█")
 
+(declare ln)
+(declare lns)
+
 (defn- gutter-marquee-label
   [{:keys [padding-left
+           padding-top
            margin-left 
            label 
            label-string 
-           border-style]}]
+           border-style]
+    :as m}]
   (let [margin-left-str     (char-repeat margin-left gutter-char)
         hrz                 #(char-repeat padding-left %)
         label-lns           (string/split-lines label)
@@ -726,7 +727,22 @@
                      (hrz " ")
                      "┗━━"
                      (char-repeat label-length "━")
-                     "━━┛")])])))))
+                     "━━┛")])]
+       (mapv (fn [_]
+               (bling [bs
+                        (str margin-left-str
+                             gutter-char
+                             (hrz " "))]))
+         (range padding-top))
+       )
+       
+;; TODO how to make lns for padding top and bottom, gutter-style
+;; (string/join "\n" 
+;;              (map-indexed
+;;               (partial ln
+;;                        (assoc m :margin-left-str :margin-left-str))
+;;               lns))
+       ))))
 
 
 (defn- sideline-marquee-label
@@ -813,7 +829,7 @@
                           s))
         lns           (some-> s string/split-lines)
         ret           (string/join "\n" (map-indexed (partial ln m) lns))]
-    #_(when (= k :label) (? ret))
+    ;; (when (= k :label) (? ret))
     ret))
 
 (defn body-lines-with-border
@@ -862,7 +878,8 @@
         gutter-theme? (contains? #{"rainbow-gutter" "gutter"} theme)]
 ;; (? (keyed [sideline-variant?
 ;;            sideline-variant-with-body?
-;;            sideline-variant-just-label?]))
+;;            sideline-variant-just-label?
+;;            gutter-theme?]))
     (str (:margin-top-str m)
          (if sideline-variant-with-body?
            (sideline-callout m)
@@ -1094,14 +1111,18 @@
           (get alert-type->label (:type m))))))
 
 
-(defn- resolve-padding-left [m sideline-theme? label-theme]
+(defn- spacing [n default]
+  (if (and (int? n) (<= 0 n)) n default))
+
+
+(defn- resolve-padding-left [m sideline-theme? label-theme f]
   (let [default (if (and sideline-theme?
                          (= label-theme "minimal"))
                   1
                   2)
         pl      (or (maybe (:padding-left m) pos-int?)
                     default)]
-    (spacing pl default)))
+    pl))
 
 (defn- resolve-padding-top 
   [theme f]
@@ -1134,7 +1155,7 @@
     margin-top     (sp :margin-top 1)
     margin-bottom  (sp :margin-bottom 0)
     margin-left    (sp :margin-left 0)
-    padding-left   (resolve-padding-left m theme label-theme)
+    padding-left   (resolve-padding-left m sideline-theme? label-theme sp)
     type           (some-> (:type m) as-str (maybe #{"warning" "error" "info"}))
     colorway       (or (get semantics-by-semantic-type type)
                        (some-> (:colorway m) as-str))
@@ -1196,12 +1217,12 @@
    optional keys:
 
 | Key               | Pred                    | Description                                                  |
-| :---------------  | -----------------       | ------------------------------------------------------------ |
+| :---------------  | ----------------------- | ------------------------------------------------------------ |
 | `:type`           | `keyword?` or `string?` | Should be one of: `:error`,  `:warning` , or `:info`. <br>Will set the label text (unless provided via `:label`). Will also set the `:colorway`, and override any provided `:colorway` value. |
-| `:colorway`       | `keyword?` or `string?` | The color of the sideline border, or gutter, depending on the value of :theme.<br />Should be one of: `:error`,  `:warning` , `:info` , `:positive`, or `:subtle`. <br>Can also be any one of the pallete colors such as  `:magenta`, `:green`,  `:negative`, `:neutral`, etc. |
-| `:theme`          | `keyword?` or `string?  | Theme of callout. Can be one of `:sideline`, `:sideline-bold`, or `:gutter`. Defaults to `:sideline`. |
+| `:colorway`       | `keyword?` or `string?` | The color of the sideline border, or gutter, depending on the value of `:theme`.<br />Should be one of: `:error`,  `:warning` , `:info` , `:positive`, or `:subtle`. <br>Can also be any one of the pallete colors such as  `:magenta`, `:green`,  `:negative`, `:neutral`, etc. |
+| `:theme`          | `keyword?` or `string?` | Theme of callout. Can be one of `:sideline`, `:sideline-bold`, or `:gutter`. Defaults to `:sideline`. |
 | `:label`          | `any?`                  | Labels the callout. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string). <br>In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively. |
-| `:label-theme`    | `keyword?` or `string?  | Theme of label. Can be one of `:marquee` or `:minimal. Defaults to `:minimal`. |
+| `:label-theme`    | `keyword?` or `string?` | Theme of label. Can be one of `:marquee` or `:minimal`. Defaults to `:minimal`. |
 | `:padding-top`    | `int?`                  | Amount of padding (in newlines) at top, inside callout.<br/>Defaults to `0`. |
 | `:padding-bottom` | `int?`                  | Amount of padding (in newlines) at bottom, inside callout.<br>Defaults to `0`. In browser console, defaults to `1` in the case of callouts of type `:warning` or `:error`.|
 | `:padding-left`   | `int?`                  | Amount of padding (in blank character spaces) at left, inside callout.<br>In console emulator, defaults to `2`. In browser console, defaults to `0`.|

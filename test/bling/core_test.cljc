@@ -56,6 +56,8 @@
 ;; (doseq [nm bling.core/colors-ordered]
 ;;   (println (bling [{:color nm :font-weight :bold} nm])))
 
+(declare example-custom-callout)
+
 (defn bling-basics
   ([]
    (bling-basics false))
@@ -107,7 +109,7 @@
                    " "
                    [:bold.blue-bg.white " Blue "]
                    " "
-                   [:bold.blue-bg.white " Purple "]
+                   [:bold.purple-bg.white " Purple "]
                    " "
                    [:bold.magenta-bg.white " Magenta "]
                    " "
@@ -139,21 +141,148 @@
 
    ;; Combo
    (printer (bling [:bold.italic "bold & italic"]
-                   ", "
+                   "\n"
                    [:italic.blue "italic & colored"]
-                   ", "
+                   "\n"
                    [:bold.italic.white.blue-bg
                     "bold & italic & colored & colored-bg"]
-                   ", "
+                   "\n"
                    [:bold.italic.blue.underline
                     "bold & italic & colored & underline"]
-                   ", "
+                   "\n"
                    [:bold.italic.blue.strikethrough 
                     "bold & italic & colored & strikethrough"]))
 
 
    ;; CALLOUT examples with light border ------------------------------------------
    
+   (println)
+   (println (bling [:italic.subtle ";; callout examples, {:label-theme :minimal}"]))
+   (callout {:type        :info
+             :label-theme :minimal}
+            "Example callout, with :type of :info")
+
+   (callout {:type  :info
+             :label-theme :minimal
+             :label "My custom label"}
+            "Example callout, with :type of :info and custom :label")
+
+
+   (callout {:type :warning
+             :label-theme :minimal}
+            "Example callout, with :type of :warning")
+
+
+   (callout {:type :error
+             :label-theme :minimal}
+            "Example callout, with :type of :error")
+
+
+   (callout {:colorway :positive
+             :label-theme :minimal
+             :label    "SUCCESS!"}
+            "Example callout, with :colorway of :positive, and custom :label")
+
+   ;; CALLOUT examples with light border ------------------------------------------
+   
+   (println)
+   (println (bling [:italic.subtle ";; callout examples, {:theme :sideline-bold :label-theme :minimal}"]))
+   (callout {:type        :info
+             :theme :sideline-bold
+             :label-theme :minimal}
+            "Example callout, with :type of :info")
+
+   (callout {:type  :info
+             :theme :sideline-bold
+             :label-theme :minimal
+             :label "My custom label"}
+            "Example callout, with :type of :info and custom :label")
+
+
+   (callout {:type :warning
+             :theme :sideline-bold
+             :label-theme :minimal}
+            "Example callout, with :type of :warning")
+
+
+   (callout {:type :error
+             :theme :sideline-bold
+             :label-theme :minimal}
+            "Example callout, with :type of :error")
+
+
+   (callout {:colorway :positive
+             :theme :sideline-bold
+             :label-theme :minimal
+             :label    "SUCCESS!"}
+            "Example callout, with :colorway of :positive, and custom :label")
+
+ 
+
+   ;; CALLOUT examples {:theme :gutter} ----------------------------------------
+   
+   (println)
+   (println (bling [:italic.subtle ";; callout examples, {:theme :gutter}"]))
+   (callout {:type  :info
+             :theme :gutter}
+            "Example callout, with :type of :info")
+
+   (callout {:type  :info
+             :theme :gutter
+             :label "My custom label"}
+            "Example callout, with :type of :info and custom :label")
+
+   (callout {:type  :warning
+             :theme :gutter}
+            "Example callout, with :type of :warning")
+
+   (callout {:type  :error
+             :theme :gutter}
+            "Example callout, with :type of :error")
+
+   (callout {:colorway :positive
+             :label    "SUCCESS!"
+             :theme    :gutter}
+            "Example callout, with :colorway of :positive, and custom :label")
+
+
+   ;; CALLOUT examples {:theme :gutter :margin-left 2} -------------------------
+   
+   (println)
+   (println)
+   (println (bling [:italic.subtle ";; callout examples, {:theme :gutter :margin-left 2}"]))
+   (callout {:type        :info
+             :margin-left 2
+             :theme       :gutter}
+            "Example callout, with :type of :info")
+
+   (callout {:type        :info
+             :margin-left 2
+             :theme       :gutter
+             :label       "My custom label"}
+            "Example callout, with :type of :info and custom :label")
+
+   (callout {:type        :warning
+             :margin-left 2
+             :theme       :gutter}
+            "Example callout, with :type of :warning")
+
+   (callout {:type        :error
+             :margin-left 2
+             :theme       :gutter}
+            "Example callout, with :type of :error")
+
+   (callout {:colorway    :positive
+             :margin-left 2
+             :label       "SUCCESS!"
+             :theme       :gutter}
+            "Example callout, with :colorway of :positive, and custom :label")  
+
+
+   ;; CALLOUT examples {:theme :sideline} ----------------------------------------
+   (println)
+   (println)
+   (println (bling [:italic.subtle ";; callout examples, :sideline theme (default)"]))
    (callout {:type :info}
             "Example callout, with :type of :info")
 
@@ -167,106 +296,185 @@
    (callout {:type :error}
             "Example callout, with :type of :error")
 
-   (callout {:colorway  :positive
-             :label "SUCCESS!"}
+   (callout {:colorway :positive
+             :label    "SUCCESS!"}
             "Example callout, with :colorway of :positive, and custom :label")
 
    ;; Off for readme banner
-   (when extras? 
-     (callout {:colorway :subtle}
-              "Example callout, with :colorway of :subtle (or :gray)")
+   #_#_
+       (when extras? 
+         (callout {:colorway :subtle}
+                  "Example callout, with :colorway of :subtle (or :gray)")
 
-     (callout {:colorway :magenta}
-              "Example callout, with :colorway of :magenta")
+         (callout {:colorway :magenta}
+                  "Example callout, with :colorway of :magenta")
 
-     (callout "Example callout, default")
+         (callout "Example callout, default")
+
+         (callout
+          {:label "HEY"}
+          "Example callout, default with custom label"))
 
      (callout
-      {:label "HEY"}
-      "Example callout, default with custom label"))
-
-   (callout
-    {:label       (bling [:magenta-bg.white.bold " HEY "])
-     :label-string " HEY "
-     :padding-top 1}
-    (bling "Example callout, styled-label, :padding-top of 1"))
+      {:label        (bling [:magenta-bg.white.bold " HEY "])
+       :label-string " HEY "
+       :padding-top  1}
+      (bling "Example callout, styled-label, :padding-top of 1"))
 
 
-   ;; CALLOUT examples with medium border ----------------------------------------
+   ;; CALLOUT examples {:theme :sideline-bold} ---------------------------------
    
-   (callout {:type          :info
+   (println)
+   (println (bling [:italic.subtle ";; callout examples, {:theme :sideline-bold}"]))
+   (callout {:type  :info
              :theme :sideline-bold}
             "Example callout, with :type of :info")
 
-   (callout {:type          :warning
+   (callout {:type  :warning
              :theme :sideline-bold}
             "Example callout, with :type of :warning")
 
-   (callout {:type          :error
+   (callout {:type  :error
              :theme :sideline-bold}
             "Example callout, with :type of :error")
 
-   (callout {:colorway          :positive
-             :label         "SUCCESS!"
-             :theme :sideline-bold}
+   (callout {:colorway :positive
+             :label    "SUCCESS!"
+             :theme    :sideline-bold}
             "Example callout, with :colorway of :positive, and custom :label")
 
 
+   ;; TODO make custom error and warning examples
+
+  (println)
+  (println)
+  (println 
+   (bling 
+    [:italic.subtle
+     ";; Custom error and warning templates with a point-of-interest "]))
+  (println 
+   (bling 
+    [:italic.subtle
+     ";; diagram. Checkout Templates section in readme for more details."]))
+  (example-custom-callout
+   {:point-of-interest-opts {:file                  "example.ns.core"
+                             :line                  11
+                             :column                1
+                             :form                  '(myfun foo baz)
+                             :type                  :warning
+                             :text-decoration-index 2}
+    :callout-opts           {:type :warning
+                             :label "WARNING: Invalid arg value"}})
+
+  (example-custom-callout
+   {:point-of-interest-opts {:file                  "example.ns.core"
+                             :line                  11
+                             :column                1
+                             :form                  '(myfun foo baz)
+                             :type                  :warning
+                             :text-decoration-index 2}
+    :callout-opts           {:type :warning
+                             :theme :sideline-bold
+                             :label "WARNING: Invalid arg value"}})
+
+  (example-custom-callout
+   {:point-of-interest-opts {:file                  "example.ns.core"
+                             :line                  11
+                             :column                1
+                             :form                  '(myfun foo baz)
+                             :type                  :warning
+                             :text-decoration-index 2}
+    :callout-opts           {:type :warning
+                             :theme :gutter
+                             :label "WARNING: Invalid arg value"}}) 
+
+  (example-custom-callout
+   {:point-of-interest-opts {:file                  "example.ns.core"
+                             :line                  11
+                             :column                1
+                             :form                  '(myfun foo baz)
+                             :type                  :warning
+                             :text-decoration-index 2}
+    :callout-opts           {:type :warning
+                             :theme :gutter
+                             :label-theme :marquee
+                             :label "WARNING: Invalid arg value"}}) 
+
+  (example-custom-callout
+   {:point-of-interest-opts {:file                  "example.ns.core"
+                             :line                  11
+                             :column                1
+                             :form                  '(+ foo baz)
+                             :text-decoration-index 2
+                             :type                  :error}
+    :callout-opts           {:type :error
+                             :label "ERROR: ClassCastException"}})
+
+  (example-custom-callout
+   {:point-of-interest-opts {:file                  "example.ns.core"
+                             :line                  11
+                             :column                1
+                             :form                  '(+ foo baz)
+                             :text-decoration-index 2}
+    :callout-opts           {:type  :error
+                             :theme :sideline-bold
+                             :label "ERROR: ClassCastException"}})
+  
+  (example-custom-callout
+   {:point-of-interest-opts {:file                  "example.ns.core"
+                             :line                  11
+                             :column                1
+                             :form                  '(+ foo baz)
+                             :text-decoration-index 2
+                             :theme                 :gutter}
+    :callout-opts           {:type :error
+                             :theme :gutter
+                             :label "ERROR: ClassCastException"}})
+
+  (example-custom-callout
+   {:point-of-interest-opts {:file                  "example.ns.core"
+                             :line                  11
+                             :column                1
+                             :form                  '(+ foo baz)
+                             :text-decoration-index 2
+                             :theme                 :gutter}
+    :callout-opts           {:type :error
+                             :theme :gutter
+                             :label "ERROR: ClassCastException"
+                             :label-theme :marquee}})
    ;; Off for readme banner
-   (when extras?
-     (callout {:colorway          :subtle
-               :theme :sideline-bold}
-              "Example callout, with :colorway of :subtle (or :gray)")
+   #_
+     (when extras?
+       (callout {:colorway :subtle
+                 :theme    :sideline-bold}
+                "Example callout, with :colorway of :subtle (or :gray)")
 
-     (callout {:colorway          :magenta
-               :theme :sideline-bold}
-              "Example callout, with :colorway of :magenta")
+       (callout {:colorway :magenta
+                 :theme    :sideline-bold}
+                "Example callout, with :colorway of :magenta")
 
-     (callout {:theme :sideline-bold} "Example callout, default"))
+       (callout {:theme :sideline-bold} "Example callout, default"))
 
 
-
-   ;; CALLOUT examples with heavy border ------------------------------------------
-   
-   (callout {:type          :info
-             :theme :gutter}
-            "Example callout, with :type of :info")
-
-   (callout {:type          :info
-             :theme :gutter
-             :label         "My custom label"}
-            "Example callout, with :type of :info and custom :label")
-
-   (callout {:type          :warning
-             :theme :gutter}
-            "Example callout, with :type of :warning")
-
-   (callout {:type          :error
-             :theme :gutter}
-            "Example callout, with :type of :error")
-
-   (callout {:colorway          :positive
-             :label         "SUCCESS!"
-             :theme :gutter}
-            "Example callout, with :colorway of :positive, and custom :label")
 
    ;; Off for readme banner
-   (when extras?
-     (callout {:colorway          :subtle
-               :theme :gutter}
-              "Example callout, with :colorway of :subtle (or :gray)")
+   #_#_
+       (when extras?
+         (callout {:colorway :subtle
+                   :theme    :gutter}
+                  "Example callout, with :colorway of :subtle (or :gray)")
 
-     (callout {:colorway          :magenta
-               :theme :gutter}
-              "Example callout, with :colorway of :magenta")
+         (callout {:colorway :magenta
+                   :theme    :gutter}
+                  "Example callout, with :colorway of :magenta")
 
-     (callout {:theme :gutter} "Example callout, default"))
+         (callout {:theme :gutter} "Example callout, default"))
 
-   (callout
-    {:type          :warning
-     :theme :gutter
-     :padding-left  4}
-    "Example callout, with :type of :warning, padding-left of 4.")))
+     (callout
+      {:type         :warning
+       :theme        :gutter
+       :padding-left 4}
+      "Example callout, with :type of :warning, padding-left of 4.")))
 
 
 
@@ -280,12 +488,9 @@
                                           "Another line.")}
                             point-of-interest-opts)
         message      (point-of-interest poi-opts)
-        callout-opts (merge callout-opts
-                            {:padding-top 1})]
+        callout-opts (merge {:padding-top 1}
+                            callout-opts)]
     (callout callout-opts message)))
-
-
-
 
 ;; CALLOUTS with poi -----------------------------------------------------------
 
@@ -372,7 +577,7 @@
                                 :file   "myfile.cljs"
                                 :type   :magenta}))
 
-;; poi with (default) :margin-block of 1
+   ;; poi with (default) :margin-block of 1
    (callout {:type :error}
             (point-of-interest {:line   11
                                 :column 2
@@ -387,7 +592,7 @@
                                 :file   "myfile.cljs"
                                 :type   :magenta}))
 
-;; poi with :margin-block of 0
+   ;; poi with :margin-block of 0
    (callout {:colorway          :magenta
              :theme :gutter}
             (point-of-interest {:line         11
@@ -413,11 +618,11 @@
                    "\n"
                    [:red "2nd line"]))
 
-;; ;; ;; Basics
+    ;; ;; ;; Basics
    (printer (bling [:bold "bold"] ", " [:italic "italic"] ", or " [:blue "colored"]))
 
 
-;; Callouts
+   ;; Callouts
    (callout
     {:type  :info
      :label-string " RAINBOW "
@@ -471,7 +676,7 @@
   
   (bling-basics)
 
-;; Default callout w/ poi, regex-form
+  ;;Default callout w/ poi, regex-form
   (example-custom-callout
    {:point-of-interest-opts {:file   "example.ns.core"
                              :line   11
@@ -480,7 +685,7 @@
                              :type   :warning}
     :callout-opts           {:type :warning}})
 
-;; Medium callout w/ poi
+  ;;Medium callout w/ poi
   (example-custom-callout
    {:point-of-interest-opts {:file   "example.ns.core"
                              :line   11
@@ -490,7 +695,7 @@
     :callout-opts           {:type          :warning
                              :theme :sideline-bold}})
 
-;; Heavy callout w/ poi
+  ;;Heavy callout w/ poi
   (example-custom-callout
    {:point-of-interest-opts {:file   "example.ns.core"
                              :line   11
@@ -501,7 +706,7 @@
                              :theme :gutter}})
 
 
-;; Default callout w/ poi, regex-form
+  ;;Default callout w/ poi, regex-form
   (example-custom-callout
    {:point-of-interest-opts {:file   "example.ns.core"
                              :line   11
@@ -510,7 +715,7 @@
                              :type   :error}
     :callout-opts           {:type :error}})
 
-;; Medium callout w/ poi
+  ;;Medium callout w/ poi
   (example-custom-callout
    {:point-of-interest-opts {:file   "example.ns.core"
                              :line   11
@@ -522,7 +727,7 @@
     :callout-opts           {:type          :error
                              :theme :sideline-bold}})
 
-;; Heavy callout w/ poi
+  ;;Heavy callout w/ poi
   (example-custom-callout
    {:point-of-interest-opts {:file   "example.ns.core"
                              :line   11
@@ -532,7 +737,8 @@
     :callout-opts           {:type          :error
                              :theme :gutter}})
 
-;; Normal callout w/ poi, label enriched and regex form
+  ;;Normal callout w/ poi, label enriched and regex form
+
   (example-custom-callout
    {:point-of-interest-opts {:file   "example.ns.core"
                              :line   11
@@ -543,7 +749,7 @@
                              :label-string " ERROR "
                              :type  :error}})
 
-;; callout w/ enriched header and body on poi
+  ;;callout w/ enriched header and body on poi
   (example-custom-callout
    {:point-of-interest-opts {:file   "example.ns.core"
                              :line   11
@@ -628,11 +834,53 @@
   ;; This should issue a warning callout with point-of-interest
   (callout [1 2 3]))
 
+
+;;------------------------------------------------------------------------------
+;;------------------------------------------------------------------------------
+;;------------------------------------------------------------------------------
+;;------------------------------------------------------------------------------
+
+(println)
+(println)
 #_(bling.sample/sample)
-
-(visual-test-suite)
+#_(visual-test-suite)
 (bling-basics)
+(println)
+(println)
+(println)
+(println)
 
+#_(example-custom-callout
+   {:point-of-interest-opts {:file                  "example.ns.core"
+                             :line                  11
+                             :column                1
+                             :form                  '(+ foo baz)
+                             :text-decoration-index 2
+                             :theme                 :gutter}
+    :callout-opts           {:type        :error
+                             :theme       :gutter
+                             :label       "ERROR: ClassCastException"
+                             :label-theme :marquee}})
+
+#_(callout {:colorway :positive
+          :label    "SUCCESS!"
+          :padding-top 1
+          :theme    :gutter}
+         "Example callout, with :colorway of :positive, and custom :label")
+
+#_(callout {
+          ;; :colorway :positive
+          :type        :error
+          ;; :padding-top 1
+          :theme       :gutter}
+         "Body text")
+
+#_(callout {
+          ;; :colorway :positive
+          :label       "gone"
+          ;; :padding-top 1
+          :theme       :gutter}
+         "Body text")
 
   #_(callout {:colorway :neutral
             :theme    :rainbow-gutter }
@@ -641,7 +889,7 @@
                   "\n"
                   [:bold.neutral "bling.core/callout, because of malformed args..."]))
 
-
+;; random samples
 #_
 #_
 #_
