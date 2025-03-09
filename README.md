@@ -497,6 +497,20 @@ More example values of `2` for `:margin-left`, to increase the weight:
 
 <br>
 
+## Testing
+There is a set of visual test suites in `bling.core-test`. For visual tests in
+node
+
+For visual testing of output in node / deno context first do:
+
+`shadow-cljs compile node-script`
+
+Then do 
+
+`node out/bling-in-node-demo-script.js`
+
+<br>
+
 ## Status / Roadmap
 Alpha, subject to change. Issues welcome, see [contributing](#contributing).
 
