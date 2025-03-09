@@ -1,3 +1,5 @@
+;; Namespace for visual testing and sandbox dev during development
+
 (ns bling.core-test
   (:require [clojure.test :as test]
             [clojure.string :as string]
@@ -844,7 +846,8 @@
 (println)
 #_(bling.sample/sample)
 #_(visual-test-suite)
-(bling-basics)
+#_(bling-basics)
+(bling.sample/sample)
 (println)
 (println)
 (println)

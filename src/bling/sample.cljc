@@ -99,10 +99,21 @@
                                    s)])) 
                     (string/split body #"\n")))
       (bling [k "\""])
-      (bling [k "\n;; =>"])))
+      (bling [k "\n;; =>\n"])))
 
     (callout (assoc m :margin-top 0 :margin-bottom 0)
              body)))
+
+;; (defn sample []
+;;   (callout (assoc {:type        :error
+;;                    :theme       :gutter
+;;                    :margin-left 3}
+;;                   :margin-top 0
+;;                   :margin-bottom 0
+;;                   :padding-top 1
+;;                   ;; :padding-bottom 1
+;;                   )
+;;            (str "afadsfsdfsadf\nasfdsadfasdf" "as")))
 
 (defn sample []
   (println)
@@ -177,12 +188,24 @@
     [:italic.subtle
      ";; a point-of-interest diagram. See readme for more details."]))
   (example-custom-callout
-   {:point-of-interest-opts {:file   "example.ns.core"
-                             :line   11
-                             :column 1
-                             :form   '(+ 1 true)
-                             :type   :warning}
-    :callout-opts           {:type :warning}})
+   {:point-of-interest-opts {:file                  "example.ns.core"
+                             :line                  11
+                             :column                1
+                             :form                  '(myfun foo baz)
+                             :type                  :warning
+                             :text-decoration-index 2}
+    :callout-opts           {:type :warning
+                             :label "WARNING: Invalid arg value"}})
+
+  (example-custom-callout
+   {:point-of-interest-opts {:file                  "example.ns.core"
+                             :line                  11
+                             :column                1
+                             :form                  '(+ foo baz)
+                             :text-decoration-index 2
+                             :type                  :error}
+    :callout-opts           {:type :error
+                             :label "ERROR: ClassCastException"}})
 
 
   ;; Combo styles ------------------------------------------------------------
