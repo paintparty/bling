@@ -19,6 +19,9 @@ For a list of breaking changes, check [here](#breaking-changes)
 
 ## 0.5.0
 2025-03-09
+
+Various internal refactoring and code cleanup, in addtion to new features:
+
 #### Fixed
 - [Dynamic underline length in point-of-interest diagram](https://github.com/paintparty/bling/issues/4)
 
@@ -30,7 +33,6 @@ For a list of breaking changes, check [here](#breaking-changes)
 
 #### Changed
 - [Redesigned `point-of-interest` interface](https://github.com/paintparty/bling/issues/14)
-- Many internal refactors
 
 #### Removed
 - `:border-weight` options (now irrelevent with new theming system).
