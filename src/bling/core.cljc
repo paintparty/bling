@@ -12,15 +12,14 @@
 ;;     ns at those lines.
 
 ;; - Should additional file-info (string), which would override the gen option
-;; 
 
 
-;; Adds about 12kb to a cljs bundle
+;; Currently adds about ~12kb to a cljs bundle
 
 (ns bling.core
   (:require [clojure.string :as string]
-            [bling.macros :refer [let-map keyed ?]] ;;<-- ? is just for debugging
-            ;; [bling.macros :refer [let-map]]
+            ;; [bling.macros :refer [let-map keyed ?]] ;;<-- ? is just for debugging
+            [bling.macros :refer [let-map keyed]]
             #?(:cljs [goog.object])
             #?(:cljs [bling.js-env :refer [node?]])))
 
@@ -731,17 +730,8 @@
                         (str margin-left-str
                              gutter-char
                              (hrz " "))]))
-         (range padding-top))
-       )
+         (range padding-top)))
        
-;; TODO how to make lns for padding top and bottom, gutter-style
-;; (string/join "\n" 
-;;              (map-indexed
-;;               (partial ln
-;;                        (assoc m :margin-left-str :margin-left-str))
-;;               lns))
-       ))))
-
 
 (defn- sideline-marquee-label
   [{:keys [padding-left
@@ -897,8 +887,7 @@
                       (bling (:margin-left-str m)
                            [(:border-style m) (if bold? "┏" "┌")]
                            (when (:label m)
-                             (char-repeat 0 #_(max 0 (dec (:padding-left m)))
-                                          (if bold? "━" "─")))
+                             (char-repeat 0 (if bold? "━" "─")))
                            (bling [:bold (some->> (:label m) (str " "))])))
         bottom-line (bling [(:border-style m)
                             (str (:margin-left-str m)
