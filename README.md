@@ -13,15 +13,15 @@
 
 <div align="left">
 
-**[Features]**  &nbsp;•&nbsp; **[Setup]**  &nbsp;•&nbsp;  **[Basic Usage]** &nbsp;•&nbsp; **[Blocks]** &nbsp;•&nbsp; **[Templates]**
+**[Features]**  &nbsp;•&nbsp; **[Setup]**  &nbsp;•&nbsp;  **[Basic Usage]** &nbsp;•&nbsp; **[Callout Blocks]** &nbsp;•&nbsp; **[Error Templates]**
 </div>
 
 [Features]: #features
 [Setup]: #setup
 [Basic Usage]: #basic-usage
-[Blocks]: #printing-formatted-blocks
+[Callout Blocks]: #callout-blocks
 
-[Templates]: #templates-for-errors-and-warnings
+[Error Templates]: #templates-for-errors-and-warnings
 [Interop]: #printing-conventions
 [Contributing]: #contributing
 
@@ -29,12 +29,12 @@
 <br>
 
 <p align="left">
-  <img src="resources/bling-banner-light-0.5.0.png" width="700px" />
+  <img src="resources/docs/chromed/bling-banner-light-0.5.0.png" width="700px" />
 </p>
 
 The same example as above, in a terminal emulator with a dark background.
 <p align="left">
-  <img src="resources/bling-banner-dark-0.5.0.png" width="700px" />
+  <img src="resources/docs/chromed/bling-banner-dark-0.5.0.png" width="700px" />
 </p>
 
 ## Features
@@ -115,12 +115,12 @@ of text decorated with tags for colorization, italics, and boldness:
                 [:blue "colored"]))
 ```
 <p align="center">
-  <img src="./resources/basics-light.png" width="750px" align="center"/>
+  <img src="./resources/docs/chromed/basics-light.png" width="700px" align="center"/>
 </p>
 
 </p>
 
-<p align="center"><img src="resources/basics-dark.png" width="750px"/></p>
+<p align="center"><img src="resources/docs/chromed/basics-dark.png" width="700px"/></p>
 
 
 
@@ -169,8 +169,8 @@ You can add multiple decorations with hiccup-style tags (a keyword with dot sepa
                 [:bold.italic.blue.strikethrough
                  "bold & italic & colored & strikethrough"]))
 ```
-<p align="center"><img src="resources/combos-light.png" width="750px" /></p>
-<p align="center"><img src="resources/combos-dark.png" width="750px" /></p>
+<p align="center"><img src="resources/docs/chromed/combos-light.png" width="700px" /></p>
+<p align="center"><img src="resources/docs/chromed/combos-dark.png" width="700px" /></p>
 
 <br>
 
@@ -257,8 +257,8 @@ Eleven carefully selected colors, from the [xterm range 16-255](https://en.m.wik
                 ", "
                 [:bold.white "White"] ))
 ```
-<p align="center"><img src="resources/colors-light.png" width="750px" /></p>
-<p align="center"><img src="resources/colors-dark.png" width="750px" /></p>
+<p align="center"><img src="resources/docs/chromed/colors-light.png" width="700px" /></p>
+<p align="center"><img src="resources/docs/chromed/colors-dark.png" width="700px" /></p>
 
 <br>
 
@@ -282,8 +282,8 @@ You can use the following semantic aliases for some colors:
 ```
 <br>
 
-<p align="center"><img src="resources/semantic-colors-light.png" width="750px" /></p>
-<p align="center"><img src="resources/semantic-colors-dark.png" width="750px" /></p>
+<p align="center"><img src="resources/docs/chromed/semantic-colors-light.png" width="700px" /></p>
+<p align="center"><img src="resources/docs/chromed/semantic-colors-dark.png" width="700px" /></p>
 
 <br>
 
@@ -332,8 +332,31 @@ map instead of a hiccup-style keyword:
 
 <br>
 
-## Printing formatted blocks
+## Callout blocks
 **`bling.core/callout`** will print a message "block" to the console with a colored bounding border in the inline-start position.
+
+**`callout`** takes one or two arguments. If two arguments are supplied, the first should be a map with 0 or more of following entries:
+
+| Key               | Pred                    | Description                                                  |
+| :---------------  | -----------------       | ------------------------------------------------------------ |
+| `:type`           | #{`keyword?` `string?`} | Should be one of: `:error`,  `:warning` , or `:info`. <br>Will set the label text (unless provided via `:label`). Will also set the `:colorway`, and override any provided `:colorway` value. |
+| `:colorway`       | #{`keyword?` `string?`} | The color of the sideline border, or gutter, depending on the value of `:theme`.<br />Should be one of: `:error`,  `:warning` , `:info` , `:positive`, or `:subtle`. <br>Can also be any one of the pallete colors such as  `:magenta`, `:green`,  `:negative`, `:neutral`, etc. |
+| `:theme`          | #{`keyword?` `string?`} | Theme of callout. Can be one of `:sideline`, `:sideline-bold`, or `:gutter`. Defaults to `:sideline`. |
+| `:label`          | `any?`                  | Labels the callout. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string). <br>In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively. |
+| `:label-theme`    | #{`keyword?` `string?`} | Theme of label. Can be one of `:marquee` or `:minimal`. Defaults to `:minimal`. |
+| `:padding-top`    | `int?`                  | Amount of padding (in newlines) at top, inside callout.<br/>Defaults to `0`. |
+| `:padding-bottom` | `int?`                  | Amount of padding (in newlines) at bottom, inside callout.<br>Defaults to `0`. In browser console, defaults to `1` in the case of callouts of type `:warning` or `:error`.|
+| `:padding-left`   | `int?`                  | Amount of padding (in blank character spaces) at left, inside callout.<br>In console emulator, defaults to `2`. In browser console, defaults to `0`.|
+| `:margin-top`     | `int?`                  | Amount of margin (in newlines) at top, outside callout.<br>Defaults to `1`. Only applies to terminal emulator printing. |
+| `:margin-bottom`  | `int?`                  | Amount of margin (in newlines) at bottom, outside callout.<br>Defaults to `0`. Only applies to terminal emulator printing. |
+| `:margin-left`    | `int?`                  | Amount of margin (in blank character spaces) at left, outside callout.<br>Defaults to `0`. Only applies to terminal emulator printing. |
+| `:data?`          | `boolean?`              | Returns a data representation of result instead of printing it. |
+
+
+<br>
+<br>
+
+Examples of `callout` with different `:type` / `:colorway` options:
 
 ```Clojure
 (callout {:type :info}
@@ -364,43 +387,29 @@ map instead of a hiccup-style keyword:
 
 <br>
 
-The above calls would render the following in your favorite terminal emulator: 
-
-<p align="center"><img src="resources/callouts-light.png" width="750px" /></p>
-
-<p align="center"><img src="resources/callouts-dark.png" width="750px" /></p>
-
+The above calls would render the following in your terminal emulator: 
+<p align="center"><img src="resources/docs/chromed/callouts_sideline_minimal_light.png" width="700px" /></p>
+<p align="center"><img src="resources/docs/chromed/callouts_sideline_minimal_dark.png" width="700px" /></p>
 <br>
 
-Callout accepts a `:theme` option. Supplying a value of `:sideline`, will render
-a `marquee` label: 
-
-<p align="center"><img src="resources/callouts-sideline-light.png" width="750px" /></p>
-
-<p align="center"><img src="resources/callouts-sideline-dark.png" width="750px" /></p>
-
-
- **`bling.core/callout`** takes one or two arguments. If two arguments are supplied, the first should be a map with 0 or more of following entries:
-
-
-
-| Key               | Pred                    | Description                                                  |
-| :---------------  | -----------------       | ------------------------------------------------------------ |
-| `:type`           | #{`keyword?` `string?`} | Should be one of: `:error`,  `:warning` , or `:info`. <br>Will set the label text (unless provided via `:label`). Will also set the `:colorway`, and override any provided `:colorway` value. |
-| `:colorway`       | #{`keyword?` `string?`} | The color of the sideline border, or gutter, depending on the value of `:theme`.<br />Should be one of: `:error`,  `:warning` , `:info` , `:positive`, or `:subtle`. <br>Can also be any one of the pallete colors such as  `:magenta`, `:green`,  `:negative`, `:neutral`, etc. |
-| `:theme`          | #{`keyword?` `string?`} | Theme of callout. Can be one of `:sideline`, `:sideline-bold`, or `:gutter`. Defaults to `:sideline`. |
-| `:label`          | `any?`                  | Labels the callout. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string). <br>In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively. |
-| `:label-theme`    | #{`keyword?` `string?`} | Theme of label. Can be one of `:marquee` or `:minimal`. Defaults to `:minimal`. |
-| `:padding-top`    | `int?`                  | Amount of padding (in newlines) at top, inside callout.<br/>Defaults to `0`. |
-| `:padding-bottom` | `int?`                  | Amount of padding (in newlines) at bottom, inside callout.<br>Defaults to `0`. In browser console, defaults to `1` in the case of callouts of type `:warning` or `:error`.|
-| `:padding-left`   | `int?`                  | Amount of padding (in blank character spaces) at left, inside callout.<br>In console emulator, defaults to `2`. In browser console, defaults to `0`.|
-| `:margin-top`     | `int?`                  | Amount of margin (in newlines) at top, outside callout.<br>Defaults to `1`. Only applies to terminal emulator printing. |
-| `:margin-bottom`  | `int?`                  | Amount of margin (in newlines) at bottom, outside callout.<br>Defaults to `0`. Only applies to terminal emulator printing. |
-| `:margin-left`    | `int?`                  | Amount of margin (in blank character spaces) at left, outside callout.<br>Defaults to `0`. Only applies to terminal emulator printing. |
-| `:data?`          | `boolean?`              | Returns a data representation of result instead of printing it. |
-
-
+With `{:theme :sideline-bold}`: 
+<p align="center"><img src="resources/docs/chromed/callouts_sideline-bold_minimal_light.png" width="700px" /></p>
+<p align="center"><img src="resources/docs/chromed/callouts_sideline-bold_minimal_dark.png" width="700px" /></p>
 <br>
+
+Callout accepts a `:label-theme` option. Supplying a value of `:marquee`, will render
+the label inside a box: 
+
+<p align="center"><img src="resources/docs/chromed/callouts_sideline_marquee_light.png" width="700px" /></p>
+<p align="center"><img src="resources/docs/chromed/callouts_sideline_marquee_dark.png" width="700px" /></p>
+<br>
+
+With `{:theme :sideline-bold :label-theme :marquee}`: 
+<p align="center"><img src="resources/docs/chromed/callouts_sideline-bold_marquee_light.png" width="700px" /></p>
+<p align="center"><img src="resources/docs/chromed/callouts_sideline-bold_marquee_dark.png" width="700px" /></p>
+<br>
+
+
 <br>
 
 ## Templates for errors and warnings
@@ -430,11 +439,12 @@ You must provide the relevant `:file`, `:line`, `:column`, and `:form` values.
     (callout callout-opts message)))
 
 (example-custom-callout
- {:point-of-interest-opts {:type   :error
-                           :file   "example.ns.core"
-                           :line   11
-                           :column 1
-                           :form   '(+ 1 true)}
+ {:point-of-interest-opts {:type                  :error
+                           :file                  "example.ns.core"
+                           :line                  11
+                           :column                1
+                           :form                  '(+ foo baz)
+                           :text-decoration-index 2}
   :callout-opts           {:type :error}})
 ```
 
@@ -443,17 +453,19 @@ You must provide the relevant `:file`, `:line`, `:column`, and `:form` values.
 
 The above callout would render like this your terminal emulator: 
 
-<p align="center"><img src="resources/error-with-point-of-interest-light.png" width="750px" /></p>
+<p align="center"><img src="resources/docs/chromed/callout-with-poi_sideline_minimal_light.png" width="700px" /></p>
+<p align="center"><img src="resources/docs/chromed/callout-with-poi_sideline_minimal_dark.png" width="700px" /></p>
 
-<p align="center"><img src="resources/error-with-point-of-interest-dark.png" width="750px" /></p>
+You can also render such warning and error callouts using a `:label-theme` value of `:marquee`. 
 
-You can also render such warning and error callouts using a `:label-theme` value of `:marquee` : 
+<p align="center"><img src="resources/docs/chromed/callout-with-poi_sideline_marquee_dark.png" width="700px" /></p>
+<p align="center"><img src="resources/docs/chromed/callout-with-poi_sideline_marquee_dark.png" width="700px" /></p>
 
-<p align="center"><img src="resources/error-with-point-of-interest-marquee-light.png" width="750px" /></p>
+The diagram inside the callout that shows the namespace, line, column, and form
+with underlined is created by **`bling.core/point-of-interest`**, which takes a
+single map with the following options:
 
-<p align="center"><img src="resources/error-with-point-of-interest-marquee-dark.png" width="750px" /></p>
-
-**`bling.core/point-of-interest`** takes a single map with the following options:
+<br>
 
 
 | Key                | Pred                   | Description                                                  |
@@ -467,9 +479,8 @@ You can also render such warning and error callouts using a `:label-theme` value
 | `:margin-block`    | `int?`                 | Controls the number of blank lines above and below the diagram.<br/>Defaults to `1`.|
 | `:type`            | #{`:error` `:warning`} | Automatically sets the `:text-decoration-color`. |
 | `:text-decoration-color` | #{`keyword?` `string?`} | Controls the color of the underline. Should be one of: `:error` `:warning`, or `:neutral`.<br>Can also be any one of the pallete colors such as  `:magenta`, `:green`,  `:negative`, `:neutral`, etc. Defaults to `:neutral` |
-| `:text-decoration-style` | #{`:wavy` `:solid` `:dashed` `:dotted` `:double`} | Controls the color of the underline. Should be one of: `:error` `:warning`, or `:neutral`. Can be any Defaults to `:neutral` |
+| `:text-decoration-style` | #{`:wavy` `:solid` `:dashed` `:dotted` `:double`} | Controls the color of the underline. |
 | `:text-decoration-index` | `pos-int?` | If the value of `:form` is a collection, this is the index of the item to apply text-decoration (underline). |
-
 <br>
 <br>
 
@@ -491,8 +502,8 @@ defined above:
   :theme         :gutter})
 ```
 
-<p align="center"><img src="resources/error-with-point-of-interest-medium-light.png" width="750px" /></p>
-<p align="center"><img src="resources/error-with-point-of-interest-medium-dark.png" width="750px" /></p>
+<p align="center"><img src="resources/docs/chromed/callout-with-poi_gutter_with-colored-labels_light.png" width="700px" /></p>
+<p align="center"><img src="resources/docs/chromed/callout-with-poi_gutter_with-colored-labels_dark.png" width="700px" /></p>
 
 Example value of `2` for `:margin-left`, to increase the weight:
 
@@ -506,19 +517,19 @@ Example value of `2` for `:margin-left`, to increase the weight:
   :margin-left   2
   :theme         :gutter})
 ```
-<p align="center"><img src="resources/error-with-point-of-interest-heavy-light.png" width="750px" /></p>
-<p align="center"><img src="resources/error-with-point-of-interest-heavy-dark.png" width="750px" /></p>
+<p align="center"><img src="resources/docs/chromed/callout-with-poi_gutter_with-colored-labels_light.png" width="700px" /></p>
+<p align="center"><img src="resources/docs/chromed/callout-with-poi_gutter_with-colored-labels_dark.png" width="700px" /></p>
 
 More callout examples of the `:gutter` theme:
 
-<p align="center"><img src="resources/callouts-medium-light.png" width="750px" /></p>
-<p align="center"><img src="resources/callouts-medium-dark.png"  width="750px" /></p>
+<p align="center"><img src="resources/docs/chromed/callouts_gutter_with-colored-labels_light.png" width="700px" /></p>
+<p align="center"><img src="resources/docs/chromed/callouts_gutter_with-colored-labels_dark.png"  width="700px" /></p>
 
 
 More example values of `2` for `:margin-left`, to increase the weight:
 
-<p align="center"><img src="resources/callouts-heavy-light.png" width="750px" /></p>
-<p align="center"><img src="resources/callouts-heavy-dark.png"  width="750px" /></p>
+<p align="center"><img src="resources/docs/chromed/callouts_gutter2_with-colored-labels_dark.png" width="700px" /></p>
+<p align="center"><img src="resources/docs/chromed/callouts_gutter2_with-colored-labels_dark.png"  width="700px" /></p>
 
 
 <br>

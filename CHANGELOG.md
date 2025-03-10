@@ -103,3 +103,14 @@ Various internal refactoring and code cleanup, in addtion to new features:
 
 ## Breaking changes
 
+## 0.5.0
+- The `:type` option for `callout` now only accepts for `:error`, `:warning`, and `:info`. Previously, it accepted the other semantic color aliases such as `:positive`, `:subtle`, `:accent`, etc., as well any of the other named colors from the [Bling pallette](https://github.com/paintparty/bling?tab=readme-ov-file#the-bling-pallette). These alias and color names can be now provided by the new `:colorway` option. If both `:colorway` and `:type` options are supplied, the `:type` option will take precedence. 
+
+- The `:border-weight` option has been removed, replaced by the functionality provided by the new `:theme` option.
+
+- By default, `callout` labels are printed in `:neutral`. This change was made for accesibility (contrast) reasons. Previously, these labels inherited the color set by the `:type` value. 
+
+- Labels with the default value of `:minimal` for the `:label-theme` option are bolded by default. Labels with the value of `:marquee` for the `:label-value` option are not bolded.
+
+- The `:warning` alias is now mapped to `:orange.` Previously it was mapped to `:yellow`.
+
