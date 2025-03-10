@@ -535,8 +535,7 @@ More example values of `2` for `:margin-left`, to increase the weight:
 <br>
 
 ## Testing
-There is a set of visual test suites in `bling.core-test`. For visual tests in
-node
+There is a set of visual test suites in `bling.core-test`.
 
 For visual testing of output in node / deno context first do:
 
