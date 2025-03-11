@@ -19,7 +19,7 @@
 
 (ns bling.core
   (:require [clojure.string :as string]
-            ;; [bling.macros :refer [let-map keyed ?]] ;;<-- ? is just for debugging
+            ;; [bling.macros :refer [let-map keyed ?]] ;;<-- just for debugging
             [bling.macros :refer [let-map keyed]]
             #?(:cljs [goog.object])
             #?(:cljs [bling.js-env :refer [node?]])))
@@ -235,13 +235,33 @@
 
 (def form-limit 33)
 
+                                                                  
+                                                                  
+;; UUUUUUUU     UUUUUUUUNNNNNNNN        NNNNNNNNDDDDDDDDDDDDD        
+;; U::::::U     U::::::UN:::::::N       N::::::ND::::::::::::DDD     
+;; U::::::U     U::::::UN::::::::N      N::::::ND:::::::::::::::DD   
+;; UU:::::U     U:::::UUN:::::::::N     N::::::NDDD:::::DDDDD:::::D  
+;;  U:::::U     U:::::U N::::::::::N    N::::::N  D:::::D    D:::::D 
+;;  U:::::D     D:::::U N:::::::::::N   N::::::N  D:::::D     D:::::D
+;;  U:::::D     D:::::U N:::::::N::::N  N::::::N  D:::::D     D:::::D
+;;  U:::::D     D:::::U N::::::N N::::N N::::::N  D:::::D     D:::::D
+;;  U:::::D     D:::::U N::::::N  N::::N:::::::N  D:::::D     D:::::D
+;;  U:::::D     D:::::U N::::::N   N:::::::::::N  D:::::D     D:::::D
+;;  U:::::D     D:::::U N::::::N    N::::::::::N  D:::::D     D:::::D
+;;  U::::::U   U::::::U N::::::N     N:::::::::N  D:::::D    D:::::D 
+;;  U:::::::UUU:::::::U N::::::N      N::::::::NDDD:::::DDDDD:::::D  
+;;   UU:::::::::::::UU  N::::::N       N:::::::ND:::::::::::::::DD   
+;;     UU:::::::::UU    N::::::N        N::::::ND::::::::::::DDD     
+;;       UUUUUUUUU      NNNNNNNN         NNNNNNNDDDDDDDDDDDDD        
+                                                                  
+                                                                
 (defn text-underline
-  [{:keys [form text-decoration-index text-decoration-style] :as m}]
+  [{:keys [form form-as-str text-decoration-index text-decoration-style] :as m}]
   (if (and text-decoration-index
-           (or (pos? text-decoration-index)
-               (zero? text-decoration-index))
-           (coll? form)
-           (< (count (as-str form)) form-limit))
+              (or (pos? text-decoration-index)
+                  (zero? text-decoration-index))
+              (coll? form)
+              (< (count (as-str form)) form-limit))
     (let [form
           (into [] form)
 
@@ -264,11 +284,11 @@
           {:keys [strlen str-index]}
           (nth data text-decoration-index nil)]
       {:text-underline-str (text-underline-str
-                             strlen
-                             str-index
-                             text-decoration-style)})
+                            strlen
+                            str-index
+                            text-decoration-style)})
     {:text-underline-str (text-underline-str
-                           (count (as-str form))
+                           (count form-as-str)
                            0
                            text-decoration-style)}))
 
@@ -564,6 +584,24 @@
        Enriched
        [tagged css consoleArray args])))
 
+                                                 
+;; PPPPPPPPPPPPPPPPP        OOOOOOOOO     IIIIIIIIII
+;; P::::::::::::::::P     OO:::::::::OO   I::::::::I
+;; P::::::PPPPPP:::::P  OO:::::::::::::OO I::::::::I
+;; PP:::::P     P:::::PO:::::::OOO:::::::OII::::::II
+;;   P::::P     P:::::PO::::::O   O::::::O  I::::I  
+;;   P::::P     P:::::PO:::::O     O:::::O  I::::I  
+;;   P::::PPPPPP:::::P O:::::O     O:::::O  I::::I  
+;;   P:::::::::::::PP  O:::::O     O:::::O  I::::I  
+;;   P::::PPPPPPPPP    O:::::O     O:::::O  I::::I  
+;;   P::::P            O:::::O     O:::::O  I::::I  
+;;   P::::P            O:::::O     O:::::O  I::::I  
+;;   P::::P            O::::::O   O::::::O  I::::I  
+;; PP::::::PP          O:::::::OOO:::::::OII::::::II
+;; P::::::::P           OO:::::::::::::OO I::::::::I
+;; P::::::::P             OO:::::::::OO   I::::::::I
+;; PPPPPPPPPP               OOOOOOOOO     IIIIIIIIII
+                                                 
 
 ;; Line and point of interest public fns  -------------------------------------
 (defn- enriched-args [o]
@@ -625,7 +663,10 @@
                                      (maybe all-color-names))
                              "neutral")
         form-as-str      (shortened form 33)
-        underline-str    (-> (text-underline opts) :text-underline-str)
+        underline-str    (-> opts
+                             (assoc :form-as-str form-as-str)
+                             text-underline
+                             :text-underline-str)
         bolded-form      [{:font-weight :bold} form-as-str]
         underline-styled [{:font-weight :bold
                            :color       underline-color} underline-str]
@@ -923,6 +964,7 @@
                   (lns m :value))))
          (:margin-bottom-str m))))
 
+
 (def rainbow-colors
   ["red" "orange" "yellow" "green" "black" "white" "blue" "purple" "magenta"])
 
@@ -1176,7 +1218,25 @@
      ;label         (if label-is-blinged? label (bling [:bold label]))
     ]))
 
-
+                                        
+                                        
+;;         CCCCCCCCCCCCC     OOOOOOOOO     
+;;      CCC::::::::::::C   OO:::::::::OO   
+;;    CC:::::::::::::::C OO:::::::::::::OO 
+;;   C:::::CCCCCCCC::::CO:::::::OOO:::::::O
+;;  C:::::C       CCCCCCO::::::O   O::::::O
+;; C:::::C              O:::::O     O:::::O
+;; C:::::C              O:::::O     O:::::O
+;; C:::::C              O:::::O     O:::::O
+;; C:::::C              O:::::O     O:::::O
+;; C:::::C              O:::::O     O:::::O
+;; C:::::C              O:::::O     O:::::O
+;;  C:::::C       CCCCCCO::::::O   O::::::O
+;;   C:::::CCCCCCCC::::CO:::::::OOO:::::::O
+;;    CC:::::::::::::::C OO:::::::::::::OO 
+;;      CCC::::::::::::C   OO:::::::::OO   
+;;         CCCCCCCCCCCCC     OOOOOOOOO     
+                                      
 
 (defn ^:public callout
   "Prints a message to the console with a block-based coloring motif controlled
