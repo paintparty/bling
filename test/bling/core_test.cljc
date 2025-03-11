@@ -1,13 +1,12 @@
 ;; Namespace for visual testing and sandbox dev during development
 
 (ns bling.core-test
-  (:require [clojure.test :as test]
-            [clojure.string :as string]
-            [bling.core :refer [bling callout point-of-interest]]
-            [bling.sample]
-            [bling.macros :refer [blingf]]
-            #?(:cljs [bling.core :refer [print-bling]])
-            #?(:cljs [bling.js-env :refer [node?]])))
+  (:require
+   #?(:cljs [bling.core :refer [print-bling]])
+   #?(:cljs [bling.js-env :refer [node?]])
+   [bling.core :refer [bling callout point-of-interest]]
+   [bling.sample]
+   ))
 
 
 (def printer
@@ -1027,12 +1026,8 @@
 (println)
 (println)
 (println)
-(callout {:colorway :positive
-          :type :errors
-          ;; :margin-left 3
-          ;; :theme    :gutter
-          }
-         "Example callout, with :colorway of :positive, and custom :label")
+
+
 #_(example-custom-callout
    {:point-of-interest-opts {:file                  "example.ns.core"
                              :line                  11
