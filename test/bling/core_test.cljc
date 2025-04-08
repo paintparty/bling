@@ -185,7 +185,7 @@
              :label    "SUCCESS!"}
             "Example callout, with :colorway of :positive, and custom :label")
 
-   ;; CALLOUT examples with light border ------------------------------------------
+   ;; CALLOUT examples with bold border ------------------------------------------
    
    (println)
    (println (bling [:italic.subtle ";; callout examples, {:theme :sideline-bold :label-theme :minimal}"]))
@@ -367,7 +367,7 @@
    ;; CALLOUT examples {:theme :sideline :label-theme :marquee} ----------------------------------------
    (println)
    (println)
-   (println (bling [:italic.subtle ";; callout examples, :sideline theme (default)"]))
+   (println (bling [:italic.subtle ";; callout examples, {:label-theme :marquee}"]))
    (callout {:type        :info
              :label-theme :marquee}
             "Example callout, with :type of :info")
@@ -411,7 +411,7 @@
    
    (println)
    (println)
-   (println (bling [:italic.subtle ";; callout examples, :sideline theme (default)"]))
+   (println (bling [:italic.subtle ";; callout examples, {:theme :sideline-bold :label-theme :marquee}"]))
    (callout {:type        :info
              :theme       :sideline-bold
              :label-theme :marquee}
