@@ -70,7 +70,7 @@
                                       "         ")
                                     s)])) 
                      (string/split (string/replace 
-                                    (with-out-str (pprint/pprint m))
+                                    (with-out-str (println m))
                                     #"\n$"
                                     "")
                                    #",")))
