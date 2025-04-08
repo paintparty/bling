@@ -87,10 +87,18 @@ Or, import into your namespace:
 
 <br>
 
-If you are a Babashka user, you can view an exhaustive sampling of Bling output by pasting this snippet into your terminal:
+You can view an exhaustive sampling of Bling output by pasting this snippet into your terminal:
 
 ```clojure
-bb -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.5.0"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
+clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.5.2"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
+```
+<br>
+<br>
+
+To view the above sample with Babashka, paste this snippet into your terminal:
+
+```clojure
+bb -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.5.2"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
 ```
 
 <br>
