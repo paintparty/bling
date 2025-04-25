@@ -1409,7 +1409,10 @@
 (defn href-console [style v]
   (let [href  (when (map? style) (:href style))
         v     (if href (hyperlink v href) v)
-        style (if href (dissoc style :href) style)]
+        style (if href
+                (merge {:text-decoration-line :underline}
+                       (dissoc style :href))
+                style)]
     [style v]))
 
 
