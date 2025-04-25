@@ -14,7 +14,6 @@
 ;; - Should additional file-info (string), which would override the gen option
 ;; 
 
-
 ;; Adds about 12kb to a cljs bundle
 
 (ns bling.core
@@ -312,14 +311,34 @@
               ret (str n ";2;" r ";" g ";" b)]
           ret)))))
 
+(def underline-style-codes-by-style
+  {"straight" 1 
+   "double"   2 
+   "wavy"    3 
+   "dotted"   4 
+   "dashed"   5})  
+
+(defn- sgr-text-decoration [m]
+  (when-not (:disable-text-decoration? m)
+    (cond
+      (or (contains? #{"underline" :underline} (:text-decoration m))
+          (contains? #{"underline" :underline} (:text-decoration-line m)))
+      (if-let [n (some->> m
+                          :text-decoration-style
+                          as-str
+                          (get underline-style-codes-by-style))] 
+        (str "4:" n)
+        "4")
+      (contains? #{"line-through" :strikethrough}
+                 (:text-decoration m))
+      "9")))
+
 (defn- m->sgr
   [{fgc*  :color
     bgc*  :background-color
     :keys [font-style
            font-weight
-           text-decoration
            disable-italics?
-           disable-text-decoration?
            disable-font-weights?]
     :as   m}]
   (let [fgc             (x->sgr fgc* :fg)
@@ -330,16 +349,7 @@
         weight          (when (and (not disable-font-weights?)
                                    (contains? #{"bold" :bold} font-weight))
                           "1")
-
-        text-decoration (when-not disable-text-decoration?
-                          (cond
-                            (contains? #{"underline" :underline}
-                                       text-decoration)
-                            "4"
-
-                            (contains? #{"line-through" :strikethrough}
-                                       text-decoration)
-                            "9"))
+        text-decoration (sgr-text-decoration m)
         ret             (str "\033["
                              (string/join ";"
                                           (remove nil?
@@ -1336,6 +1346,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Enriched text public fns and helpers  --------------------------------------
 
+
 (defn- ^:private tagged-str
   "Expects an EnrichedText record.
    In Clojure, returns string wrapped with appropriate sgr codes for rich
@@ -1352,23 +1363,35 @@
     #?(:cljs
        (if node? (f o) (str "%c" (:value o) "%c"))
        :clj
-       #_(?sgr (f o))
        (f o))))
 
+
 (defn- tag->map [acc s]
-  (let [[k m] (case s
-                "bold" [:font-weight "bold"]
-                "italic" [:font-style "italic"]
-                "underline" [:text-decoration "underline"]
-                "strikethrough" [:text-decoration "line-through"]
-                (let [cs (:all color-codes)
-                      m  (get cs s nil)]
-                  (if m
-                    [:color m]
-                    (when-let [nm (string/replace s #"-bg$" "")]
-                      (when-let [m (get cs nm nil)]
-                        [:background-color m])))))]
-    (if k (assoc acc k m) acc)))
+  (let [kvs (case s
+              "bold"             [[:font-weight "bold"]]
+              "italic"           [[:font-style "italic"]]
+              "underline"        [[:text-decoration "underline"]]
+              "solid-underline"  [[:text-decoration "underline"]]
+              "double-underline" [[:text-decoration-line "underline"]
+                                  [:text-decoration-style "double"]]
+              "wavy-underline"   [[:text-decoration-line "underline"]
+                                  [:text-decoration-style "wavy"]]
+              "dotted-underline" [[:text-decoration-line "underline"]
+                                  [:text-decoration-style "dotted"]]
+              "dashed-underline" [[:text-decoration-line "underline"]
+                                  [:text-decoration-style "dashed"]]
+              "strikethrough"    [[:text-decoration "line-through"]]
+              (let [cs (:all color-codes)
+                    m  (get cs s nil)]
+                (if m
+                  [[:color m]]
+                  (when-let [nm (string/replace s #"-bg$" "")]
+                    (when-let [m (get cs nm nil)]
+                      [[:background-color m]])))))]
+    (if kvs
+      (reduce (fn [acc [k m]] (assoc acc k m)) acc kvs)
+      acc)))
+
 
 (defrecord EnrichedText [value style])
 
@@ -1423,14 +1446,25 @@
            (->> (reduce tag->map {})))))))
 
 
+(defn- reorder-text-decoration-shorthand [style]
+  (if-let [td (or (get style :text-decoration)
+                  (get style "text-decoration"))]
+    (->> (reduce-kv (fn [acc k v]
+                      (conj acc k v))
+                    [:text-decoration td]
+                    (dissoc style :text-decoration))
+         (apply array-map)) 
+    style))
+
+
 (defn- updated-css [css-styles x]
   (if-let [style (some-> x
                          (maybe et-vec?)
                          enriched-text
                          :style)]
-
-    (let [style* (select-keys style browser-dev-console-props)
-          style  (reduce-colors-to-sgr-or-css :css style*)
+    (let [style  (->> (select-keys style browser-dev-console-props)
+                      (reduce-colors-to-sgr-or-css :css)
+                      (reorder-text-decoration-shorthand))
           ks     (keys style)
           resets (reduce (fn [acc k]
                            (assoc acc k "initial"))
@@ -1439,8 +1473,9 @@
 
       ;; (prn {:style* style*
       ;;       :style  style
-      ;;       :ks     ks
-      ;;       :resets ks})
+      ;;       ;; :ks     ks
+      ;;       ;; :resets ks
+      ;;       })
 
       (conj css-styles
             (css-stylemap->str style)
@@ -1450,13 +1485,6 @@
 
 (defn- enriched-data-inner
   [[coll css] x]
-  ;; (prn (merge {:coll    coll
-  ;;                :css     css
-  ;;                :x       x
-  ;;                :et-vec? (et-vec? x)}
-  ;;             (when (et-vec? x)
-  ;;               {:enriched-text (tagged-str (enriched-text x))
-  ;;                :updated-css   (updated-css css x)})))
   (let [s (cond (et-vec? x)
                 (tagged-str (enriched-text x))
                 (not (coll? x))
@@ -1470,6 +1498,12 @@
                            [[] []]
                            args)
         tagged (string/join coll)]
+
+    ;; #?(:cljs
+    ;;    (js/console.log css)
+    ;;    :clj
+    ;;    ())
+    
     {:console-array (into-array (concatv [tagged] css))
      :tagged        tagged
      :css           css
