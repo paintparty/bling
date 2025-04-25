@@ -68,8 +68,19 @@
    ;; PRIMITIVES ------------------------------------------------------------------
    (printer (bling [:bold "bold "]
                    [:italic "italic "]
-                   [:underline "underline "]
-                   [:strikethrough "strikethrough"]))
+                   [:strikethrough "strikethrough"]
+                   [:underline "underline"]
+                   [:double-underline "underline"]
+                   [:wavy-underline "underline"]
+                   [:dotted-underline "underline"]
+                   [:dashed-underline "underline"]))
+
+   (println)
+
+   ;; Hyperlink
+   (printer (bling [{:text-decoration :underline
+                     :href "http://example.com"}
+                    "cmd (or ctrl) + click on me to follow hypelink"]))
 
    (println)
 
