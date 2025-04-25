@@ -26,6 +26,28 @@
 
 (declare xterm-colors-by-id)
 
+(def ^:private ESC "\u001B[")
+(def ^:private OSC "\u001B]")
+(def ^:private BEL "\u0007")
+(def ^:private SEP ";")
+
+(defn hyperlink [text url]
+  #?(:cljs
+     url
+     :clj
+     (apply str
+            [OSC
+             "8"
+             SEP
+             SEP
+             url
+             BEL
+             text
+             OSC
+             "8"
+             SEP
+             SEP
+             BEL])))
 
 (def ^:private browser-dev-console-props
   [:text-decoration-line
@@ -1391,33 +1413,55 @@
 
 (defrecord EnrichedText [value style])
 
+
+#?(:cljs
+   (defn- href-browser-dev-console [style v]
+     (let [href  (when (map? style) (:href style))
+           v     (if href
+                   (if (= href v) href (str v " " href))
+                   v)
+           style (if href (dissoc style :href) style)]
+       [style v])))
+
+
+(defn href-console [style v]
+  (let [href  (when (map? style) (:href style))
+        v     (if href (hyperlink v href) v)
+        style (if href (dissoc style :href) style)]
+    [style v]))
+
+
 (defn- enriched-text
   "Returns an EnrichedText record. The `:value` entry is intended to be
    displayed as a text string in the console, while the `:style` entry is a map
    of styling to be applied to the printed text.
 
-   Private, for lib internal use.
-   
    Example:
    #my.ns/EnrichedText {:style {:font-weight \"bold\"
                                 :color       {:sgr 39
                                               :css \"#00afff\"}
                         :value \"hi\"}"
   [[style v]]
-  (->EnrichedText
-    (str v)
-    (cond
-      (map? style)
-      (reduce-kv convert-color {} style)
+  (let [[style v] #?(:cljs
+                     (if node? 
+                       (href-console style v)
+                       (href-browser-dev-console style v))
+                     :clj
+                     (href-console style v))]
+    (->EnrichedText
+     (str v)
+     (cond
+       (map? style)
+       (reduce-kv convert-color {} style)
 
-      (or (keyword? style)
-          (string? style))
-      (-> style
-          name
-          (string/split (if (keyword? style)
-                          #"\."
-                          #" "))
-          (->> (reduce tag->map {}))))))
+       (or (keyword? style)
+           (string? style))
+       (-> style
+           name
+           (string/split (if (keyword? style)
+                           #"\."
+                           #" "))
+           (->> (reduce tag->map {})))))))
 
 
 (defn- updated-css [css-styles x]
