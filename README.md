@@ -182,7 +182,7 @@ You can add multiple decorations with hiccup-style tags (a keyword with dot sepa
 
 <br>
 
-
+#### Using a map instead of a hiccup-style keyword
 You can also pass a map (instead of a hiccup-style keyword tag) to style the text:
 
 ```Clojure
@@ -210,6 +210,60 @@ Using a map is preferrable if you are doing something like this:
 
 <br>
 
+
+### Underline styles
+
+```Clojure
+(println (bling [:underline "underline"]
+                ", "
+                [:solid-underline "solid-underline"]
+                ", "
+                [:double-underline "double-underline"]
+                ", "
+                [:wavy-underline "wavy-underline"]
+                ", "
+                [:dotted-underline "dotted-underline"]
+                ", "
+                [:dashed-underline "dashed-underline"]))
+```
+<p align="center"><img src="resources/docs/chromed/underline-styles_light.png" width="700px" /></p>
+<p align="center"><img src="resources/docs/chromed/underline-styles_dark.png" width="700px" /></p>
+
+<br>
+
+
+### Hyperlinks
+
+Bling supports clickable hyperlinks in terminal environments. You must use `cmd` + click to navigate to the link.
+
+```Clojure
+(bling [{:href "http://example.com"}
+        "cmd + click to follow this hyperlink"])
+```
+<p align="center"><img src="resources/docs/chromed/hyperlink_light.png" width="700px" /></p>
+<p align="center"><img src="resources/docs/chromed/hyperlink_dark.png" width="700px" /></p>
+
+
+#### Hyperlink support in browser dev consoles
+Hyperlink support in browser dev consoles is actually more limited.
+This is not a limitation of Bling but rather the browser.
+
+```Clojure
+(bling [{:href "http://example.com"}
+        "My site"])
+```
+In a browser dev console, Bling would format the above example above like this:<br>
+<code>My site <ins>http://example.com</ins></code>
+
+If you just want a clickable link in a browser dev environment, you don't
+necessarily need to use Bling's `:href` feature, as a valid url will be automatically
+clickable and styled by the browser dev console.
+
+
+<br>
+
+
+#### Valid arguments to bling
 Note that all the arguments to **`bling.core/bling`** must satisfy this predicate:
 
 ```Clojure
@@ -236,7 +290,8 @@ If, for example, you wanted to print `[1 2 3]` in red, you will need to stringif
 ```
 
 
-
+<br>
+<br>
 
 ### The Bling pallette 
 

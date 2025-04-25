@@ -233,7 +233,29 @@
                              :label       "ERROR: ClassCastException"}})
 
 
+  ;; Hyperlink support ---------------------------------------------------------
+  (println)
+  (println)
+  (printer (bling [{:href            "http://example.com"}
+                   "cmd + click to follow this hyperlink"]))
+
+
+  ;; Underline styles ----------------------------------------------------------
+  (println)
+  (println)
+  (printer (bling [:underline "underline"]
+                  "\n"
+                  [:double-underline "double-underline"]
+                  "\n"
+                  [:wavy-underline "wavy-underline"]
+                  "\n"
+                  [:dotted-underline "dotted-underline"]
+                  "\n"
+                  [:dashed-underline "dashed-underline"]))
+  
+
   ;; Combo styles ------------------------------------------------------------
+  (println)
   (println)
   (printer (bling [:bold.italic "bold & italic"]
                   "\n"
@@ -246,10 +268,12 @@
                    "bold & italic & colored & underline"]
                   "\n"
                   [:bold.italic.blue.strikethrough 
-                   "bold & italic & colored & strikethrough"]))
+                   "bold & italic & colored & strikethrough"]
+                  ))
 
   
   ;; All the colors ----------------------------------------------------------
+  (println)
   (println)
   (let [colors   (filter #(not (re-find #"^system-" %)) colors-ordered)
         max-char (apply max (map count colors))]

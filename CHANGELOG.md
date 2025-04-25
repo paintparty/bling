@@ -17,7 +17,23 @@ For a list of breaking changes, check [here](#breaking-changes)
 <br>
 <br>
 
-## 0.5.0
+## 0.6.0
+2025-04-25
+
+Added support for underline styles and also hyperlinks.
+
+#### Fixed
+- [:text-decoration value bug](https://github.com/paintparty/bling/issues/21)
+
+#### Added 
+- [Underline/text-decoration styles](https://github.com/paintparty/bling/issues/24)
+- [Support for hyperlinks](https://github.com/paintparty/bling/issues/10)
+
+<br>
+<br>
+
+
+## 0.5.2
 2025-03-09
 
 Various internal refactoring and code cleanup, in addtion to new features:

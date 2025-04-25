@@ -14,7 +14,6 @@
 ;; - Should additional file-info (string), which would override the gen option
 ;; 
 
-
 ;; Adds about 12kb to a cljs bundle
 
 (ns bling.core
@@ -26,6 +25,28 @@
 
 (declare xterm-colors-by-id)
 
+(def ^:private ESC "\u001B[")
+(def ^:private OSC "\u001B]")
+(def ^:private BEL "\u0007")
+(def ^:private SEP ";")
+
+(defn hyperlink [text url]
+  #?(:cljs
+     url
+     :clj
+     (apply str
+            [OSC
+             "8"
+             SEP
+             SEP
+             url
+             BEL
+             text
+             OSC
+             "8"
+             SEP
+             SEP
+             BEL])))
 
 (def ^:private browser-dev-console-props
   [:text-decoration-line
@@ -223,7 +244,8 @@
                    ret*)]
         ret))))
 
-(defn- text-underline-str [n str-index text-decoration-style]
+                                                                  
+(defn- poi-text-underline-str [n str-index text-decoration-style]
   (str (string/join (repeat str-index " "))
        (string/join (repeat n
                             (case text-decoration-style
@@ -235,27 +257,7 @@
 
 (def form-limit 33)
 
-                                                                  
-                                                                  
-;; UUUUUUUU     UUUUUUUUNNNNNNNN        NNNNNNNNDDDDDDDDDDDDD        
-;; U::::::U     U::::::UN:::::::N       N::::::ND::::::::::::DDD     
-;; U::::::U     U::::::UN::::::::N      N::::::ND:::::::::::::::DD   
-;; UU:::::U     U:::::UUN:::::::::N     N::::::NDDD:::::DDDDD:::::D  
-;;  U:::::U     U:::::U N::::::::::N    N::::::N  D:::::D    D:::::D 
-;;  U:::::D     D:::::U N:::::::::::N   N::::::N  D:::::D     D:::::D
-;;  U:::::D     D:::::U N:::::::N::::N  N::::::N  D:::::D     D:::::D
-;;  U:::::D     D:::::U N::::::N N::::N N::::::N  D:::::D     D:::::D
-;;  U:::::D     D:::::U N::::::N  N::::N:::::::N  D:::::D     D:::::D
-;;  U:::::D     D:::::U N::::::N   N:::::::::::N  D:::::D     D:::::D
-;;  U:::::D     D:::::U N::::::N    N::::::::::N  D:::::D     D:::::D
-;;  U::::::U   U::::::U N::::::N     N:::::::::N  D:::::D    D:::::D 
-;;  U:::::::UUU:::::::U N::::::N      N::::::::NDDD:::::DDDDD:::::D  
-;;   UU:::::::::::::UU  N::::::N       N:::::::ND:::::::::::::::DD   
-;;     UU:::::::::UU    N::::::N        N::::::ND::::::::::::DDD     
-;;       UUUUUUUUU      NNNNNNNN         NNNNNNNDDDDDDDDDDDDD        
-                                                                  
-                                                                
-(defn text-underline
+(defn poi-text-underline
   [{:keys [form form-as-str text-decoration-index text-decoration-style] :as m}]
   (if (and text-decoration-index
               (or (pos? text-decoration-index)
@@ -283,11 +285,11 @@
 
           {:keys [strlen str-index]}
           (nth data text-decoration-index nil)]
-      {:text-underline-str (text-underline-str
+      {:text-underline-str (poi-text-underline-str
                             strlen
                             str-index
                             text-decoration-style)})
-    {:text-underline-str (text-underline-str
+    {:text-underline-str (poi-text-underline-str
                            (count form-as-str)
                            0
                            text-decoration-style)}))
@@ -309,14 +311,34 @@
               ret (str n ";2;" r ";" g ";" b)]
           ret)))))
 
+(def underline-style-codes-by-style
+  {"straight" 1 
+   "double"   2 
+   "wavy"    3 
+   "dotted"   4 
+   "dashed"   5})  
+
+(defn- sgr-text-decoration [m]
+  (when-not (:disable-text-decoration? m)
+    (cond
+      (or (contains? #{"underline" :underline} (:text-decoration m))
+          (contains? #{"underline" :underline} (:text-decoration-line m)))
+      (if-let [n (some->> m
+                          :text-decoration-style
+                          as-str
+                          (get underline-style-codes-by-style))] 
+        (str "4:" n)
+        "4")
+      (contains? #{"line-through" :strikethrough}
+                 (:text-decoration m))
+      "9")))
+
 (defn- m->sgr
   [{fgc*  :color
     bgc*  :background-color
     :keys [font-style
            font-weight
-           text-decoration
            disable-italics?
-           disable-text-decoration?
            disable-font-weights?]
     :as   m}]
   (let [fgc             (x->sgr fgc* :fg)
@@ -327,16 +349,7 @@
         weight          (when (and (not disable-font-weights?)
                                    (contains? #{"bold" :bold} font-weight))
                           "1")
-
-        text-decoration (when-not disable-text-decoration?
-                          (cond
-                            (contains? #{"underline" :underline}
-                                       text-decoration)
-                            "4"
-
-                            (contains? #{"line-through" :strikethrough}
-                                       text-decoration)
-                            "9"))
+        text-decoration (sgr-text-decoration m)
         ret             (str "\033["
                              (string/join ";"
                                           (remove nil?
@@ -425,12 +438,12 @@
       v)))
 
 (defn- et-vec? [x]
-  (and (vector? x)
-       (= 2 (count x))
-       (-> x
-           (nth 0)
-           (maybe #(or (keyword? %)
-                       (map? %))))))
+  (boolean (and (vector? x)
+                (= 2 (count x))
+                (-> x
+                    (nth 0)
+                    (maybe #(or (keyword? %)
+                                (map? %)))))))
 
 
 ;; Formatting helper fns  -----------------------------------------------------
@@ -450,24 +463,6 @@
 (declare callout)
 (declare bling)
 (declare print-bling)
-
-
-;; TODO - confirm we don't need this anymore and delete
-(defn- maybe-wrap [x]
-  (when (et-vec? x)
-    #?(:cljs
-       (js/console.warn
-         "bling.core/point-of-interest\n\n"
-         "Supplied value for :header option:\n\n"
-         x
-         "\n\n"
-         "If you are trying to style this text, this value needs to be wrapped"
-         "in a vector like this:\n\n"
-         [x]
-         "\n\n")
-       :clj
-       ()))
-  (cond (coll? x) x :else [x]))
 
 
 ;; Formatting exceptions ----------------------------------------------------------
@@ -665,7 +660,7 @@
         form-as-str      (shortened form 33)
         underline-str    (-> opts
                              (assoc :form-as-str form-as-str)
-                             text-underline
+                             poi-text-underline
                              :text-underline-str)
         bolded-form      [{:font-weight :bold} form-as-str]
         underline-styled [{:font-weight :bold
@@ -861,8 +856,6 @@
           s))))
 
 (defn- lns [m k]
-  ;; (when (= k :label)
-  ;;   (? m))
   (let [s                           (some-> m k)
         label-lines?                (= k :label)
         body-lines?                 (= k :value)
@@ -896,8 +889,6 @@
                                                (assoc m
                                                       :current-line-type k)) 
                                       lns-coll))]
-    ;;  (when (= k :label) (? lns-coll))
-    ;;  (when (= k :label) (? ret))
     ret))
 
 (defn body-lines-with-border
@@ -981,61 +972,61 @@
 
 (defn callout*
   [{:keys [theme] :as m}]
-  ;; (? m)
-  (let [char               gutter-char
-        style              {:color (:color m)}
-        gutter?            (= "gutter" theme)
-        rainbow?           (= "rainbow-gutter" theme)
-        gutter-str         (if rainbow? 
-                             (bling [{:color (last rainbow-colors)} char])
-                             (bling [style char]))
-        rainbow-gutter-str (apply bling
+  (let [char                 gutter-char
+        style                {:color (:color m)}
+        gutter?              (= "gutter" theme)
+        rainbow?             (= "rainbow-gutter" theme)
+        gutter-str           (if rainbow? 
+                               (bling [{:color (last rainbow-colors)} char])
+                               (bling [style char]))
+        rainbow-gutter-str   (apply bling
                                   (for [s (drop-last rainbow-colors)]
                                     [{:color s} char]))
         rainbow-gutter-str-odd (apply bling
                                   (for [s (drop-last rainbow-colors-system)]
                                     [{:color s} char]))
 
-        cr                 (fn [k ch] (char-repeat (or (k m) 0) ch))
-        gutter-str-zero    (bling [style (string/join 
-                                          (cr :margin-left
-                                              gutter-char-lower-seven-eighths))])
+        cr                   (fn [k ch] (char-repeat (or (k m) 0) ch))
+        gutter-str-zero      (bling [style
+                                     (string/join 
+                                      (cr :margin-left
+                                          gutter-char-lower-seven-eighths))])
         margin-left-str-zero gutter-str-zero
         border-left-str-zero gutter-char-lower-seven-eighths
-        s                  (ansi-callout-str
-                            (merge
-                             m
-                             {:border-style      style
-                              :border-left-str   (case theme
-                                                   "sideline"
-                                                   "│"
-                                                   "sideline-bold"
-                                                   "┃"
-                                                   "gutter"
-                                                   gutter-str
-                                                   "rainbow-gutter"
-                                                   gutter-str
-                                                   " ")
-                              :padding-left-str  (cr :padding-left " ")
-                              :margin-left-str   (if rainbow?
-                                                   rainbow-gutter-str
-                                                   (cr
-                                                    :margin-left
-                                                    (case theme
-                                                      "gutter"
-                                                      gutter-str
-                                                      "rainbow-gutter"
-                                                      rainbow-gutter-str
-                                                      " ")))
+        s                    (ansi-callout-str
+                              (merge
+                               m
+                               {:border-style      style
+                                :border-left-str   (case theme
+                                                     "sideline"
+                                                     "│"
+                                                     "sideline-bold"
+                                                     "┃"
+                                                     "gutter"
+                                                     gutter-str
+                                                     "rainbow-gutter"
+                                                     gutter-str
+                                                     " ")
+                                :padding-left-str  (cr :padding-left " ")
+                                :margin-left-str   (if rainbow?
+                                                     rainbow-gutter-str
+                                                     (cr
+                                                      :margin-left
+                                                      (case theme
+                                                        "gutter"
+                                                        gutter-str
+                                                        "rainbow-gutter"
+                                                        rainbow-gutter-str
+                                                        " ")))
 
-                              :margin-top-str    (cr :margin-top "\n")
-                              :margin-bottom-str (cr :margin-bottom "\n")}
-                              
-                              (when rainbow?
-                                {:margin-left-str-odd rainbow-gutter-str-odd})
-                              (when gutter?
-                                (keyed [margin-left-str-zero
-                                        border-left-str-zero]))))]
+                                :margin-top-str    (cr :margin-top "\n")
+                                :margin-bottom-str (cr :margin-bottom "\n")}
+                               
+                               (when rainbow?
+                                 {:margin-left-str-odd rainbow-gutter-str-odd})
+                               (when gutter?
+                                 (keyed [margin-left-str-zero
+                                         border-left-str-zero]))))]
     (if (true? (:data? m))
       s
       (some-> s println))))
@@ -1355,6 +1346,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Enriched text public fns and helpers  --------------------------------------
 
+
 (defn- ^:private tagged-str
   "Expects an EnrichedText record.
    In Clojure, returns string wrapped with appropriate sgr codes for rich
@@ -1371,53 +1363,101 @@
     #?(:cljs
        (if node? (f o) (str "%c" (:value o) "%c"))
        :clj
-       #_(?sgr (f o))
        (f o))))
 
+
 (defn- tag->map [acc s]
-  (let [[k m] (case s
-                "bold" [:font-weight "bold"]
-                "italic" [:font-style "italic"]
-                "underline" [:text-decoration "underline"]
-                "strikethrough" [:text-decoration "line-through"]
-                (let [cs (:all color-codes)
-                      m  (get cs s nil)]
-                  (if m
-                    [:color m]
-                    (when-let [nm (string/replace s #"-bg$" "")]
-                      (when-let [m (get cs nm nil)]
-                        [:background-color m])))))]
-    (if k (assoc acc k m) acc)))
+  (let [kvs (case s
+              "bold"             [[:font-weight "bold"]]
+              "italic"           [[:font-style "italic"]]
+              "underline"        [[:text-decoration "underline"]]
+              "solid-underline"  [[:text-decoration "underline"]]
+              "double-underline" [[:text-decoration-line "underline"]
+                                  [:text-decoration-style "double"]]
+              "wavy-underline"   [[:text-decoration-line "underline"]
+                                  [:text-decoration-style "wavy"]]
+              "dotted-underline" [[:text-decoration-line "underline"]
+                                  [:text-decoration-style "dotted"]]
+              "dashed-underline" [[:text-decoration-line "underline"]
+                                  [:text-decoration-style "dashed"]]
+              "strikethrough"    [[:text-decoration "line-through"]]
+              (let [cs (:all color-codes)
+                    m  (get cs s nil)]
+                (if m
+                  [[:color m]]
+                  (when-let [nm (string/replace s #"-bg$" "")]
+                    (when-let [m (get cs nm nil)]
+                      [[:background-color m]])))))]
+    (if kvs
+      (reduce (fn [acc [k m]] (assoc acc k m)) acc kvs)
+      acc)))
+
 
 (defrecord EnrichedText [value style])
+
+
+#?(:cljs
+   (defn- href-browser-dev-console [style v]
+     (let [href  (when (map? style) (:href style))
+           v     (if href
+                   (if (= href v) href (str v " " href))
+                   v)
+           style (if href (dissoc style :href) style)]
+       [style v])))
+
+
+(defn href-console [style v]
+  (let [href  (when (map? style) (:href style))
+        v     (if href (hyperlink v href) v)
+        style (if href
+                (merge {:text-decoration-line :underline}
+                       (dissoc style :href))
+                style)]
+    [style v]))
+
 
 (defn- enriched-text
   "Returns an EnrichedText record. The `:value` entry is intended to be
    displayed as a text string in the console, while the `:style` entry is a map
    of styling to be applied to the printed text.
 
-   Private, for lib internal use.
-   
    Example:
    #my.ns/EnrichedText {:style {:font-weight \"bold\"
                                 :color       {:sgr 39
                                               :css \"#00afff\"}
                         :value \"hi\"}"
   [[style v]]
-  (->EnrichedText
-    (str v)
-    (cond
-      (map? style)
-      (reduce-kv convert-color {} style)
+  (let [[style v] #?(:cljs
+                     (if node? 
+                       (href-console style v)
+                       (href-browser-dev-console style v))
+                     :clj
+                     (href-console style v))]
+    (->EnrichedText
+     (str v)
+     (cond
+       (map? style)
+       (reduce-kv convert-color {} style)
 
-      (or (keyword? style)
-          (string? style))
-      (-> style
-          name
-          (string/split (if (keyword? style)
-                          #"\."
-                          #" "))
-          (->> (reduce tag->map {}))))))
+       (or (keyword? style)
+           (string? style))
+       (-> style
+           name
+           (string/split (if (keyword? style)
+                           #"\."
+                           #" "))
+           (->> (reduce tag->map {})))))))
+
+
+(defn- reorder-text-decoration-shorthand [style]
+  (if-let [td (or (get style :text-decoration)
+                  (get style "text-decoration"))]
+    (->> (reduce-kv (fn [acc k v]
+                      (conj acc k v))
+                    [:text-decoration td]
+                    (dissoc style :text-decoration))
+         (apply array-map)) 
+    style))
 
 
 (defn- updated-css [css-styles x]
@@ -1425,9 +1465,9 @@
                          (maybe et-vec?)
                          enriched-text
                          :style)]
-
-    (let [style* (select-keys style browser-dev-console-props)
-          style  (reduce-colors-to-sgr-or-css :css style*)
+    (let [style  (->> (select-keys style browser-dev-console-props)
+                      (reduce-colors-to-sgr-or-css :css)
+                      (reorder-text-decoration-shorthand))
           ks     (keys style)
           resets (reduce (fn [acc k]
                            (assoc acc k "initial"))
@@ -1436,8 +1476,9 @@
 
       ;; (prn {:style* style*
       ;;       :style  style
-      ;;       :ks     ks
-      ;;       :resets ks})
+      ;;       ;; :ks     ks
+      ;;       ;; :resets ks
+      ;;       })
 
       (conj css-styles
             (css-stylemap->str style)
@@ -1447,13 +1488,6 @@
 
 (defn- enriched-data-inner
   [[coll css] x]
-  ;; (prn (merge {:coll    coll
-  ;;                :css     css
-  ;;                :x       x
-  ;;                :et-vec? (et-vec? x)}
-  ;;             (when (et-vec? x)
-  ;;               {:enriched-text (tagged-str (enriched-text x))
-  ;;                :updated-css   (updated-css css x)})))
   (let [s (cond (et-vec? x)
                 (tagged-str (enriched-text x))
                 (not (coll? x))
@@ -1467,6 +1501,12 @@
                            [[] []]
                            args)
         tagged (string/join coll)]
+
+    ;; #?(:cljs
+    ;;    (js/console.log css)
+    ;;    :clj
+    ;;    ())
+    
     {:console-array (into-array (concatv [tagged] css))
      :tagged        tagged
      :css           css
