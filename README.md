@@ -215,15 +215,15 @@ Using a map is preferrable if you are doing something like this:
 
 ```Clojure
 (println (bling [:underline "underline"]
-                ", "
+                "\n"
                 [:solid-underline "solid-underline"]
-                ", "
+                "\n"
                 [:double-underline "double-underline"]
-                ", "
+                "\n"
                 [:wavy-underline "wavy-underline"]
-                ", "
+                "\n"
                 [:dotted-underline "dotted-underline"]
-                ", "
+                "\n"
                 [:dashed-underline "dashed-underline"]))
 ```
 <p align="center"><img src="resources/docs/chromed/underline-styles_light.png" width="700px" /></p>
