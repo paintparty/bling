@@ -233,6 +233,26 @@
                              :label       "ERROR: ClassCastException"}})
 
 
+  ;; Hyperlink support ---------------------------------------------------------
+  (println)
+  (printer (bling [{:text-decoration :underline
+                    :href            "http://example.com"}
+                   "cmd + click to follow this hyperlink"]))
+
+
+  ;; Underline styles ----------------------------------------------------------
+  (println)
+  (printer (bling [:underline "underline"]
+                  "\n"
+                  [:double-underline "double-underline"]
+                  "\n"
+                  [:wavy-underline "wavy-underline"]
+                  "\n"
+                  [:dotted-underline "dotted-underline"]
+                  "\n"
+                  [:dashed-underline "dashed-underline"]))
+  
+
   ;; Combo styles ------------------------------------------------------------
   (println)
   (printer (bling [:bold.italic "bold & italic"]
