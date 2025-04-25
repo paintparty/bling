@@ -235,12 +235,13 @@
 
   ;; Hyperlink support ---------------------------------------------------------
   (println)
-  (printer (bling [{:text-decoration :underline
-                    :href            "http://example.com"}
+  (println)
+  (printer (bling [{:href            "http://example.com"}
                    "cmd + click to follow this hyperlink"]))
 
 
   ;; Underline styles ----------------------------------------------------------
+  (println)
   (println)
   (printer (bling [:underline "underline"]
                   "\n"
@@ -255,21 +256,24 @@
 
   ;; Combo styles ------------------------------------------------------------
   (println)
+  (println)
   (printer (bling [:bold.italic "bold & italic"]
                   "\n"
                   [:italic.blue "italic & colored"]
                   "\n"
                   [:bold.italic.white.blue-bg
                    "bold & italic & colored & colored-bg"]
-                  "\n"
-                  [:bold.italic.blue.underline
-                   "bold & italic & colored & underline"]
-                  "\n"
-                  [:bold.italic.blue.strikethrough 
-                   "bold & italic & colored & strikethrough"]))
+                  ;; "\n"
+                  ;; [:bold.italic.blue.underline
+                  ;;  "bold & italic & colored & underline"]
+                  ;; "\n"
+                  ;; [:bold.italic.blue.strikethrough 
+                  ;;  "bold & italic & colored & strikethrough"]
+                  ))
 
   
   ;; All the colors ----------------------------------------------------------
+  (println)
   (println)
   (let [colors   (filter #(not (re-find #"^system-" %)) colors-ordered)
         max-char (apply max (map count colors))]
