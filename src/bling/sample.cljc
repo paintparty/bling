@@ -263,12 +263,12 @@
                   "\n"
                   [:bold.italic.white.blue-bg
                    "bold & italic & colored & colored-bg"]
-                  ;; "\n"
-                  ;; [:bold.italic.blue.underline
-                  ;;  "bold & italic & colored & underline"]
-                  ;; "\n"
-                  ;; [:bold.italic.blue.strikethrough 
-                  ;;  "bold & italic & colored & strikethrough"]
+                  "\n"
+                  [:bold.italic.blue.underline
+                   "bold & italic & colored & underline"]
+                  "\n"
+                  [:bold.italic.blue.strikethrough 
+                   "bold & italic & colored & strikethrough"]
                   ))
 
   
