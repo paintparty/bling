@@ -245,7 +245,8 @@
                    ret*)]
         ret))))
 
-(defn- text-underline-str [n str-index text-decoration-style]
+                                                                  
+(defn- poi-text-underline-str [n str-index text-decoration-style]
   (str (string/join (repeat str-index " "))
        (string/join (repeat n
                             (case text-decoration-style
@@ -257,27 +258,7 @@
 
 (def form-limit 33)
 
-                                                                  
-                                                                  
-;; UUUUUUUU     UUUUUUUUNNNNNNNN        NNNNNNNNDDDDDDDDDDDDD        
-;; U::::::U     U::::::UN:::::::N       N::::::ND::::::::::::DDD     
-;; U::::::U     U::::::UN::::::::N      N::::::ND:::::::::::::::DD   
-;; UU:::::U     U:::::UUN:::::::::N     N::::::NDDD:::::DDDDD:::::D  
-;;  U:::::U     U:::::U N::::::::::N    N::::::N  D:::::D    D:::::D 
-;;  U:::::D     D:::::U N:::::::::::N   N::::::N  D:::::D     D:::::D
-;;  U:::::D     D:::::U N:::::::N::::N  N::::::N  D:::::D     D:::::D
-;;  U:::::D     D:::::U N::::::N N::::N N::::::N  D:::::D     D:::::D
-;;  U:::::D     D:::::U N::::::N  N::::N:::::::N  D:::::D     D:::::D
-;;  U:::::D     D:::::U N::::::N   N:::::::::::N  D:::::D     D:::::D
-;;  U:::::D     D:::::U N::::::N    N::::::::::N  D:::::D     D:::::D
-;;  U::::::U   U::::::U N::::::N     N:::::::::N  D:::::D    D:::::D 
-;;  U:::::::UUU:::::::U N::::::N      N::::::::NDDD:::::DDDDD:::::D  
-;;   UU:::::::::::::UU  N::::::N       N:::::::ND:::::::::::::::DD   
-;;     UU:::::::::UU    N::::::N        N::::::ND::::::::::::DDD     
-;;       UUUUUUUUU      NNNNNNNN         NNNNNNNDDDDDDDDDDDDD        
-                                                                  
-                                                                
-(defn text-underline
+(defn poi-text-underline
   [{:keys [form form-as-str text-decoration-index text-decoration-style] :as m}]
   (if (and text-decoration-index
               (or (pos? text-decoration-index)
@@ -305,11 +286,11 @@
 
           {:keys [strlen str-index]}
           (nth data text-decoration-index nil)]
-      {:text-underline-str (text-underline-str
+      {:text-underline-str (poi-text-underline-str
                             strlen
                             str-index
                             text-decoration-style)})
-    {:text-underline-str (text-underline-str
+    {:text-underline-str (poi-text-underline-str
                            (count form-as-str)
                            0
                            text-decoration-style)}))
@@ -447,12 +428,12 @@
       v)))
 
 (defn- et-vec? [x]
-  (and (vector? x)
-       (= 2 (count x))
-       (-> x
-           (nth 0)
-           (maybe #(or (keyword? %)
-                       (map? %))))))
+  (boolean (and (vector? x)
+                (= 2 (count x))
+                (-> x
+                    (nth 0)
+                    (maybe #(or (keyword? %)
+                                (map? %)))))))
 
 
 ;; Formatting helper fns  -----------------------------------------------------
@@ -472,24 +453,6 @@
 (declare callout)
 (declare bling)
 (declare print-bling)
-
-
-;; TODO - confirm we don't need this anymore and delete
-(defn- maybe-wrap [x]
-  (when (et-vec? x)
-    #?(:cljs
-       (js/console.warn
-         "bling.core/point-of-interest\n\n"
-         "Supplied value for :header option:\n\n"
-         x
-         "\n\n"
-         "If you are trying to style this text, this value needs to be wrapped"
-         "in a vector like this:\n\n"
-         [x]
-         "\n\n")
-       :clj
-       ()))
-  (cond (coll? x) x :else [x]))
 
 
 ;; Formatting exceptions ----------------------------------------------------------
@@ -687,7 +650,7 @@
         form-as-str      (shortened form 33)
         underline-str    (-> opts
                              (assoc :form-as-str form-as-str)
-                             text-underline
+                             poi-text-underline
                              :text-underline-str)
         bolded-form      [{:font-weight :bold} form-as-str]
         underline-styled [{:font-weight :bold
@@ -883,8 +846,6 @@
           s))))
 
 (defn- lns [m k]
-  ;; (when (= k :label)
-  ;;   (? m))
   (let [s                           (some-> m k)
         label-lines?                (= k :label)
         body-lines?                 (= k :value)
@@ -918,8 +879,6 @@
                                                (assoc m
                                                       :current-line-type k)) 
                                       lns-coll))]
-    ;;  (when (= k :label) (? lns-coll))
-    ;;  (when (= k :label) (? ret))
     ret))
 
 (defn body-lines-with-border
@@ -1003,61 +962,61 @@
 
 (defn callout*
   [{:keys [theme] :as m}]
-  ;; (? m)
-  (let [char               gutter-char
-        style              {:color (:color m)}
-        gutter?            (= "gutter" theme)
-        rainbow?           (= "rainbow-gutter" theme)
-        gutter-str         (if rainbow? 
-                             (bling [{:color (last rainbow-colors)} char])
-                             (bling [style char]))
-        rainbow-gutter-str (apply bling
+  (let [char                 gutter-char
+        style                {:color (:color m)}
+        gutter?              (= "gutter" theme)
+        rainbow?             (= "rainbow-gutter" theme)
+        gutter-str           (if rainbow? 
+                               (bling [{:color (last rainbow-colors)} char])
+                               (bling [style char]))
+        rainbow-gutter-str   (apply bling
                                   (for [s (drop-last rainbow-colors)]
                                     [{:color s} char]))
         rainbow-gutter-str-odd (apply bling
                                   (for [s (drop-last rainbow-colors-system)]
                                     [{:color s} char]))
 
-        cr                 (fn [k ch] (char-repeat (or (k m) 0) ch))
-        gutter-str-zero    (bling [style (string/join 
-                                          (cr :margin-left
-                                              gutter-char-lower-seven-eighths))])
+        cr                   (fn [k ch] (char-repeat (or (k m) 0) ch))
+        gutter-str-zero      (bling [style
+                                     (string/join 
+                                      (cr :margin-left
+                                          gutter-char-lower-seven-eighths))])
         margin-left-str-zero gutter-str-zero
         border-left-str-zero gutter-char-lower-seven-eighths
-        s                  (ansi-callout-str
-                            (merge
-                             m
-                             {:border-style      style
-                              :border-left-str   (case theme
-                                                   "sideline"
-                                                   "│"
-                                                   "sideline-bold"
-                                                   "┃"
-                                                   "gutter"
-                                                   gutter-str
-                                                   "rainbow-gutter"
-                                                   gutter-str
-                                                   " ")
-                              :padding-left-str  (cr :padding-left " ")
-                              :margin-left-str   (if rainbow?
-                                                   rainbow-gutter-str
-                                                   (cr
-                                                    :margin-left
-                                                    (case theme
-                                                      "gutter"
-                                                      gutter-str
-                                                      "rainbow-gutter"
-                                                      rainbow-gutter-str
-                                                      " ")))
+        s                    (ansi-callout-str
+                              (merge
+                               m
+                               {:border-style      style
+                                :border-left-str   (case theme
+                                                     "sideline"
+                                                     "│"
+                                                     "sideline-bold"
+                                                     "┃"
+                                                     "gutter"
+                                                     gutter-str
+                                                     "rainbow-gutter"
+                                                     gutter-str
+                                                     " ")
+                                :padding-left-str  (cr :padding-left " ")
+                                :margin-left-str   (if rainbow?
+                                                     rainbow-gutter-str
+                                                     (cr
+                                                      :margin-left
+                                                      (case theme
+                                                        "gutter"
+                                                        gutter-str
+                                                        "rainbow-gutter"
+                                                        rainbow-gutter-str
+                                                        " ")))
 
-                              :margin-top-str    (cr :margin-top "\n")
-                              :margin-bottom-str (cr :margin-bottom "\n")}
-                              
-                              (when rainbow?
-                                {:margin-left-str-odd rainbow-gutter-str-odd})
-                              (when gutter?
-                                (keyed [margin-left-str-zero
-                                        border-left-str-zero]))))]
+                                :margin-top-str    (cr :margin-top "\n")
+                                :margin-bottom-str (cr :margin-bottom "\n")}
+                               
+                               (when rainbow?
+                                 {:margin-left-str-odd rainbow-gutter-str-odd})
+                               (when gutter?
+                                 (keyed [margin-left-str-zero
+                                         border-left-str-zero]))))]
     (if (true? (:data? m))
       s
       (some-> s println))))
