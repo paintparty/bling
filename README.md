@@ -29,12 +29,12 @@
 <br>
 
 <p align="left">
-  <img src="resources/docs/chromed/bling-banner-light-0.5.0.png" width="700px" />
+  <img src="resources/docs/chromed/bling-banner-light-0.6.0.png" width="700px" />
 </p>
 
 The same example as above, in a terminal emulator with a dark background.
 <p align="left">
-  <img src="resources/docs/chromed/bling-banner-dark-0.5.0.png" width="700px" />
+  <img src="resources/docs/chromed/bling-banner-dark-0.6.0.png" width="700px" />
 </p>
 
 ## Features
@@ -61,7 +61,11 @@ Add as a dependency to your project:
 
 
 ```Clojure
-[io.github.paintparty/bling "0.5.0"]
+;; lein
+[io.github.paintparty/bling "0.6.0"]
+
+;; deps
+io.github.paintparty/bling {:mvn/version "0.6.0"}
 ```
 <br>
 
@@ -90,7 +94,7 @@ Or, import into your namespace:
 You can view an exhaustive sampling of Bling output by pasting this snippet into your terminal:
 
 ```clojure
-clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.5.2"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
+clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.6.0"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
 ```
 <br>
 <br>
@@ -98,7 +102,7 @@ clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.5.2"}}}' -e "(re
 To view the above sample with Babashka, paste this snippet into your terminal:
 
 ```clojure
-bb -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.5.2"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
+bb -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.6.0"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
 ```
 
 <br>
@@ -113,7 +117,7 @@ bb -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.5.2"}}}' -e "(req
 <br>
 
 **`bling.core/bling`** takes any number of arguments and returns a string
-of text decorated with tags for colorization, italics, and boldness:
+of text decorated with tags for colorization, italics, boldness, and text-decoration:
 
 ```Clojure
 (println (bling [:bold "bold"]
@@ -580,8 +584,8 @@ Example value of `2` for `:margin-left`, to increase the weight:
   :margin-left   2
   :theme         :gutter})
 ```
-<p align="center"><img src="resources/docs/chromed/callout-with-poi_gutter_with-colored-labels_light.png" width="700px" /></p>
-<p align="center"><img src="resources/docs/chromed/callout-with-poi_gutter_with-colored-labels_dark.png" width="700px" /></p>
+<p align="center"><img src="resources/docs/chromed/callout-with-poi_gutter2_with-colored-labels_light.png" width="700px" /></p>
+<p align="center"><img src="resources/docs/chromed/callout-with-poi_gutter2_with-colored-labels_dark.png" width="700px" /></p>
 
 More callout examples of the `:gutter` theme:
 
