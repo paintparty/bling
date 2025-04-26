@@ -18,7 +18,7 @@
 
 (ns bling.core
   (:require [clojure.string :as string]
-            ;; [bling.macros :refer [let-map keyed ?]] ;;<-- just for debugging
+            [bling.macros :refer [let-map keyed ?]] ;;<-- just for debugging
             [bling.macros :refer [let-map keyed]]
             #?(:cljs [goog.object])
             #?(:cljs [bling.js-env :refer [node?]])))
@@ -103,17 +103,17 @@
    "system-white"   {:sgr 15}})
 
 (def ^:private colors-source
-  (merge {"red"     {:sgr 196 :semantic "negative"}
-          "orange"  {:sgr 208 :semantic "warning"}
-          "yellow"  {:sgr 178}
-          "olive"   {:sgr 106}
-          "green"   {:sgr 40 :semantic "positive"}
-          "blue"    {:sgr 39 :semantic "accent"}
-          "purple"  {:sgr 141}
-          "magenta" {:sgr 201}
-          "gray"    {:sgr 247 :semantic "subtle"}
-          "black"   {:sgr 16}
-          "white"   {:sgr 231}}
+  (merge {"red"     {:sgr 196 :semantic "negative" :sgr-dark 124 :sgr-light 203}
+          "orange"  {:sgr 208 :semantic "warning" :sgr-dark 166 :sgr-light 214}
+          "yellow"  {:sgr 178 :sgr-dark 136 :sgr-light 220}
+          "olive"   {:sgr 106 :sgr-dark 100 :sgr-light 143}
+          "green"   {:sgr 40 :semantic "positive" :sgr-dark 28 :sgr-light 82}
+          "blue"    {:sgr 39 :semantic "accent" :sgr-dark 26 :sgr-light 81}
+          "purple"  {:sgr 141 :sgr-dark 129 :sgr-light 147}
+          "magenta" {:sgr 201 :sgr-dark 163 :sgr-light 219}
+          "gray"    {:sgr 247 :semantic "subtle" :sgr-dark 166 :sgr-light 214}
+          "black"   {:sgr 16 :sgr-dark 166 :sgr-light 214}
+          "white"   {:sgr 231 :sgr-dark 166 :sgr-light 214}}
          system-colors-source))
 
 
@@ -397,6 +397,7 @@
 (defn- assoc-hex-colors [m]
   (reduce-kv (fn [m color {:keys [sgr]}]
                (let [hex (get xterm-colors-by-id sgr nil)]
+                 hex
                  (assoc m color {:sgr sgr
                                  :css hex})))
              {}
