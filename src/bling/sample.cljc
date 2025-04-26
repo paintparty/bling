@@ -39,6 +39,50 @@
 (def ^:private printer
   #?(:cljs print-bling :clj println))
 
+(defn all-the-colors 
+  ([]
+   (all-the-colors nil))
+  ([k]
+   (let [colors   (filter #(not (re-find #"^system-" %)) colors-ordered)
+         max-char (apply max (map count colors))]
+     (doseq [s     colors
+             :when (not (re-find #"^system-" s))]
+       (let [spaces (string/join (repeat (- max-char (count s)) " "))
+             f      (fn lab
+                      ([m] (lab m s))
+                      ([m s] [(merge {:color s} m) s]))]
+         (printer (bling (f {:background-color s
+                             :color            :white
+                             :font-weight      :bold}
+                            (str " " s " " ))
+                         spaces
+
+                         " "
+                         (f {:font-weight :bold})
+                         " "
+                         spaces
+
+                         " "
+                         (f {})
+                         " "
+                         spaces
+
+                         " "
+                         (f {:text-decoration :strikethrough})
+                         " "
+                         spaces
+
+                         " "
+                         (f {:text-decoration :underline})
+                         " "
+                         spaces
+
+                         " "
+                         (f {:font-style :italic})
+                         " "
+                         spaces)))))))
+
+
 (defn example-custom-callout
   [{:keys [point-of-interest-opts callout-opts]}]
   (let [poi-opts     (merge {:header (str "This is not a real error or warning"
@@ -275,42 +319,5 @@
   ;; All the colors ----------------------------------------------------------
   (println)
   (println)
-  (let [colors   (filter #(not (re-find #"^system-" %)) colors-ordered)
-        max-char (apply max (map count colors))]
-    (doseq [s     colors
-            :when (not (re-find #"^system-" s))]
-      (let [spaces (string/join (repeat (- max-char (count s)) " "))
-            f      (fn lab
-                     ([m] (lab m s))
-                     ([m s] [(merge {:color s} m) s]))]
-        (printer (bling (f {:background-color s
-                            :color            :white
-                            :font-weight      :bold}
-                           (str " " s " " ))
-                        spaces
-
-                        " "
-                        (f {:font-weight :bold})
-                        " "
-                        spaces
-
-                        " "
-                        (f {})
-                        " "
-                        spaces
-
-                        " "
-                        (f {:text-decoration :strikethrough})
-                        " "
-                        spaces
-
-                        " "
-                        (f {:text-decoration :underline})
-                        " "
-                        spaces
-
-                        " "
-                        (f {:font-style :italic})
-                        " "
-                        spaces))))))
+  (all-the-colors))
 
