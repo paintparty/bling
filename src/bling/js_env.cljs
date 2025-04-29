@@ -1,5 +1,7 @@
 (ns bling.js-env)
 
+(defonce BLING_THEME (some-> js/process .-env .-BLING_THEME))
+
 (defonce node?
   (boolean 
    (some->> 

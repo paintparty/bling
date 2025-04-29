@@ -18,12 +18,75 @@
 
 (ns bling.core
   (:require [clojure.string :as string]
-            [bling.macros :refer [let-map keyed ?]] ;;<-- just for debugging
+            ;; [bling.macros :refer [let-map keyed ?]] ;;<-- just for debugging
             [bling.macros :refer [let-map keyed]]
             #?(:cljs [goog.object])
             #?(:cljs [bling.js-env :refer [node?]])))
 
 (declare xterm-colors-by-id)
+(def gutter-char "█")
+(def gutter-char-lower-seven-eighths "▆")
+(def orange-tag-open "\033[38;5;208;1m")
+(def bold-tag-open "\033[1m")
+(def sgr-tag-close "\033[0;m")
+
+(def bling-theme-names-set #{"light" "dark" "medium"})
+
+;; TODO this is manually hack of public callout fn b/c having problems
+;; with declaring it above this and then using it ... investigate.
+(defn invalid-bling-theme-warning!
+  [s]
+  (println
+   (apply str 
+          (str "\n"
+               orange-tag-open
+               gutter-char-lower-seven-eighths
+               sgr-tag-close
+               "  "
+               bold-tag-open "WARNING" sgr-tag-close
+               "\n")
+          (mapv 
+           #(str orange-tag-open
+                 gutter-char
+                 sgr-tag-close
+                 "  "
+                 % 
+                 "\n")
+           [""
+            "bling.core/bling-theme"
+            ""
+            "Invalid BLING_THEME environmental variable:"
+            ""
+            (str "BLING_THEME=" bold-tag-open "\"" s "\"" sgr-tag-close)
+            (str "            "
+                 orange-tag-open
+                 (apply str (repeat (+ 2 (count s)) "^"))
+                 sgr-tag-close)
+            ""
+            "Valid values for BLING_THEME:"
+            (str bling-theme-names-set "")
+            ""
+            "\"light\" will increase the contrast of bling-styled"
+            "messages on terminals with a light background."
+            ""
+            "\"dark\" will increase the contrast of bling-styled"
+            "messages on terminals with a dark background."
+            ""
+            "The default value of \"medium\" will be used, which"
+            "provides reasonable contrast on both light and"
+            "dark terminal backgrounds."]))))
+
+(def ^:public BLING_THEME
+  #?(:clj  (System/getenv "BLING_THEME")
+     :cljs bling.js-env/BLING_THEME))
+
+(def ^:public bling-theme 
+ (if (contains? bling-theme-names-set BLING_THEME)
+   BLING_THEME
+   (do
+     (when (string? BLING_THEME)
+       (invalid-bling-theme-warning! BLING_THEME))
+     "medium")))
 
 (def ^:private ESC "\u001B[")
 (def ^:private OSC "\u001B]")
@@ -102,18 +165,101 @@
    "system-aqua"    {:sgr 14}
    "system-white"   {:sgr 15}})
 
+;; figure out light-gray and dark-gray
+;; support "medium-orange to force medium"
+;; support "dark-orange to force dark"
+;; support "light-orange to force light"
+
+(def ^:private bling-colors-dark
+  (apply 
+   array-map 
+   ["red"     {:sgr 124}
+    "orange"  {:sgr 166}
+    "yellow"  {:sgr 136}
+    "olive"   {:sgr 100}
+    "green"   {:sgr 28}
+    "blue"    {:sgr 26}
+    "purple"  {:sgr 129}
+    "magenta" {:sgr 163}
+    "gray"    {:sgr 244}
+    "black"   {:sgr 16}
+    "white"   {:sgr 231}]))
+
+(def ^:private bling-colors-light 
+  (apply 
+   array-map 
+   ["red"     {:sgr 203}
+    "orange"  {:sgr 214}
+    "yellow"  {:sgr 220}
+    "olive"   {:sgr 143}
+    "green"   {:sgr 82}
+    "blue"    {:sgr 81}
+    "purple"  {:sgr 147}
+    "magenta" {:sgr 219}
+    "gray"    {:sgr 249}
+    "black"   {:sgr 16}
+    "white"   {:sgr 231}]))
+
+;; (? (reduce-kv (fn [acc k v]
+;;                 (conj acc k {:sgr (:sgr-dark v)}))
+;;               [] 
+;;               bling-colors-dark))
+
+;; TODO Add the light and dark variants to x-term-colors-by-id
+(def ^:private bling-colors*
+  (apply
+   array-map
+   ["red"        {:sgr      196
+                  :semantic "negative"}
+    "orange"     {:sgr      208
+                  :semantic "warning"}
+    "yellow"     {:sgr 178}
+    "olive"      {:sgr 106}
+    "green"      {:sgr      40
+                  :semantic "positive"}
+    "blue"       {:sgr      39
+                  :semantic "accent"}
+    "purple"     {:sgr 141}
+    "magenta"    {:sgr 201}
+    "gray"       {:sgr      245
+                  :semantic "subtle"}
+    "black"      {:sgr 16}
+    "white"      {:sgr 231}]))
+
+;; (? (reduce-kv (fn [acc k v]
+;;                 (conj acc k (select-keys v [:sgr :semantic])))
+;;               [] 
+;;               bling-colors*))
+
+(defn concatv
+  "Concatenate `xs` and return the result as a vector."
+  [& xs]
+  (into [] cat xs))
+
+(def ^:private bling-colors
+  (apply
+   array-map
+   (reduce-kv (fn [acc k v]
+                (let [dark   (get-in bling-colors-dark [k :sgr])
+                      light  (get-in bling-colors-light [k :sgr])
+                      medium (:sgr v)]
+                  (concatv (conj acc
+                                 k
+                                 (assoc v
+                                        :sgr-dark
+                                        dark
+                                        :sgr-light
+                                        light))
+                           (when-not (contains? #{"black" "white"} k) 
+                             [(str "medium-" k) {:sgr medium}
+                              (str "dark-" k)   {:sgr dark}
+                              (str "light-" k)  {:sgr light}]))))
+              [] 
+              bling-colors*)))
+
+
 (def ^:private colors-source
-  (merge {"red"     {:sgr 196 :semantic "negative" :sgr-dark 124 :sgr-light 203}
-          "orange"  {:sgr 208 :semantic "warning" :sgr-dark 166 :sgr-light 214}
-          "yellow"  {:sgr 178 :sgr-dark 136 :sgr-light 220}
-          "olive"   {:sgr 106 :sgr-dark 100 :sgr-light 143}
-          "green"   {:sgr 40 :semantic "positive" :sgr-dark 28 :sgr-light 82}
-          "blue"    {:sgr 39 :semantic "accent" :sgr-dark 26 :sgr-light 81}
-          "purple"  {:sgr 141 :sgr-dark 129 :sgr-light 147}
-          "magenta" {:sgr 201 :sgr-dark 163 :sgr-light 219}
-          "gray"    {:sgr 247 :semantic "subtle" :sgr-dark 166 :sgr-light 214}
-          "black"   {:sgr 16 :sgr-dark 166 :sgr-light 214}
-          "white"   {:sgr 231 :sgr-dark 166 :sgr-light 214}}
+  (merge bling-colors
          system-colors-source))
 
 
@@ -126,10 +272,6 @@
    "subtle"   "subtle"
    "neutral"  "neutral"})
 
-(defn concatv
-  "Concatenate `xs` and return the result as a vector."
-  [& xs]
-  (into [] cat xs))
 
 
 (def ^:private all-color-names
@@ -395,11 +537,14 @@
    })
 
 (defn- assoc-hex-colors [m]
-  (reduce-kv (fn [m color {:keys [sgr]}]
+  (reduce-kv (fn [m color {:keys [sgr sgr-light sgr-dark]}]
                (let [hex (get xterm-colors-by-id sgr nil)]
-                 hex
-                 (assoc m color {:sgr sgr
-                                 :css hex})))
+                 (merge (assoc m
+                               color 
+                               (merge {:sgr sgr
+                                       :css hex}
+                                      (when sgr-light {:sgr-light sgr-light})
+                                      (when sgr-dark {:sgr-dark sgr-dark}))))))
              {}
              m))
 
@@ -419,11 +564,53 @@
      :callouts         callouts
      :colors+semantics (merge colors semantics)}))
 
-(defn- reduce-colors-to-sgr-or-css [ctx m]
-  (reduce-kv (fn [m k v]
-               (assoc m k (if (map? v) (ctx v) v)))
-             {}
-             m))
+(declare callout)
+(declare bling)
+(declare bling!)
+(declare print-bling)
+
+(defn- reduce-colors-to-sgr-or-css
+  "This is where the actual color value gets pulled out of the color map that is
+   associated with each color (in bling.core/all-color-names). The sgr-or-css-kw
+   will be :sgr or :css, depending on whether execution context is a terminal
+   emulator or browser dev console.
+
+   For terminal environments, a light or dark theme can be optionally specified
+   via an environmental variable:
+   
+   `BLING_THEME=light`
+   `BLING_THEME=dark`
+   `BLING_THEME=universal`.
+
+   `UNIVERSAL` would be equivalent to the default (not setting it at all).
+   
+   `LIGHT` theme will use a darker version of the color, which would improve the
+   contrast for users that develop with a light-themed terminal.
+
+   `DARK` theme will use a lighter version of the color, which would improve the
+   contrast for users that develop with a dark-themed terminal.
+   
+   If `LIGHT` OR `DARK` values are detected for the `BLING_THEME` env var, the
+   value of the `:sgr-or-css-kw` will be changed inside this function, from
+   `:sgr` to `:sgr-light` or `:sgr-dark`"
+  [sgr-or-css-kw m]
+  (let [sgr?
+        (= sgr-or-css-kw :sgr)]
+    (reduce-kv (fn [m k v]
+                 (assoc m k
+                        (if (map? v)
+                          (if (and sgr? (= :color k))
+                            (or (let [kw
+                                      (case bling-theme
+                                        "light" :sgr-dark
+                                        "dark" :sgr-light
+                                        :sgr)]
+                                  (kw v))
+                                (:sgr v))
+                            (sgr-or-css-kw v))
+                          v)))
+               {}
+               m)))
 
 (defn- convert-color [m k v]
   (assoc m
@@ -447,7 +634,7 @@
                                 (map? %)))))))
 
 
-;; Formatting helper fns  -----------------------------------------------------
+;; Formatting helper fns  ------------------------------------------------------
 
 (defn- semantic-type [opts]
   (let [x (:colorway opts)]
@@ -461,12 +648,9 @@
               (maybe nameable?)
               name))))
 
-(declare callout)
-(declare bling)
-(declare print-bling)
 
 
-;; Formatting exceptions ----------------------------------------------------------
+;; Formatting exceptions -------------------------------------------------------
 
 ;; Stack trace preview intended for JVM clojure (no clojurescript)
 ;; TODO - put this through the paces and decided whether or not to expose in the
@@ -702,9 +886,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Enriched text public fns and helpers  --------------------------------------
-
-(def gutter-char "█")
-(def gutter-char-lower-seven-eighths "▆")
 
 (declare ln)
 (declare lns)
@@ -1300,17 +1481,19 @@
      ;; Internal warning from bling about bad args
      :else
      (callout
-       {:type :warning}
+      {:type        :warning
+       :theme       :sideline-bold
+       :label-theme :marquee}
        ;; TODO - this is messy formatiing for data-structures, fix
-       (point-of-interest
-         {:type   :warning
-          :header "bling.core/callout"
-          :form   (cons 'callout (list x))
-          :body   (str "bling-core/callout, if called with a single argument,\n"
-                       "expects either:\n"
-                       "- a map of options\n"
-                       "- a string\n\n"
-                       "Nothing will be printed.")}))))
+      (point-of-interest
+       {:type   :warning
+        :header "bling.core/callout"
+        :form   (cons 'callout (list x))
+        :body   (str "bling-core/callout, if called with a single argument,\n"
+                     "expects either:\n"
+                     "- a map of options\n"
+                     "- a string\n\n"
+                     "Nothing will be printed.")}))))
   ([opts value]
    (if-not (map? opts)
      ;; Internal warning from bling about bad args
@@ -1570,4 +1753,7 @@
                          args)))
        :clj (f))))
 
-                     
+(defn ^:public bling!
+  "Equivalent to (println (apply bling args))"
+  [& args]
+  (println (apply bling args)))
