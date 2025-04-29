@@ -1,11 +1,15 @@
 (ns bling.sample
   (:require 
+
+  ;;  [bling.macros :refer [let-map keyed ?]] ;;<-- just for debugging
    [clojure.string :as string]
    [clojure.pprint :as pprint]
    #?(:cljs
-      [bling.core :refer [bling callout print-bling point-of-interest]]
+      [bling.core :refer [bling bling! callout print-bling point-of-interest]]
       :clj
-      [bling.core :refer [bling callout point-of-interest]])))
+      [bling.core :refer [bling bling! callout point-of-interest]
+       
+       ])))
 
 (def ^:private colors-ordered
   ["system-black"   
@@ -42,45 +46,55 @@
 (defn all-the-colors 
   ([]
    (all-the-colors nil))
-  ([k]
+  ([{:keys [label variant]}]
    (let [colors   (filter #(not (re-find #"^system-" %)) colors-ordered)
          max-char (apply max (map count colors))]
-     (doseq [s     colors
+     (when label (bling! "\n" [:italic label] "\n"))
+     (doseq [s     colors #_(take 1 colors)
              :when (not (re-find #"^system-" s))]
        (let [spaces (string/join (repeat (- max-char (count s)) " "))
              f      (fn lab
                       ([m] (lab m s))
-                      ([m s] [(merge {:color s} m) s]))]
-         (printer (bling (f {:background-color s
-                             :color            :white
-                             :font-weight      :bold}
-                            (str " " s " " ))
-                         spaces
+                      ([m s] 
+                       (let [color-name 
+                             (if (contains? #{"medium" "light" "dark"}
+                                            variant)
+                               (str variant "-" s)
+                               s)]
+                         [(merge {:color color-name} m) s])))]
+         (printer (bling 
 
-                         " "
-                         (f {:font-weight :bold})
-                         " "
-                         spaces
+                   (f {:background-color s
+                       :color            :white
+                       :font-weight      :bold}
+                      (str " " s " " ))
 
-                         " "
-                         (f {})
-                         " "
-                         spaces
+                   spaces
 
-                         " "
-                         (f {:text-decoration :strikethrough})
-                         " "
-                         spaces
+                   " "
+                   (f {:font-weight :bold})
+                   " "
+                   spaces
 
-                         " "
-                         (f {:text-decoration :underline})
-                         " "
-                         spaces
+                   " "
+                   (f {})
+                   " "
+                   spaces
 
-                         " "
-                         (f {:font-style :italic})
-                         " "
-                         spaces)))))))
+                   " "
+                   (f {:text-decoration :strikethrough})
+                   " "
+                   spaces
+
+                   " "
+                   (f {:text-decoration :underline})
+                   " "
+                   spaces
+
+                   " "
+                   (f {:font-style :italic})
+                   " "
+                   spaces)))))))
 
 
 (defn example-custom-callout
