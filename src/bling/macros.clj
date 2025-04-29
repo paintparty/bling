@@ -71,7 +71,11 @@
                                         ns-name
                                         str
                                         (str ":" line ":" column))
-          ns-str                (str "\033[3;38;5;201;1m" ns-str "\033[0m")]
+          ns-str                (do 
+                                  (str "\033[3;38;5;247m" ns-str "\033[0;m")
+                                  ;; magenta
+                                  #_(str "\033[3;38;5;201;1m" ns-str "\033[0m"))
+          ]
       ns-str))
   
   (defmacro ? 
