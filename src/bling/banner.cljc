@@ -60,10 +60,11 @@
        (str #_(apply str (repeat (+ 1 (count option-key)) " "))
         defs/orange-tag-open
             (apply str (repeat (count option-value) "^"))
-            defs/sgr-tag-close)
-       ""
-       (str "The value for the " option-key " option must be:")
-       ]
+            defs/sgr-tag-close)]
+
+       (when valid-desc
+         [""
+          (str "The value for the " option-key " option must be:")])
 
        (cond (coll? valid-desc)
              valid-desc
@@ -78,37 +79,13 @@
 
       (when valid-colors
         [""
-         (str "Valid gradient color pairs for " option-key " option:")])
+         (str "Valid color pairs for " option-key " option:")])
       valid-colors
       default-val-msg
       ))))
 
 
-(defn invalid-gradient-opt-warning! [gradient gradient-pairs-map]
-  (invalid-banner-opt-warning! 
-   {:option-key     :gradient
-    :option-value   gradient
-    :valid-desc     "A valid css linear-gradient string."
-    :valid-examples (map-indexed
-                     (fn [i [k v]] 
-                       (str "\""
-                            (if (odd? i)
-                              "to bottom"
-                              "to top")
-                            ", "
-                            (name k)
-                            ", " 
-                            (name v)
-                            "\"")) 
-                     gradient-pairs-map)
-    :valid-colors   (map (fn [[k v]] 
-                           (str "\""
-                                (name k)
-                                ", " 
-                                (name v)
-                                "\"")) 
-                         gradient-pairs-map)
-    }))
+
 
 
 (defn- x->sgr [x k]
@@ -208,6 +185,13 @@
    :red    :magenta
    :orange :purple})
 
+(def gradient-pairs-set
+  (reduce 
+   (fn [acc [k v]]
+     (conj acc #{(name k) (name v)}))
+   #{}
+   gradient-pairs-map))
+
 (def gradient-pairs-all-base-colors-set
   (reduce-kv (fn [acc k v]
                (conj acc (name k) (name v))) 
@@ -223,6 +207,8 @@
    })
 
 (def shade-names ["dark" "medium" "light"])
+
+;; (def shade-names ["dark" "medium-dark" "medium" "medium-light" "light"])
 
 (defn shade-map [k i n]
     (let [prefix (nth shade-names i)
@@ -260,21 +246,57 @@
    "to left"   :horizontal})
 
 (defn resolve-base-gradient-color-for-theme 
-  [base-colors? soft? c]
-  (cond
-    (and base-colors? soft?)
-    (str defs/bling-theme "-" c)
-    base-colors?
-    (str (case defs/bling-theme
-           "light" "dark"
-           "dark" "light"
-           "medium")
-         "-"
-         c)
-    :else c))
+  [opts c]
+  (let [prefix (case (:contrast opts)
+                 ;; :super-soft
 
+                 :soft
+                 defs/bling-theme
+
+                 :medium
+                 "medium"
+
+                 ;; :super-hard
+
+                 ;; covers :hard 
+                 (case defs/bling-theme
+                   "light" "dark"
+                   "dark" "light"
+                   "medium"))]
+    (str prefix "-" c)))
+
+(defn invalid-gradient-opt-warning!
+  [{:keys [gradient
+           gradient-pairs-map
+           show-examples?]}]
+  (invalid-banner-opt-warning! 
+   {:option-key     :gradient
+    :option-value   gradient
+    :valid-desc     (when show-examples?
+                      "A valid css linear-gradient string.")
+    :valid-examples (when show-examples?
+                      (map-indexed
+                       (fn [i [k v]] 
+                         (str "\""
+                              (if (odd? i)
+                                "to bottom"
+                                "to top")
+                              ", "
+                              (name k)
+                              ", " 
+                              (name v)
+                              "\"")) 
+                       gradient-pairs-map))
+    :valid-colors   (map (fn [[k v]] 
+                           (str "\""
+                                (name k)
+                                ", " 
+                                (name v)
+                                "\"")) 
+                         gradient-pairs-map)}))
 (defn gradient-map
-  "Expects a string as first argument representing a linear-gradient in css syntax:
+  "Expects a string as first argument representing a linear-gradient in standard
+   css syntax:
    \"to bottom, yellow, purple\"
 
    Expects a boolean as second argument. If the user has BLING_THEME env
@@ -288,45 +310,47 @@
     :vertical-gradient?   true
     :horizontal-gradient? false
    }"
-  [s soft?]
+  [s opts]
   (when-let [[direction c1 c2]
              (some-> s
                      (maybe string?)
                      (string/split #", "))]
-    (if (and (contains? gradient-directions direction)
-             (contains? gradient-colors-set c1)
-             (contains? gradient-colors-set c2)
-             (let [prefix-c1 (re-find #"^light-|^dark-" c1)
-                   prefix-c2 (re-find #"^light-|^dark-" c2)]
-               (if (= prefix-c1 prefix-c2)
-                 true
-                 (print-warning! 
-                  ['bling.banner/gradient-map
-                   ""
-                   (str "A gradient from "
-                        defs/bold-tag-open "\"" c1 "\"" defs/sgr-tag-close
-                        " to "
-                        defs/bold-tag-open "\"" c2 "\"" defs/sgr-tag-close
-                        " is not valid") ]) )))
-      (let [base-colors? 
-            (and (contains? gradient-pairs-all-base-colors-set c1)
-                 (contains? gradient-pairs-all-base-colors-set c2))
-            c1  (resolve-base-gradient-color-for-theme base-colors? soft? c1)
-            c2  (resolve-base-gradient-color-for-theme base-colors? soft? c2)
-            k   (case direction "to top" [c2 c1] [c1 c2])
-            gr  (get gradient-ranges k)
-            go  (get gradient-directions direction :vertical)
-            vg? (and gr (= go :vertical))
-            hg? (and gr (= go :horizontal))]
-        {:gradient-range       gr
-         :gradient-orientation go
-         :vertical-gradient?   vg?
-         :horizontal-gradient? hg?})
-      (invalid-gradient-opt-warning! s gradient-pairs-map))))
+    (let [valid-gradient-pairs? (contains? gradient-pairs-set #{c1 c2})]
+          (if (and (contains? gradient-directions direction)
+                   valid-gradient-pairs?
+                   #_(let [prefix-c1 (re-find #"^light-|^dark-" c1)
+                           prefix-c2 (re-find #"^light-|^dark-" c2)]
+                       (if (= prefix-c1 prefix-c2)
+                         true
+                         (print-warning! 
+                          ['bling.banner/gradient-map
+                           ""
+                           (str "A gradient from "
+                                defs/bold-tag-open "\"" c1 "\"" defs/sgr-tag-close
+                                " to "
+                                defs/bold-tag-open "\"" c2 "\"" defs/sgr-tag-close
+                                " is not valid") ]) )))
+            (let [
+                  c1  (resolve-base-gradient-color-for-theme opts c1)
+                  c2  (resolve-base-gradient-color-for-theme opts c2)
+                  k   (case direction "to top" [c2 c1] [c1 c2])
+                  gr  (get gradient-ranges k)
+                  go  (get gradient-directions direction :vertical)
+                  vg? (and gr (= go :vertical))
+                  hg? (and gr (= go :horizontal))]
+              {:gradient-range       gr
+               :gradient-orientation go
+               :vertical-gradient?   vg?
+               :horizontal-gradient? hg?})
+            (invalid-gradient-opt-warning!
+             {:gradient           s
+              :gradient-pairs-map gradient-pairs-map
+              :show-examples?     valid-gradient-pairs?})))))
 
 (defn horizontal-gradient [composed gr]
   (let [width      (-> composed first count)
         col-colors (color-rows gr width)]
+    (? col-colors)
     (mapv #(string/join
             (map-indexed
              (fn [i s]
@@ -410,8 +434,7 @@
   [{:keys [font
            text
            letter-spacing
-           gradient
-           soft?]
+           gradient]
     :as opts}]
   (let [valid-text?  (and (string? text)
                           (not (string/blank? text)))
@@ -447,7 +470,7 @@
            {:keys [gradient-range 
                    vertical-gradient?
                    horizontal-gradient?]}
-           (gradient-map gradient (true? soft?))
+           (gradient-map gradient opts)
 
            first-char
            (if vertical-gradient?
