@@ -299,7 +299,7 @@ If, for example, you wanted to print `[1 2 3]` in red, you will need to stringif
 
 ### The Bling pallette 
 
-Eleven carefully selected colors, from the [xterm range 16-255](https://en.m.wikipedia.org/wiki/Xterm#/media/File%3AXterm_256color_chart.svg), are available for use. All of these colors should display consistantly across most consoles on the end-user side. Don't expect all of the colors to pass the [strictest APCA contrast criterion](https://www.myndex.com/APCA/), but you can be sure of reasonable visibility on both light and dark backgrounds:
+Eleven carefully selected colors, from the [8-bit(256 colors)](https://en.m.wikipedia.org/wiki/Xterm#/media/File%3AXterm_256color_chart.svg), range(16-255) are available for use. All of these colors should display consistantly across most consoles on the end-user side. Don't expect all of the colors to pass the [strictest APCA contrast criterion](https://www.myndex.com/APCA/), but you can be sure of reasonable visibility on both light and dark backgrounds:
 
 ```Clojure
 (println (bling [:bold.red "Red"]
@@ -356,7 +356,7 @@ You can use the following semantic aliases for some colors:
 
 ### Using system colors
 
-Bling also supports named color aliases for system colors (Xterm colors 0-16).
+Bling also supports named color aliases for system colors (16 colors).
 
 Most likely, you do **not** want to use these. They will not display consistently across user spaces, as the actual color is dictated by the theme the user has selected in their particular terminal emulator.
 
@@ -385,14 +385,14 @@ If, however, you are using Bling to provide errors, warnings, and messages for t
 
 ### Using arbitrary colors
 
-Bling also supports arbitrary colors in the xTerm 0-256 range. If you are using
+Bling also supports arbitrary colors in the 8-bit(256 colors range). If you are using
 arbitrary colors to construct messages to stdout that other people might have to
 read, you may want to test the appearance with both light and dark terminal
 themes. They must be provided as integers, so you will need to use an options
 map instead of a hiccup-style keyword:
 
 ```Clojure
-(println (bling [{:color 180} "xTerm color 180, aka Tan"]))
+(println (bling [{:color 180} "8-bit color 180, aka Tan"]))
 ```
 
 <br>
