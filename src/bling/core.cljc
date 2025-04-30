@@ -20,78 +20,18 @@
   (:require [clojure.string :as string]
             ;; [bling.macros :refer [let-map keyed ?]] ;;<-- just for debugging
             [bling.macros :refer [let-map keyed]]
+            [bling.defs :as defs]
             #?(:cljs [goog.object])
-            #?(:cljs [bling.js-env :refer [node?]])))
+            #?(:cljs [bling.js-env :refer [node?]])
+            ))
 
 (declare xterm-colors-by-id)
-(def gutter-char "█")
-(def gutter-char-lower-seven-eighths "▆")
-(def orange-tag-open "\033[38;5;208;1m")
-(def bold-tag-open "\033[1m")
-(def sgr-tag-close "\033[0;m")
-
-(def bling-theme-names-set #{"light" "dark" "medium"})
-
-;; TODO this is manually hack of public callout fn b/c having problems
-;; with declaring it above this and then using it ... investigate.
-(defn invalid-bling-theme-warning!
-  [s]
-  (println
-   (apply str 
-          (str "\n"
-               orange-tag-open
-               gutter-char-lower-seven-eighths
-               sgr-tag-close
-               "  "
-               bold-tag-open "WARNING" sgr-tag-close
-               "\n")
-          (mapv 
-           #(str orange-tag-open
-                 gutter-char
-                 sgr-tag-close
-                 "  "
-                 % 
-                 "\n")
-           [""
-            "bling.core/bling-theme"
-            ""
-            "Invalid BLING_THEME environmental variable:"
-            ""
-            (str "BLING_THEME=" bold-tag-open "\"" s "\"" sgr-tag-close)
-            (str "            "
-                 orange-tag-open
-                 (apply str (repeat (+ 2 (count s)) "^"))
-                 sgr-tag-close)
-            ""
-            "Valid values for BLING_THEME:"
-            (str bling-theme-names-set "")
-            ""
-            "\"light\" will increase the contrast of bling-styled"
-            "messages on terminals with a light background."
-            ""
-            "\"dark\" will increase the contrast of bling-styled"
-            "messages on terminals with a dark background."
-            ""
-            "The default value of \"medium\" will be used, which"
-            "provides reasonable contrast on both light and"
-            "dark terminal backgrounds."]))))
-
-(def ^:public BLING_THEME
-  #?(:clj  (System/getenv "BLING_THEME")
-     :cljs bling.js-env/BLING_THEME))
-
-(def ^:public bling-theme 
- (if (contains? bling-theme-names-set BLING_THEME)
-   BLING_THEME
-   (do
-     (when (string? BLING_THEME)
-       (invalid-bling-theme-warning! BLING_THEME))
-     "medium")))
 
 (def ^:private ESC "\u001B[")
 (def ^:private OSC "\u001B]")
 (def ^:private BEL "\u0007")
 (def ^:private SEP ";")
+
 
 (defn hyperlink [text url]
   #?(:cljs
@@ -217,6 +157,7 @@
     "olive"      {:sgr 106}
     "green"      {:sgr      40
                   :semantic "positive"}
+    "teal"       {:sgr      43}
     "blue"       {:sgr      39
                   :semantic "accent"}
     "purple"     {:sgr 141}
@@ -601,7 +542,8 @@
                         (if (map? v)
                           (if (and sgr? (= :color k))
                             (or (let [kw
-                                      (case bling-theme
+                                      ;; TODO support :soft here like in banner
+                                      (case defs/bling-theme
                                         "light" :sgr-dark
                                         "dark" :sgr-light
                                         :sgr)]
@@ -898,7 +840,7 @@
            label-string 
            border-style]
     :as m}]
-  (let [margin-left-str     (char-repeat margin-left gutter-char)
+  (let [margin-left-str     (char-repeat margin-left defs/gutter-char)
         hrz                 #(char-repeat padding-left %)
         label-lns           (-> label as-str string/split-lines)
         label-length        (some->> label-lns (mapv count) (apply max))
@@ -919,7 +861,7 @@
                  "━━┓")])
         (str (bling [bs
                      (str margin-left-str
-                          gutter-char
+                          defs/gutter-char
                           (hrz " ")
                           "┃  ")])
              (bling [{:font-color :neutral}
@@ -935,7 +877,7 @@
                              "  ┃")])))
        [(bling [bs
                 (str margin-left-str
-                     gutter-char
+                     defs/gutter-char
                      (hrz " ")
                      "┗━━"
                      (char-repeat label-length "━")
@@ -943,7 +885,7 @@
        (mapv (fn [_]
                (bling [bs
                         (str margin-left-str
-                             gutter-char
+                             defs/gutter-char
                              (hrz " "))]))
          (range padding-top)))))))
 
@@ -1154,7 +1096,7 @@
 
 (defn callout*
   [{:keys [theme] :as m}]
-  (let [char                 gutter-char
+  (let [char                 defs/gutter-char
         style                {:color (:color m)}
         gutter?              (= "gutter" theme)
         rainbow?             (= "rainbow-gutter" theme)
@@ -1172,9 +1114,9 @@
         gutter-str-zero      (bling [style
                                      (string/join 
                                       (cr :margin-left
-                                          gutter-char-lower-seven-eighths))])
+                                          defs/gutter-char-lower-seven-eighths))])
         margin-left-str-zero gutter-str-zero
-        border-left-str-zero gutter-char-lower-seven-eighths
+        border-left-str-zero defs/gutter-char-lower-seven-eighths
         s                    (ansi-callout-str
                               (merge
                                m
