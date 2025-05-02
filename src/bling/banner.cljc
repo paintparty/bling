@@ -1,7 +1,8 @@
 (ns bling.banner
   (:require
    [bling.macros :refer [let-map keyed ? start-dbg! stop-dbg! nth-not-found]]
-   [bling.fonts :refer [fonts]]
+   [bling.fonts]
+   [bling.fontlib]
    [bling.util :refer [sjr]]
    [clojure.pprint :refer [pprint]]
    [bling.defs :as defs]
@@ -576,6 +577,15 @@
         (stop-dbg! debug?)
         ret))
 
+(def fonts-ordered
+  '[bling.fonts/miniwi
+    bling.fonts/ansi-shadow
+    bling.fonts/drippy
+    bling.fonts/big
+    bling.fonts/big-money
+    bling.fonts/rounded
+    bling.fonts/isometric-1])
+
 (defn banner 
   [{:keys [text
            letter-spacing
@@ -587,10 +597,10 @@
     user-font :font}]
   (let [valid-text?  (and (string? text)
                           (not (string/blank? text)))
-        ;; text-subsitutes (some ...)
-        default-font (-> fonts var meta :default)
-        valid-font?  (contains? fonts user-font)
-        font         (if valid-font? user-font default-font)]
+        default-font bling.fonts/ansi-shadow
+        font         (or user-font default-font)
+        ;; Some kind of validation here
+        valid-font?  true]
 
     (when-not valid-text?
       (invalid-banner-opt-warning! 
@@ -603,10 +613,10 @@
        {:option-key      :font
         :option-value    user-font
         :valid-desc      "One of the Figlet fonts that ships with Bling."
-        :valid-examples  (map #(str "\"" % "\"") (keys fonts))
+        :valid-examples  (map #(str "\"" % "\"") fonts-ordered)
         :default-val-msg [""
                           (str "The default font "
-                               "\"" default-font  "\""
+                               "\"" (:name default-font)  "\""
                                " will be used")]}))
 
     (when valid-text?
@@ -621,7 +631,8 @@
                  ;; For dev, creates font from raw figlet string
                  {:keys [char-height]
                  :as   font-map}
-                 (bling.fonts/banner-font-array-map font)]
+                 (bling.fontlib/banner-font-array-map font)]
+
         (when print-font! (pprint font-map))
         (let [text-str-chars
               (banner-str-chars font-map char-height text display-missing-chars?)
@@ -668,3 +679,4 @@
               (maybe-with-inline-margins margins)
               (maybe-with-block-margins margins))
           )))))
+

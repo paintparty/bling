@@ -1,4 +1,10 @@
-(ns bling.fontlib)
+(ns bling.fontlib
+  (:require [clojure.string :as string]
+            [clojure.data]
+            [clojure.pprint :refer [pprint]]
+            [bling.util :refer [sjr]]
+            [bling.macros :refer [? keyed]]
+            [clojure.set]))
 
 (def ascii-syms     
   '["! 
@@ -6721,7 +6727,8 @@ Rounded by Nick Miners N.M.Miners@durham.ac.uk
 May 1994
 ")
 
-(def rounded 
+(def ^{:name "Rounded"}
+  rounded 
 "$$@
 $$@
 $$@
@@ -7438,6 +7445,285 @@ $$@@
        @@"
 )
 
+;; 32-126
+(def ascii-chars
+  [
+   " " 
+   "!" 
+   "\""
+   "#" 
+   "$" 
+   "%" 
+   "&" 
+   "'" 
+   "(" 
+   ")" 
+   "*" 
+   "+" 
+   "," 
+   "-" 
+   "." 
+   "/" 
+   "0" 
+   "1" 
+   "2" 
+   "3" 
+   "4" 
+   "5" 
+   "6" 
+   "7" 
+   "8" 
+   "9" 
+   ":" 
+   ";" 
+   "<" 
+   "=" 
+   ">" 
+   "?" 
+   "@"             
+   "A"             
+   "B"             
+   "C"             
+   "D"             
+   "E"             
+   "F"             
+   "G"             
+   "H"             
+   "I"             
+   "J"             
+   "K"             
+   "L"             
+   "M"             
+   "N"             
+   "O"             
+   "P"             
+   "Q"             
+   "R"             
+   "S"             
+   "T"             
+   "U"             
+   "V"             
+   "W"             
+   "X"             
+   "Y"             
+   "Z"             
+   "["             
+   "\\"             
+   "]"             
+   "^"             
+   "_"
+   "`"
+   "a"
+   "b"
+   "c"
+   "d"
+   "e"
+   "f"
+   "g"
+   "h"
+   "i"
+   "j"
+   "k"
+   "l"
+   "m"
+   "n"
+   "o"
+   "p"
+   "q"
+   "r"
+   "s"
+   "t"
+   "u"
+   "v"
+   "w"
+   "x"
+   "y"
+   "z"
+   "{"
+   "|"
+   "}"
+   "~"
+   "Ä"
+   "Ö"
+   "Ü"
+   "ä"
+   "ö"
+   "ü"
+   "ß"
+   ])
+
+(def ascii-chars-by-index-map
+  (reduce 
+   (fn [acc i]
+     (assoc acc i (nth ascii-chars i :not-found)))
+   {}
+   (-> ascii-chars count range)))
+
+(def ascii-indices-by-chars
+  (clojure.set/map-invert ascii-chars-by-index-map))
+
+
+(defn figlet-font-multiple-character-heights-warning!
+  [font-name m]
+  (let [m+                    m #_(update-in m ["o" :height] + 2)
+        height-frequencies    (some->> m+
+                                       (mapv (fn [[_ v]] (:height v)))
+                                       frequencies) ]
+    (when (< 1 (count height-frequencies))
+       (let [least-frequent-height (some->> height-frequencies
+                                            (sort-by val <)
+                                            ffirst)
+             most-frequent-height (some->> height-frequencies
+                                           (sort-by val >)
+                                           ffirst)
+             chars (keep (fn [[_ {:keys [height character]}]]
+                           (when (not= height most-frequent-height)
+                             character)) 
+                         m+)
+             ]
+         (println 
+          (str "WARNING!\n"
+               "Figlet font may contain chars of varying heights:\n\n"
+               "font-name:\n"
+               "\"" font-name  "\""
+               "\n\n"
+               "height frequencies:"
+               "\n"
+               (with-out-str (println height-frequencies))
+               "\n"
+               "chars found with lesser frequent heights:\n"
+               "\"" (string/join "\n" chars) "\""
+               "\n"))
+         (doseq [char chars]
+           (pprint (get m char)))))))
+
+(defn space-width [widths]
+  (let [pos-widths (filter pos? widths)]
+    (Math/round 
+     (Math/ceil 
+      (double 
+       (/ (/ (apply + pos-widths)
+             (count pos-widths))
+          2))))))
+
+(defn space-char [widths max-height]
+  (let [space-width (space-width widths)]
+    {:bands     (->> (repeat space-width " ")
+                     string/join
+                     (repeat max-height)
+                     vec)
+     :i         0
+     :character (ascii-chars-by-index-map 0)
+     :width     space-width
+     :height    max-height}))
+
+(defn- char-bands-coll-inner [i s]
+  (when (pos? i)
+    (let [[_ & bands]       
+          (string/split-lines s)
+
+          [!-char :as bands]
+          (mapv #(string/replace % #"@$" "") bands)
+
+          width              
+          (count !-char)]
+      (merge {:bands     bands
+              :i         i
+              :character (ascii-chars-by-index-map i)
+              :width     width
+              :height    (count bands)}
+             (when (every? (fn [s] (= "" s)) bands)  
+                   {:missing? true})))))
+
+(defn- chars-array-map* [coll]
+  (let [m 
+        (reduce (fn [acc m]
+                  {:coll    (conj (:coll acc) (:character m) m)
+                   :missing (if (:missing? m)
+                              (conj (:missing acc) (:character m))
+                              (:missing acc))})
+                {:coll    []
+                 :missing []}
+                coll)
+
+        chars-array-map
+        (apply array-map (:coll m)) 
+
+        missing-chars
+        (->> chars-array-map
+             keys
+             (clojure.data/diff ascii-chars)
+             first
+             (remove nil?)
+             (concat (:missing m))
+             (into []))]
+     (keyed [chars-array-map missing-chars])))
+
+(defn font-metrics [coll]
+  (reduce 
+   (fn [{:keys [widest-char widest-char-width widths max-height]
+         :as   acc}
+        {:keys [width height character]}]
+     (assoc acc
+            :widths 
+            (conj widths width)
+
+            :widest-char-width
+            (if (> width widest-char-width)
+              width
+              widest-char-width)
+
+            :widest-char
+            (if (> width widest-char-width)
+              character
+              widest-char)
+            
+            :max-height
+            (if (> height max-height)
+              height
+              max-height)))
+   {:widths            []
+    :widest-char-width 0
+    :max-height        0
+    :widest-char       ""}
+   coll))
+
+
+(defn- missing-char-str [width s]
+  (case width
+    0 ""
+    1 s
+    2 (str " " s)
+    3 (str " " s " ")
+    (if (odd? width)
+      (let [pad (sjr (/ (dec width) 2) " ")]
+        (str pad s pad))
+      (let [pad (sjr (/ width 2) " ")]
+        (str pad s (subs pad 1))))))
+
+(defn- replacement-char-vec 
+  [{:keys [width height]}
+   {s :character}]
+  (into []
+        (let [s        (missing-char-str width s)
+              band-str (sjr width " ")]
+          (if (odd? height)
+            (concat (repeat (dec (/ (dec height) 2)) band-str)
+                    [s]
+                    (repeat (inc (/ (dec height) 2)) band-str))
+            (concat (repeat (dec (/ height 2)) band-str)
+                    [s]
+                    (repeat (/ height 2) band-str))))))
+
+(defn replacement-char-fn [space-char %]
+  (if (:missing? %)
+    (let [vc (replacement-char-vec space-char %)]
+      (assoc %
+             :bands
+             vc
+             :height
+             (count vc)))
+    %))
 
 (def raw-figlet-font-strings-by-name
   {"Big Money"    big-money-nw
@@ -7447,3 +7733,55 @@ $$@@
    "Miniwi"       miniwi
    "Isometric 1"  isometric-1
    "Rounded"      rounded})
+
+(def raw-figlet-font-names-by-font
+  (clojure.set/map-invert raw-figlet-font-strings-by-name))
+
+(def raw-figlet-font-strings-by-sym
+  {'bling.fonts/big-money   big-money-nw
+   'bling.fonts/ansi-shadow ansi-shadow
+   'bling.fonts/drippy      drippy
+   'bling.fonts/big         big
+   'bling.fonts/miniwi      miniwi
+   'bling.fonts/isometric-1 isometric-1
+   'bling.fonts/rounded     rounded})
+
+(defn banner-font-array-map [font-sym]
+  (when-let [font (some-> (get raw-figlet-font-strings-by-sym font-sym))]
+   (let [font-name 
+         (get raw-figlet-font-names-by-font font)
+
+         char-strings-coll
+         (string/split font #"@@")
+
+         char-bands-coll
+         (keep-indexed char-bands-coll-inner char-strings-coll)
+
+         {:keys [widest-char widths max-height]}
+         (font-metrics char-bands-coll)
+
+         space-char
+         (space-char widths max-height)
+
+         char-bands-coll
+         (mapv (partial replacement-char-fn space-char) char-bands-coll)
+
+         char-bands-coll
+         (cons space-char char-bands-coll)
+         
+         {:keys [chars-array-map missing-chars]}
+         (chars-array-map* char-bands-coll)]
+
+     (figlet-font-multiple-character-heights-warning! 
+      font-name
+      chars-array-map)
+
+     (assoc (keyed [chars-array-map missing-chars font-sym font-name widest-char])
+            :char-height     
+            max-height
+            :max-char-width  
+            (apply max widths)))))
+
+ '(spit "./foo.txt"
+        content
+        :append false)
