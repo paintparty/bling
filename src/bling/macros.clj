@@ -4,7 +4,6 @@
    [clojure.pprint :refer [pprint]]
    [clojure.edn :as edn]))
 
-
 (defn- regex? [v]
   (-> v type str (= "class java.util.regex.Pattern")))
 
@@ -64,7 +63,7 @@
 
 ;; macro for debugging bling
 (do 
-  (defn- ns-str
+  (defn- ns+ln+col-str
     [form-meta]
     (let [{:keys [line column]} form-meta
           ns-str                (some-> *ns*
@@ -73,14 +72,82 @@
                                         (str ":" line ":" column))
           ns-str                (do 
                                   (str "\033[3;38;5;247m" ns-str "\033[0;m")
-                                  ;; magenta
-                                  #_(str "\033[3;38;5;201;1m" ns-str "\033[0m"))
+
+                                  ;; magenta bold
+                                  (str "\033[3;38;5;201;1m" ns-str "\033[0m")
+
+                                  ;; olive bold
+                                  (str "\033[3;38;5;69;m" ns-str "\033[0m")
+                                  
+                                  )]
+      ns-str))
+
+  (defn- ns+fn-str
+    [form-meta]
+    (let [{:keys [line column]} form-meta
+          ns-str                (some-> *ns*
+                                        ns-name
+                                        str)
+          ;; ns-str                (do 
+          ;;                         (str "\033[3;38;5;247m" ns-str "\033[0;m")
+          ;;                         ;; magenta
+          ;;                         #_(str "\033[3;38;5;201;1m" ns-str "\033[0m"))
           ]
       ns-str))
   
+  
+  (defmacro stop-dbg! [x]
+    `(when ~x 
+       (println 
+        (str "\033[3;38;5;166;m"
+             "--------------------------------------------------------------"
+             "\033[0m"
+             "\n"))))
+
+  
+
+  (defmacro start-dbg!
+    ([]
+     nil
+     #_(let [ns-str (ns-str (meta &form))]
+         `(println (str ~ns-str ))))
+    ([x]
+     (when x
+       (let [label  (when-not (boolean? x) x)
+             ns-str (ns+fn-str (meta &form))]
+         `(do
+            (println
+             (str "\033[3;38;5;166;m" 
+                  (str 
+                   "\n--------------------------------------------------------------"
+                   "\n"
+                   ~ns-str
+                   "/"
+                   (-> ~x var meta :name)
+                   ":"
+                   (-> ~x var meta :line)
+                   ":"
+                   (-> ~x var meta :column)
+                   " -- "
+                   "debugging"
+                   "\n"
+                   "--------------------------------------------------------------"
+                   "\n")
+                  "\033[0m"))
+            true))))) 
+
+  (defmacro nth-not-found
+    ([]
+     (let [ns-str (ns+ln+col-str (meta &form))]
+       `(do
+          #_(println
+           (str ~ns-str " " :nth-not-found))
+          nil))))
+  
+
   (defmacro ? 
     ([x]
-     (let [ns-str (ns-str (meta &form))]
+     (let [ns-str (ns+ln+col-str (meta &form))]
        `(do
           (println
            (str ~ns-str
@@ -91,14 +158,18 @@
           ~x)))
     ([label x]
      (let [label  (or (:label label) label)
-           ns-str (ns-str (meta &form))]
+           ns-str (ns+ln+col-str (meta &form))]
+      ;;  (println "FOOO" ns-str)
        `(do
           (println
-           (str ~ns-str
-                "\n"
-                ~label
-                "\n"
-                (with-out-str (pprint ~x))))
+           (if (= :- ~label)
+             (with-out-str (pprint ~x))
+             #_(string/replace (with-out-str (pprint ~x)) #"\n$" "")
+             (str ~ns-str
+                  "\n"
+                  ~label
+                  "\n"
+                  (with-out-str (pprint ~x)))))
           ~x)))))
 
 (defn interleave-all

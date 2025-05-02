@@ -5,6 +5,21 @@
 
 (def gutter-char "█")
 (def gutter-char-lower-seven-eighths "▆")
+
+(def sideline-bold-char-top "┏")
+(def sideline-bold-char "┃")
+(def sideline-bold-char-bottom "┗")
+
+(def internal-warning-border-chars
+  {:gutter        [gutter-char-lower-seven-eighths
+                   gutter-char 
+                   gutter-char]
+   :sideline-bold [sideline-bold-char-top
+                   sideline-bold-char 
+                   sideline-bold-char-bottom]})
+
+(def internal-warning-border-style :gutter)
+
 (def orange-tag-open "\033[38;5;208;1m")
 (def bold-tag-open "\033[1m")
 (def sgr-tag-close "\033[0;m")
@@ -15,48 +30,56 @@
 ;; with declaring it above this and then using it ... investigate.
 (defn invalid-bling-theme-warning!
   [s]
-  (println
-   (apply str 
-          (str "\n"
-               orange-tag-open
-               gutter-char-lower-seven-eighths
-               sgr-tag-close
-               "  "
-               bold-tag-open "WARNING" sgr-tag-close
-               "\n")
-          (mapv 
-           #(str orange-tag-open
-                 gutter-char
-                 sgr-tag-close
-                 "  "
-                 % 
-                 "\n")
-           [""
-            "bling.core/bling-theme"
-            ""
-            "Invalid BLING_THEME environmental variable:"
-            ""
-            (str "BLING_THEME=" 
-                 bold-tag-open 
-                 "\"" s "\""
-                 sgr-tag-close)
-            (str "            "
-                 orange-tag-open
-                 (apply str (repeat (+ 2 (count s)) "^"))
-                 sgr-tag-close)
-            ""
-            "Valid values for BLING_THEME:"
-            (str bling-theme-names-set "")
-            ""
-            "\"light\" will increase the contrast of bling-styled"
-            "messages on terminals with a light background."
-            ""
-            "\"dark\" will increase the contrast of bling-styled"
-            "messages on terminals with a dark background."
-            ""
-            "The default value of \"medium\" will be used, which"
-            "provides reasonable contrast on both light and"
-            "dark terminal backgrounds."]))))
+  (let [[border-char-top
+         border-char
+         border-char-bottom]
+        (get internal-warning-border-chars
+             internal-warning-border-style)] 
+    (println
+     (str (apply str 
+                 (str "\n"
+                      orange-tag-open
+                      border-char-top
+                      sgr-tag-close
+                      "  "
+                      bold-tag-open "WARNING" sgr-tag-close
+                      "\n")
+                 (mapv 
+                  #(str orange-tag-open
+                        border-char
+                        sgr-tag-close
+                        "  "
+                        % 
+                        "\n")
+                  [""
+                   "bling.core/bling-theme"
+                   ""
+                   "Invalid BLING_THEME environmental variable:"
+                   ""
+                   (str "BLING_THEME=" 
+                        bold-tag-open 
+                        "\"" s "\""
+                        sgr-tag-close)
+                   (str "            "
+                        orange-tag-open
+                        (apply str (repeat (+ 2 (count s)) "^"))
+                        sgr-tag-close)
+                   ""
+                   "Valid values for BLING_THEME:"
+                   (str bling-theme-names-set "")
+                   ""
+                   "\"light\" will increase the contrast of bling-styled"
+                   "messages on terminals with a light background."
+                   ""
+                   "\"dark\" will increase the contrast of bling-styled"
+                   "messages on terminals with a dark background."
+                   ""
+                   "The default value of \"medium\" will be used, which"
+                   "provides reasonable contrast on both light and"
+                   "dark terminal backgrounds."]))
+          orange-tag-open
+          border-char-bottom
+          sgr-tag-close))))
 
 (def ^:public BLING_THEME
   #?(:clj  (System/getenv "BLING_THEME")
