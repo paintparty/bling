@@ -1,9 +1,8 @@
 (ns bling.banner
   (:require
-   [bling.macros :refer [let-map keyed ? start-dbg! stop-dbg! nth-not-found]]
+   [bling.macros :refer [keyed ? start-dbg! stop-dbg! nth-not-found]]
    [bling.fonts]
-   [bling.fontlib]
-   [bling.util :refer [sjr]]
+   [bling.util :as util :refer [sjr]]
    [clojure.pprint :refer [pprint]]
    [bling.defs :as defs]
    [clojure.string :as string]))
@@ -45,10 +44,10 @@
                  border-char-bottom
                  defs/sgr-tag-close))))))
 
-(defn- maybe-wrap-in-double-quotes [x]
-  (if (string? x) 
+(defn- maybe-wrap-in-double-quotes [x option-value-is-string?]
+  (if option-value-is-string? 
     (str "\"" x "\"")
-    (str x)))
+    x))
 
 (defn invalid-banner-opt-warning!
   [{:keys [option-key 
@@ -57,8 +56,12 @@
            valid-colors
            valid-examples
            default-val-msg]}]
-  (let [option-key   (str option-key)
-        option-value (maybe-wrap-in-double-quotes option-value)]
+  (let [option-key              (str option-key)
+        option-value-is-string? (string? option-value)
+        option-value-shortened  (util/shortened option-value 33)
+        option-value-wrapped    (maybe-wrap-in-double-quotes
+                                 option-value-shortened
+                                 option-value-is-string?)]
     (print-warning!
      (concat
       [""
@@ -69,25 +72,25 @@
             " option:")
        ""
        (str  defs/bold-tag-open
-             option-value
+             option-value-wrapped
              defs/sgr-tag-close)
        (str #_(sjr (+ 1 (count option-key)) " ")
-        defs/orange-tag-open
-            (sjr (count option-value) "^")
+            defs/orange-tag-open
+            (sjr (count option-value-wrapped) "^")
             defs/sgr-tag-close)]
 
-       (when valid-desc
-         [""
-          (str "The value for the " option-key " option must be:")])
+      (when valid-desc
+        [""
+         (str "The value for the " option-key " option must be:")])
 
-       (cond (coll? valid-desc)
-             valid-desc
-             (string? valid-desc)
-             [valid-desc])
+      (cond (coll? valid-desc)
+            valid-desc
+            (string? valid-desc)
+            [valid-desc])
 
-       (when valid-examples 
-         [""
-          "Examples:"])
+      (when valid-examples 
+        [""
+         "Examples:"])
 
       valid-examples
 
@@ -577,14 +580,6 @@
         (stop-dbg! debug?)
         ret))
 
-(def fonts-ordered
-  '[bling.fonts/miniwi
-    bling.fonts/ansi-shadow
-    bling.fonts/drippy
-    bling.fonts/big
-    bling.fonts/big-money
-    bling.fonts/rounded
-    bling.fonts/isometric-1])
 
 (defn banner 
   [{:keys [text
@@ -599,8 +594,20 @@
                           (not (string/blank? text)))
         default-font bling.fonts/ansi-shadow
         font         (or user-font default-font)
-        ;; Some kind of validation here
-        valid-font?  true]
+        valid-font?  true
+        ;; font scheming checking for devving of fonts
+        ;; valid-font?  (let [{:keys [widest-char
+        ;;                            char-height
+        ;;                            max-char-width
+        ;;                            chars-array-map]}
+        ;;                    font]
+        ;;                (boolean (and (string? widest-char)
+        ;;                              (= 1 (count widest-char))
+        ;;                              (pos-int? char-height)
+        ;;                              (pos-int? max-char-width)
+        ;;                              (map? chars-array-map)
+        ;;                              (seq chars-array-map))))
+        ]
 
     (when-not valid-text?
       (invalid-banner-opt-warning! 
@@ -613,70 +620,61 @@
        {:option-key      :font
         :option-value    user-font
         :valid-desc      "One of the Figlet fonts that ships with Bling."
-        :valid-examples  (map #(str "\"" % "\"") fonts-ordered)
+        :valid-examples  (map #(str "bling.fonts/" % ) defs/banner-fonts-vec)
         :default-val-msg [""
                           (str "The default font "
-                               "\"" (:name default-font)  "\""
+                               "bling.fonts/" (:font-sym default-font)
                                " will be used")]}))
 
-    (when valid-text?
-      (when-let [
-                 
-                 ;; TODO - move fonts to static 
-                 
-                 ;; {:keys [char-height]
-                 ;;  :as   font-map}
-                 ;; (get bling.fonts/fonts font)
+    ;; (when print-font! (pprint valid-font?))
 
-                 ;; For dev, creates font from raw figlet string
-                 {:keys [char-height]
-                 :as   font-map}
-                 (bling.fontlib/banner-font-array-map font)]
+    (when (and valid-font? valid-text?)
+      (let [{:keys [char-height]}
+            font
 
-        (when print-font! (pprint font-map))
-        (let [text-str-chars
-              (banner-str-chars font-map char-height text display-missing-chars?)
+            text-str-chars
+            (banner-str-chars font char-height text display-missing-chars?)
 
-              {:keys [gradient-range 
-                      vertical-gradient?
-                      horizontal-gradient?]}
-              (gradient-map gradient opts)
+            {:keys [gradient-range 
+                    vertical-gradient?
+                    horizontal-gradient?]}
+            (gradient-map gradient opts)
 
 
               ;; TODO - get this working
-
+            
               ;; red-blue-range-level 
               ;; ;; for light theme it is 0-4
               ;; ;; for dark theme it is 1-5
               ;; 0
-
+            
               ;; gradient-range
               ;; (map #(+ (* red-blue-range-level 6) %) '(21 56 91 126 161 196))
+            
+            first-char
+            (if vertical-gradient?
+              (sgr-gradient char-height (first text-str-chars) gradient-range)
+              (first text-str-chars))
 
-              first-char
-              (if vertical-gradient?
-                (sgr-gradient char-height (first text-str-chars) gradient-range)
-                (first text-str-chars))
-
-              rest-chars
-              (if vertical-gradient?
-                (mapv #(sgr-gradient char-height % gradient-range)
-                      (rest text-str-chars))
-                (rest text-str-chars))
-              
-              composed
-              (composed letter-spacing rest-chars first-char)
+            rest-chars
+            (if vertical-gradient?
+              (mapv #(sgr-gradient char-height % gradient-range)
+                    (rest text-str-chars))
+              (rest text-str-chars))
+            
+            composed
+            (composed letter-spacing rest-chars first-char)
 
 
-              composed 
-              (if horizontal-gradient?
-                (horizontal-gradient composed gradient-range opts) 
-                composed)
+            composed 
+            (if horizontal-gradient?
+              (horizontal-gradient composed gradient-range opts) 
+              composed)
 
-              margins
-              (banner-margin-map opts)]
-          (->> composed
-              (maybe-with-inline-margins margins)
-              (maybe-with-block-margins margins))
-          )))))
+            margins
+            (banner-margin-map opts)]
+        (->> composed
+             (maybe-with-inline-margins margins)
+             (maybe-with-block-margins margins))
+        ))))
 

@@ -21,9 +21,9 @@
             ;; [bling.macros :refer [let-map keyed ?]] ;;<-- just for debugging
             [bling.macros :refer [let-map keyed]]
             [bling.defs :as defs]
+            [bling.util :as util]
             #?(:cljs [goog.object])
-            #?(:cljs [bling.js-env :refer [node?]])
-            ))
+            #?(:cljs [bling.js-env :refer [node?]])))
 
 (declare xterm-colors-by-id)
 
@@ -293,39 +293,6 @@
     file-line-column
     (str (some-> file (str ":")) line ":" column)))
 
-(defn- regex? [v]
-  #?(:clj  (-> v type str (= "class java.util.regex.Pattern"))
-     :cljs (-> v type str (= "#object[RegExp]"))))
-
-(defn- surround-with-quotes [x]
-  (str "\"" x "\""))
-
-(defn- shortened
-  "Stringifies a collection and truncates the result with ellipsis 
-   so that it fits on one line."
-  [v limit]
-  (let [as-str                        (str v)
-        regex?                        (regex? v)
-        double-quotes?                (or (string? v) regex?)
-        regex-pound #?(:cljs nil :clj (when regex? "#"))]
-    (if (> limit (count as-str))
-      (if double-quotes?
-        (str regex-pound (surround-with-quotes as-str))
-        as-str)
-      (let [ret* (-> as-str
-                     (string/split #"\n")
-                     first)
-            ret  (if (< limit (count ret*))
-                   (let [ret (->> ret*
-                                  (take limit)
-                                  string/join)]
-                     (str (if double-quotes?
-                            (str regex-pound (surround-with-quotes ret))
-                            ret)
-                          (when-not double-quotes? " ")
-                          "..."))
-                   ret*)]
-        ret))))
 
                                                                   
 (defn- poi-text-underline-str [n str-index text-decoration-style]
@@ -659,7 +626,7 @@
                   [:bold 'java.lang.Exception.]
                   "\n\n"
                   "Value received:\n"
-                  [:bold (shortened error 33)]
+                  [:bold (util/shortened error 33)]
                   "\n\n"
                   "Type of value received:\n"
                   [:bold (str (type error))]
@@ -784,7 +751,7 @@
                                      as-str
                                      (maybe all-color-names))
                              "neutral")
-        form-as-str      (shortened form 33)
+        form-as-str      (util/shortened form 33)
         underline-str    (-> opts
                              (assoc :form-as-str form-as-str)
                              poi-text-underline
@@ -1221,7 +1188,7 @@
                                     :else
                                     #js[(str (if (coll? label)
                                                (some-> label
-                                                       (shortened 50)
+                                                       (util/shortened 50)
                                                        (str "\n"))
                                                (some-> label 
                                                        (str "\n")))
@@ -1250,7 +1217,7 @@
         supplied-coll-label-shortened       (some-> m
                                                     :label
                                                     (maybe coll?)
-                                                    (shortened 33))
+                                                    (util/shortened 33))
         default-label-based-on-callout-type (some-> type-as-str
                                                     string/upper-case)]
     ;; (? (keyed [blank-string-supplied? 
