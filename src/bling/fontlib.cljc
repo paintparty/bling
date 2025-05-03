@@ -1,120 +1,152 @@
 (ns bling.fontlib
-  (:require [clojure.string :as string]
-            [clojure.data]
+  (:require [clojure.data]
             [clojure.pprint :refer [pprint]]
-            [bling.util :refer [sjr]]
+            [clojure.repl]
+            [clojure.set]
+            [clojure.string :as string]
+            [bling.defs :as defs]
             [bling.macros :refer [? keyed]]
-            [clojure.set]))
+            [bling.util :refer [sjr]]))
 
-(def ascii-syms     
-  '["! 
-\"
-# 
-$ 
-% 
-& 
-' 
-( 
-) 
-* 
-+ 
-, 
-- 
-. 
-/ 
-0 
-1 
-2 
-3 
-4 
-5 
-6 
-7 
-8 
-9 
-: 
-; 
-< 
-= 
-> 
-? 
-@             
-A             
-B             
-C             
-D             
-E             
-F             
-G             
-H             
-I             
-J             
-K             
-L             
-M             
-N             
-O             
-P             
-Q             
-R             
-S             
-T             
-U             
-V             
-W             
-X             
-Y             
-Z             
-[             
-\\             
-]             
-^             
-_
-`
-a
-b
-c
-d
-e
-f
-g
-h
-i
-j
-k
-l
-m
-n
-o
-p
-q
-r
-s
-t
-u
-v
-w
-x
-y
-z
-{
-|
-}
-~
-Ä
-Ö
-Ü
-ä
-ö
-ü
-ß"])
+(def ascii-chars
+  ;; 32-126
+  [
+   " " 
+   "!" 
+   "\""
+   "#" 
+   "$" 
+   "%" 
+   "&" 
+   "'" 
+   "(" 
+   ")" 
+   "*" 
+   "+" 
+   "," 
+   "-" 
+   "." 
+   "/" 
+   "0" 
+   "1" 
+   "2" 
+   "3" 
+   "4" 
+   "5" 
+   "6" 
+   "7" 
+   "8" 
+   "9" 
+   ":" 
+   ";" 
+   "<" 
+   "=" 
+   ">" 
+   "?" 
+   "@"             
+   "A"             
+   "B"             
+   "C"             
+   "D"             
+   "E"             
+   "F"             
+   "G"             
+   "H"             
+   "I"             
+   "J"             
+   "K"             
+   "L"             
+   "M"             
+   "N"             
+   "O"             
+   "P"             
+   "Q"             
+   "R"             
+   "S"             
+   "T"             
+   "U"             
+   "V"             
+   "W"             
+   "X"             
+   "Y"             
+   "Z"             
+   "["             
+   "\\"             
+   "]"             
+   "^"             
+   "_"
+   "`"
+   "a"
+   "b"
+   "c"
+   "d"
+   "e"
+   "f"
+   "g"
+   "h"
+   "i"
+   "j"
+   "k"
+   "l"
+   "m"
+   "n"
+   "o"
+   "p"
+   "q"
+   "r"
+   "s"
+   "t"
+   "u"
+   "v"
+   "w"
+   "x"
+   "y"
+   "z"
+   "{"
+   "|"
+   "}"
+   "~"
+   "Ä"
+   "Ö"
+   "Ü"
+   "ä"
+   "ö"
+   "ü"
+   "ß"
+   ])
+
+(def ascii-chars-by-index-map
+  (reduce 
+   (fn [acc i]
+     (assoc acc i (nth ascii-chars i :not-found)))
+   {}
+   (-> ascii-chars count range)))
+
+(def ascii-indices-by-chars
+  (clojure.set/map-invert ascii-chars-by-index-map))
 
 
-(comment 
-"flf2a$ 11 11 18 -1 23
-isometric1.flf
-
-Figlet conversion by Kent Nassen (kentn@cyberspace.org), 8-10-94, based
+(def isometric-1
+ {:font-name      
+  "Isometric 1"
+  :example        
+[
+ "                 ___           ___           ___           ___           ___           ___                       ___"
+ "     ___        /\\  \\         /\\  \\         /\\__\\         /\\  \\         /\\  \\         /\\  \\          ___        /\\  \\"
+ "    /\\  \\      /::\\  \\       /::\\  \\       /::|  |       /::\\  \\        \\:\\  \\       /::\\  \\        /\\  \\      /::\\  \\"
+ "    \\:\\  \\    /:/\\ \\  \\     /:/\\:\\  \\     /:|:|  |      /:/\\:\\  \\        \\:\\  \\     /:/\\:\\  \\       \\:\\  \\    /:/\\:\\  \\"
+ "    /::\\__\\  _\\:\\~\\ \\  \\   /:/  \\:\\  \\   /:/|:|__|__   /::\\~\\:\\  \\       /::\\  \\   /::\\~\\:\\  \\      /::\\__\\  /:/  \\:\\  \\"
+ " __/:/\\/__/ /\\ \\:\\ \\ \\__\\ /:/__/ \\:\\__\\ /:/ |::::\\__\\ /:/\\:\\ \\:\\__\\     /:/\\:\\__\\ /:/\\:\\ \\:\\__\\  __/:/\\/__/ /:/__/ \\:\\__\\"
+ "/\\/:/  /    \\:\\ \\:\\ \\/__/ \\:\\  \\ /:/  / \\/__/~~/:/  / \\:\\~\\:\\ \\/__/    /:/  \\/__/ \\/_|::\\/:/  / /\\/:/  /    \\:\\  \\  \\/__/"
+ "\\::/__/      \\:\\ \\:\\__\\    \\:\\  /:/  /        /:/  /   \\:\\ \\:\\__\\     /:/  /         |:|::/  /  \\::/__/      \\:\\  \\"
+ " \\:\\__\\       \\:\\/:/  /     \\:\\/:/  /        /:/  /     \\:\\ \\/__/     \\/__/          |:|\\/__/    \\:\\__\\       \\:\\  \\"
+ "  \\/__/        \\::/  /       \\::/  /        /:/  /       \\:\\__\\                      |:|  |       \\/__/        \\:\\__\\"
+ "                \\/__/         \\/__/         \\/__/         \\/__/                       \\|__|                     \\/__/"
+ ]
+ :author         
+ "Lennert Stock, Kent Nassen"
+ :desc
+"Figlet conversion by Kent Nassen (kentn@cyberspace.org), 8-10-94, based
 on the fonts posted by Lennert Stock:
 
 From: stock@fwi.uva.nl (Lennert Stock)
@@ -134,9 +166,9 @@ my guest. I posted the isometric fonts before.
   `;%:`\\. `-' |                                             | `-' ./':%:'
    ``x`. -===.'                   stock@fwi.uva.nl -------- `.===- .'x''
     / `:`.__.;                                               :.__.':' \\
- .d8b.     ..`.                                             .'..     .d8b.")
-
-(def isometric-1
+ .d8b.     ..`.                                             .'..     .d8b."
+   :figlet-metrics "flf2a$ 11 11 18 -1 23"
+   :figlet-string
 "$       $@
 $       $@
 $       $@
@@ -1258,29 +1290,30 @@ $       $@@
 @
 @
 @
-@@")
+@@"})
 
 
-
-
-;;  █████╗ ███╗   ██╗███████╗██╗    ███████╗██╗  ██╗ █████╗ ██████╗  ██████╗ ██╗    ██╗
-;; ██╔══██╗████╗  ██║██╔════╝██║    ██╔════╝██║  ██║██╔══██╗██╔══██╗██╔═══██╗██║    ██║
-;; ███████║██╔██╗ ██║███████╗██║    ███████╗███████║███████║██║  ██║██║   ██║██║ █╗ ██║
-;; ██╔══██║██║╚██╗██║╚════██║██║    ╚════██║██╔══██║██╔══██║██║  ██║██║   ██║██║███╗██║
-;; ██║  ██║██║ ╚████║███████║██║    ███████║██║  ██║██║  ██║██████╔╝╚██████╔╝╚███╔███╔╝
-;; ╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝╚═╝    ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝  ╚═════╝  ╚══╝╚══╝
-
-(comment "
-flf2a$ 7 7 13 0 7 0 64 0
-Font Author: ?
-
-More Info:
-
-https://web.archive.org/web/20120819044459/http://www.roysac.com/thedrawfonts-tdf.asp
-")
 
 (def ansi-shadow
-"@@
+{
+ :font-name "ANSI Shadow"
+ :author "?"
+ :desc ""
+ :more-info
+ "https://web.archive.org/web/20120819044459/http://www.roysac.com/thedrawfonts-tdf.asp"
+ :url ""
+ :example
+[
+" █████╗ ███╗   ██╗███████╗██╗    ███████╗██╗  ██╗ █████╗ ██████╗  ██████╗ ██╗    ██╗"
+"██╔══██╗████╗  ██║██╔════╝██║    ██╔════╝██║  ██║██╔══██╗██╔══██╗██╔═══██╗██║    ██║"
+"███████║██╔██╗ ██║███████╗██║    ███████╗███████║███████║██║  ██║██║   ██║██║ █╗ ██║"
+"██╔══██║██║╚██╗██║╚════██║██║    ╚════██║██╔══██║██╔══██║██║  ██║██║   ██║██║███╗██║"
+"██║  ██║██║ ╚████║███████║██║    ███████║██║  ██║██║  ██║██████╔╝╚██████╔╝╚███╔███╔╝"
+"╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝╚═╝    ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝  ╚═════╝  ╚══╝╚══╝ "
+]
+ :figlet-metrics "flf2a$ 7 7 13 0 7 0 64 0"
+ :figlet-string
+ "@@
 ██╗@
 ██║@
 ██║@
@@ -1910,36 +1943,37 @@ https://web.archive.org/web/20120819044459/http://www.roysac.com/thedrawfonts-td
  ███╔╝  @
 ███████╗@
 ╚══════╝@
-        @@")
+        @@"})
 
 
+(def big-money
+{
+ :font-name      
+ "Big Money"
+ :example        
+ [
+"$$$$$$$\\  $$\\                $$\\      $$\\"
+"$$  __$$\\ \\__|               $$$\\    $$$ |"
+"$$ |  $$ |$$\\  $$$$$$\\       $$$$\\  $$$$ | $$$$$$\\  $$$$$$$\\   $$$$$$\\  $$\\   $$\\"
+"$$$$$$$\\ |$$ |$$  __$$\\      $$\\$$\\$$ $$ |$$  __$$\\ $$  __$$\\ $$  __$$\\ $$ |  $$ |"
+"$$  __$$\\ $$ |$$ /  $$ |     $$ \\$$$  $$ |$$ /  $$ |$$ |  $$ |$$$$$$$$ |$$ |  $$ |"
+"$$ |  $$ |$$ |$$ |  $$ |     $$ |\\$  /$$ |$$ |  $$ |$$ |  $$ |$$   ____|$$ |  $$ |"
+"$$$$$$$  |$$ |\\$$$$$$$ |     $$ | \\_/ $$ |\\$$$$$$  |$$ |  $$ |\\$$$$$$$\\ \\$$$$$$$ |"
+"\\_______/ \\__| \\____$$ |     \\__|     \\__| \\______/ \\__|  \\__| \\_______| \\____$$ |"
+"              $$\\   $$ |                                                $$\\   $$ |"
+"              \\$$$$$$  |                                                \\$$$$$$  |"
+"               \\______/                                                  \\______/"
+ ]
+ :author         
+ "nathan bloomfield"
+ :desc
+ "bigmoney-nw : by nathan bloomfield (xzovik@gmail.com)
+  based on art from the legendary MAKEMONEYFAST chain letter
 
-
-
-;; $$$$$$$\  $$\                $$\      $$\
-;; $$  __$$\ \__|               $$$\    $$$ |
-;; $$ |  $$ |$$\  $$$$$$\       $$$$\  $$$$ | $$$$$$\  $$$$$$$\   $$$$$$\  $$\   $$\
-;; $$$$$$$\ |$$ |$$  __$$\      $$\$$\$$ $$ |$$  __$$\ $$  __$$\ $$  __$$\ $$ |  $$ |
-;; $$  __$$\ $$ |$$ /  $$ |     $$ \$$$  $$ |$$ /  $$ |$$ |  $$ |$$$$$$$$ |$$ |  $$ |
-;; $$ |  $$ |$$ |$$ |  $$ |     $$ |\$  /$$ |$$ |  $$ |$$ |  $$ |$$   ____|$$ |  $$ |
-;; $$$$$$$  |$$ |\$$$$$$$ |     $$ | \_/ $$ |\$$$$$$  |$$ |  $$ |\$$$$$$$\ \$$$$$$$ |
-;; \_______/ \__| \____$$ |     \__|     \__| \______/ \__|  \__| \_______| \____$$ |
-;;               $$\   $$ |                                                $$\   $$ |
-;;               \$$$$$$  |                                                \$$$$$$  |
-;;                \______/                                                  \______/
-
-(comment"
-flf2a& 11 8 18 0 25
-#-> bigmoney-nw : by nathan bloomfield (xzovik@gmail.com)
-#-> based on art from the legendary MAKEMONEYFAST chain letter
-#->
-#-> History:
-#->   5-30-2007 : first version (required characters only)
-#->
-#-> (end comments)
-         ")
-
-(def big-money-nw 
+  History:
+  5-30-2007 : first version (required characters only)"
+   :figlet-metrics "flf2a& 11 8 18 0 25"
+   :figlet-string
 "@@
 $$\\ @
 $$ |@
@@ -3051,30 +3085,27 @@ $$ $$$$  |@
 $$ \\____/ @
 $$ |      @
 $$ |      @
-\\__|      @@")
+\\__|      @@"})
 
-
-
-
-;; ▓█████▄  ██▀███   ██▓ ██▓███   ██▓███  ▓██   ██▓
-;; ▒██▀ ██▌▓██ ▒ ██▒▓██▒▓██░  ██▒▓██░  ██▒ ▒██  ██▒
-;; ░██   █▌▓██ ░▄█ ▒▒██▒▓██░ ██▓▒▓██░ ██▓▒  ▒██ ██░
-;; ░▓█▄   ▌▒██▀▀█▄  ░██░▒██▄█▓▒ ▒▒██▄█▓▒ ▒  ░ ▐██▓░
-;; ░▒████▓ ░██▓ ▒██▒░██░▒██▒ ░  ░▒██▒ ░  ░  ░ ██▒▓░
-;;  ▒▒▓  ▒ ░ ▒▓ ░▒▓░░▓  ▒▓▒░ ░  ░▒▓▒░ ░  ░   ██▒▒▒
-;;  ░ ▒  ▒   ░▒ ░ ▒░ ▒ ░░▒ ░     ░▒ ░      ▓██ ░▒░
-;;  ░ ░  ░   ░░   ░  ▒ ░░░       ░░        ▒ ▒ ░░
-;;    ░       ░      ░                     ░ ░
-;;  ░                                      ░ ░
-
-(comment"
-flf2a$ 10 5 10 0 3 0
-Author: ?
-Original font name: \"Bloody\""
-)
 
 (def drippy
-"$ $@
+  {:font-name      "Drippy"
+   :example        [
+"▓█████▄  ██▀███   ██▓ ██▓███   ██▓███  ▓██   ██▓"
+"▒██▀ ██▌▓██ ▒ ██▒▓██▒▓██░  ██▒▓██░  ██▒ ▒██  ██▒"
+"░██   █▌▓██ ░▄█ ▒▒██▒▓██░ ██▓▒▓██░ ██▓▒  ▒██ ██░"
+"░▓█▄   ▌▒██▀▀█▄  ░██░▒██▄█▓▒ ▒▒██▄█▓▒ ▒  ░ ▐██▓░"
+"░▒████▓ ░██▓ ▒██▒░██░▒██▒ ░  ░▒██▒ ░  ░  ░ ██▒▓░"
+" ▒▒▓  ▒ ░ ▒▓ ░▒▓░░▓  ▒▓▒░ ░  ░▒▓▒░ ░  ░   ██▒▒▒"
+" ░ ▒  ▒   ░▒ ░ ▒░ ▒ ░░▒ ░     ░▒ ░      ▓██ ░▒░"
+" ░ ░  ░   ░░   ░  ▒ ░░░       ░░        ▒ ▒ ░░"
+"   ░       ░      ░                     ░ ░"
+" ░                                      ░ ░"
+                    ]
+   :author         "?"
+   :desc           "Original font name: \"Bloody\""
+   :figlet-metrics "flf2a$ 10 5 10 0 3 0"
+   :figlet-string  "$ $@
 $ $@
 $ $@
 $ $@
@@ -4093,22 +4124,25 @@ $ ░ $@@
 @
 @
 @
-@@")
+@@"})
 
 
-
-;;  ____   _
-;; |  _ \ (_)
-;; | |_) | _   __ _
-;; |  _ < | | / _` |
-;; | |_) || || (_| |
-;; |____/ |_| \__, |
-;;             __/ |
-;;            |___/
-
-(comment
-  "flf2a$ 8 6 59 15 10 0 24463
-Big by Glenn Chappell 4/93 -- based on Standard
+(def big
+ {
+  :font-name      "Big"
+  :example        [
+                   " ____   _"
+                   "|  _ \\ (_)"
+                   "| |_) | _   __ _"
+                   "|  _ < | | / _` |"
+                   "| |_) || || (_| |"
+                   "|____/ |_| \\__, |"
+                   "            __/ |"
+                   "           |___/"
+                   ]
+  :author         "Glenn Chappell, Bruce Jakeway"
+  :desc           
+  "Big by Glenn Chappell 4/93 -- based on Standard
 Includes ISO Latin-1
 Greek characters by Bruce Jakeway <pbjakeway@neumann.uwaterloo.ca>
 figlet release 2.2 -- November 1996
@@ -4117,10 +4151,10 @@ modifier's name is placed on a comment line.
 
 Modified by Paul Burton <solution@earthlink.net> 12/96 to include new parameter
 supported by FIGlet and FIGWin.  May also be slightly modified for better use
-of new full-width/kern/smush alternatives, but default output is NOT changed.")
-
-(def big
- "$@
+of new full-width/kern/smush alternatives, but default output is NOT changed."
+  :figlet-metrics "flf2a$ 8 6 59 15 10 0 24463"
+  :figlet-string  
+"$@
  $@
  $@
  $@
@@ -6305,24 +6339,27 @@ __   @
 ;;   \___^___/ @
 ;;             @
 ;;             @@
-  )
-
-
-
-;; ▖  ▖▘  ▘   ▘
-;; ▛▖▞▌▌▛▌▌▌▌▌▌
-;; ▌▝ ▌▌▌▌▌▚▚▘▌
-
-(comment "
-flf2a$ 4 4 3 -1 5 0 1 0
-
-   ▘  ▘   ▘ miniwi font
-▛▛▌▌▛▌▌▌▌▌▌ after the miniwi bitmap font
-▌▌▌▌▌▌▌▚▚▘▌ http://github.com/sshbio/miniwi
-")
-
+  })
 
 (def miniwi
+ {
+ :font-name "Miniwi"
+ :example
+[
+"▖  ▖▘  ▘   ▘"
+"▛▖▞▌▌▛▌▌▌▌▌▌"
+"▌▝ ▌▌▌▌▌▚▚▘▌"
+""
+"   ▘  ▘   ▘"
+"▛▛▌▌▛▌▌▌▌▌▌"
+"▌▌▌▌▌▌▌▚▚▘▌"
+ ]
+ :author "Nick Miners"
+ :desc "miniwi font
+        after the miniwi bitmap font"
+ :url "http://github.com/sshbio/miniwi"
+ :figlet-metrics "flf2a$ 4 4 3 -1 5 0 1 0"
+ :figlet-string
 "$@
  $@
  $@
@@ -6702,33 +6739,33 @@ flf2a$ 4 4 3 -1 5 0 1 0
    @
 ▖▄ @
 ▝▘▘@
-   @@")
+   @@"})
 
 
-
-
-;;  ______                            _             _
-;; (_____ \                          | |           | |
-;;  _____) )  ___   _   _  ____    __| | _____   __| |
-;; |  __  /  / _ \ | | | ||  _ \  / _  || ___ | / _  |
-;; | |  \ \ | |_| || |_| || | | |( (_| || ____|( (_| |
-;; |_|   |_| \___/ |____/ |_| |_| \____||_____) \____|
-
-;;  ______   _______  _     _  _______  ______   _______  ______
-;; (_____ \ (_______)(_)   (_)(_______)(______) (_______)(______)
-;;  _____) ) _     _  _     _  _     _  _     _  _____    _     _
-;; |  __  / | |   | || |   | || |   | || |   | ||  ___)  | |   | |
-;; | |  \ \ | |___| || |___| || |   | || |__/ / | |_____ | |__/ /
-;; |_|   |_| \_____/  \_____/ |_|   |_||_____/  |_______)|_____/
-
-(comment
- "flf2a$ 7 6 20 15 2
-Rounded by Nick Miners N.M.Miners@durham.ac.uk
-May 1994
-")
-
-(def ^{:name "Rounded"}
-  rounded 
+(def rounded 
+{
+ :font-name "ANSI Shadow"
+ :example
+[
+" ______                            _             _"
+"(_____ \\                          | |           | |"
+" _____) )  ___   _   _  ____    __| | _____   __| |"
+"|  __  /  / _ \\ | | | ||  _ \\  / _  || ___ | / _  |"
+"| |  \\ \\ | |_| || |_| || | | |( (_| || ____|( (_| |"
+"|_|   |_| \\___/ |____/ |_| |_| \\____||_____) \\____|"
+""
+" ______   _______  _     _  _______  ______   _______  ______"
+"(_____ \\ (_______)(_)   (_)(_______)(______) (_______)(______)"
+" _____) ) _     _  _     _  _     _  _     _  _____    _     _"
+"|  __  / | |   | || |   | || |   | || |   | ||  ___)  | |   | |"
+"| |  \\ \\ | |___| || |___| || |   | || |__/ / | |_____ | |__/ /"
+"|_|   |_| \\_____/  \\_____/ |_|   |_||_____/  |_______)|_____/"
+ ]
+ :author "Nick Miners"
+ :desc "Rounded by Nick Miners N.M.Miners@durham.ac.uk
+        May 1994"
+ :figlet-metrics "flf2a$ 7 6 20 15 2"
+ :figlet-string
 "$$@
 $$@
 $$@
@@ -7443,127 +7480,11 @@ $$@@
 | | ) )@
 |_|(_/ @
        @@"
-)
+})
 
-;; 32-126
-(def ascii-chars
-  [
-   " " 
-   "!" 
-   "\""
-   "#" 
-   "$" 
-   "%" 
-   "&" 
-   "'" 
-   "(" 
-   ")" 
-   "*" 
-   "+" 
-   "," 
-   "-" 
-   "." 
-   "/" 
-   "0" 
-   "1" 
-   "2" 
-   "3" 
-   "4" 
-   "5" 
-   "6" 
-   "7" 
-   "8" 
-   "9" 
-   ":" 
-   ";" 
-   "<" 
-   "=" 
-   ">" 
-   "?" 
-   "@"             
-   "A"             
-   "B"             
-   "C"             
-   "D"             
-   "E"             
-   "F"             
-   "G"             
-   "H"             
-   "I"             
-   "J"             
-   "K"             
-   "L"             
-   "M"             
-   "N"             
-   "O"             
-   "P"             
-   "Q"             
-   "R"             
-   "S"             
-   "T"             
-   "U"             
-   "V"             
-   "W"             
-   "X"             
-   "Y"             
-   "Z"             
-   "["             
-   "\\"             
-   "]"             
-   "^"             
-   "_"
-   "`"
-   "a"
-   "b"
-   "c"
-   "d"
-   "e"
-   "f"
-   "g"
-   "h"
-   "i"
-   "j"
-   "k"
-   "l"
-   "m"
-   "n"
-   "o"
-   "p"
-   "q"
-   "r"
-   "s"
-   "t"
-   "u"
-   "v"
-   "w"
-   "x"
-   "y"
-   "z"
-   "{"
-   "|"
-   "}"
-   "~"
-   "Ä"
-   "Ö"
-   "Ü"
-   "ä"
-   "ö"
-   "ü"
-   "ß"
-   ])
+;; Functions to generate font maps for use during dev --------------------------
 
-(def ascii-chars-by-index-map
-  (reduce 
-   (fn [acc i]
-     (assoc acc i (nth ascii-chars i :not-found)))
-   {}
-   (-> ascii-chars count range)))
-
-(def ascii-indices-by-chars
-  (clojure.set/map-invert ascii-chars-by-index-map))
-
-
-(defn figlet-font-multiple-character-heights-warning!
+(defn- figlet-font-multiple-character-heights-warning!
   [font-name m]
   (let [m+                    m #_(update-in m ["o" :height] + 2)
         height-frequencies    (some->> m+
@@ -7597,7 +7518,7 @@ $$@@
          (doseq [char chars]
            (pprint (get m char)))))))
 
-(defn space-width [widths]
+(defn- space-width [widths]
   (let [pos-widths (filter pos? widths)]
     (Math/round 
      (Math/ceil 
@@ -7606,7 +7527,7 @@ $$@@
              (count pos-widths))
           2))))))
 
-(defn space-char [widths max-height]
+(defn- space-char [widths max-height]
   (let [space-width (space-width widths)]
     {:bands     (->> (repeat space-width " ")
                      string/join
@@ -7659,7 +7580,7 @@ $$@@
              (into []))]
      (keyed [chars-array-map missing-chars])))
 
-(defn font-metrics [coll]
+(defn- font-metrics [coll]
   (reduce 
    (fn [{:keys [widest-char widest-char-width widths max-height]
          :as   acc}
@@ -7715,7 +7636,7 @@ $$@@
                     [s]
                     (repeat (/ height 2) band-str))))))
 
-(defn replacement-char-fn [space-char %]
+(defn- replacement-char-fn [space-char %]
   (if (:missing? %)
     (let [vc (replacement-char-vec space-char %)]
       (assoc %
@@ -7725,34 +7646,38 @@ $$@@
              (count vc)))
     %))
 
-(def raw-figlet-font-strings-by-name
-  {"Big Money"    big-money-nw
-   "ANSI Shadow"  ansi-shadow
-   "Drippy"       drippy
-   "Big"          big
-   "Miniwi"       miniwi
-   "Isometric 1"  isometric-1
-   "Rounded"      rounded})
+(def font-maps-by-sym
+  {'big-money   big-money
+   'ansi-shadow ansi-shadow
+   'drippy      drippy
+   'big         big
+   'miniwi      miniwi
+   'isometric-1 isometric-1
+   'rounded     rounded})
 
-(def raw-figlet-font-names-by-font
-  (clojure.set/map-invert raw-figlet-font-strings-by-name))
+(def font-maps-by-name
+  (reduce (fn [acc [_ v]]
+            (assoc acc (:font-name v) v))
+          {}
+          font-maps-by-sym))
 
-(def raw-figlet-font-strings-by-sym
-  {'bling.fonts/big-money   big-money-nw
-   'bling.fonts/ansi-shadow ansi-shadow
-   'bling.fonts/drippy      drippy
-   'bling.fonts/big         big
-   'bling.fonts/miniwi      miniwi
-   'bling.fonts/isometric-1 isometric-1
-   'bling.fonts/rounded     rounded})
+(def font-names-by-font
+  (clojure.set/map-invert font-maps-by-name))
 
 (defn banner-font-array-map [font-sym]
-  (when-let [font (some-> (get raw-figlet-font-strings-by-sym font-sym))]
-   (let [font-name 
-         (get raw-figlet-font-names-by-font font)
-
-         char-strings-coll
-         (string/split font #"@@")
+  (when-let [{:keys [figlet-string 
+                     font-name
+                     author-name
+                     desc
+                     more-info
+                     url
+                     example
+                     figlet-metrics
+                     figlet-string]
+              :as   font-map}
+             (get font-maps-by-sym font-sym)]
+   (let [char-strings-coll
+         (string/split figlet-string #"@@")
 
          char-bands-coll
          (keep-indexed char-bands-coll-inner char-strings-coll)
@@ -7776,12 +7701,81 @@ $$@@
       font-name
       chars-array-map)
 
-     (assoc (keyed [chars-array-map missing-chars font-sym font-name widest-char])
-            :char-height     
-            max-height
-            :max-char-width  
-            (apply max widths)))))
+     (apply array-map
+             (reduce
+              (fn [acc [k v]]
+                (if k
+                  (conj acc k v)
+                  acc))
+              []
+              [[:font-name font-name]
+               [:example example]
+               (some->> author-name (vector :author-name))
+               (some->> desc (vector :desc))
+               (some->> more-info (vector :more-info))
+               (some->> url (vector :url))
+               [:font-sym font-sym]
+               [:widest-char widest-char]
+               [:char-height max-height]
+               [:max-char-width (apply max widths)]
+               [:missing-chars missing-chars]
+               [:chars-array-map chars-array-map]])))))
 
- '(spit "./foo.txt"
-        content
-        :append false)
+
+
+;; This is called during development of the fonts themselves, by code in
+;; bling.test that is calling bling.banner/banner to try out new / changed fonts
+(def fonts-by-sym
+ (reduce (fn [m sym]
+           (assoc m sym (banner-font-array-map sym)))
+         {}
+         defs/banner-fonts-vec))
+
+
+
+;; For manually generating bling.fonts namespace from babashka -----------------
+#?(:clj
+   (do
+     (defn- font-def-source-code [m font-sym]
+       (let [commented-example-of-output    (some->> m
+                                                     :example
+                                                     (string/join "\n;;  ")
+                                                     (str ";;  ")) 
+
+             quoted-pretty-printed-font-map (-> m
+                                                pprint
+                                                with-out-str
+                                                (string/replace #"\n$" "")
+                                                (->> (str "'")))]
+         
+         (str commented-example-of-output
+              "\n"
+              "\n"
+              "(def " (name font-sym) "\n"
+              quoted-pretty-printed-font-map ")")))
+
+     (defn- font-defs []
+       (string/join "\n\n\n"
+                    (mapv #(font-def-source-code 
+                            (banner-font-array-map %)
+                            %)
+                          defs/banner-fonts-vec)))
+     (defn write-fonts-ns!
+       "This updates/generates a bling.fonts namespace.
+      
+        Used ocasionally during dev, when fonts are modified or added.
+  
+        This is intended to be called from repl or babashka script in
+        dev/bb-script.cljc.
+        
+        To call from bb (from the bling project root dir):
+        bb bb-script.cljc"
+       []
+       (spit "./src/bling/fonts.cljc"
+             (str "(ns bling.fonts)"
+                  "\n"
+                  "\n"
+                  "\n"
+                  "\n"
+                  (font-defs))
+             :append false))))

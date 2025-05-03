@@ -3,6 +3,18 @@
     [clojure.string :as string]
     #?(:cljs [bling.js-env :refer [node?]])))
 
+(def banner-fonts-vec
+  '[miniwi
+    ansi-shadow
+    drippy
+    big
+    big-money
+    rounded
+    isometric-1])
+
+(def banner-fonts-set
+  (into #{} banner-fonts-vec))
+
 (def gutter-char "█")
 (def gutter-char-lower-seven-eighths "▆")
 
@@ -26,8 +38,7 @@
 
 (def bling-theme-names-set #{"light" "dark" "medium"})
 
-;; TODO this is manually hack of public callout fn b/c having problems
-;; with declaring it above this and then using it ... investigate.
+;; TODO - Refactor with warning template in bling.core
 (defn invalid-bling-theme-warning!
   [s]
   (let [[border-char-top
