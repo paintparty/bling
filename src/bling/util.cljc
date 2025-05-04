@@ -1,6 +1,15 @@
 (ns bling.util
   (:require [clojure.string :as string]))
 
+(defn maybe [x pred]
+  (when (if (set? pred)
+          (contains? pred x)
+          (pred x))
+    x))
+
+(defn as-str [x]
+  (str (if (or (keyword? x) (symbol? x)) (name x) x)))
+
 (defn- regex? [v]
   #?(:clj  (-> v type str (= "class java.util.regex.Pattern"))
      :cljs (-> v type str (= "#object[RegExp]"))))
