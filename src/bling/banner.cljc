@@ -2,19 +2,38 @@
   (:require
    [bling.macros :refer [keyed ? start-dbg! stop-dbg! nth-not-found]]
    [bling.fonts]
-   [bling.util :as util :refer [sjr]]
+   [bling.util :as util :refer [sjr maybe as-str]]
    [clojure.pprint :refer [pprint]]
    [bling.defs :as defs]
    [clojure.string :as string]))
 
-(defn- maybe [x pred]
-  (when (if (set? pred)
-          (contains? pred x)
-          (pred x))
-    x))
 
-(defn print-warning! [lns]
+(defn- print-caught-exception! [fn-name]
+  (let [[border-char-top
+         border-char
+         border-char-bottom]
+        (get defs/internal-warning-border-chars
+             defs/internal-warning-border-style)]
+    (println
+     (str (apply str 
+                 (str "\n"
+                      defs/orange-tag-open
+                      border-char-top
+                      defs/sgr-tag-close
+                      "  "
+                      defs/bold-tag-open
+                      "EXCEPTION (Caught) "
+                      defs/sgr-tag-close
+                      fn-name
+                      "\n"))
+          (when (contains? #{:sideline-bold :sideline}
+                           defs/internal-warning-border-style)
+            (str defs/orange-tag-open
+                 border-char-bottom
+                 defs/sgr-tag-close))))))
 
+
+(defn- print-warning! [lns]
   (let [[border-char-top
          border-char
          border-char-bottom]
@@ -49,7 +68,7 @@
     (str "\"" x "\"")
     x))
 
-(defn invalid-banner-opt-warning!
+(defn- invalid-banner-opt-warning!
   [{:keys [option-key 
            option-value
            valid-desc
@@ -65,7 +84,7 @@
     (print-warning!
      (concat
       [""
-       "bling.banner/banner*"
+       "bling.banner/banner"
        ""
        (str "Invalid value for the "
             defs/bold-tag-open option-key defs/sgr-tag-close
@@ -142,7 +161,7 @@
 
     ret))
 
-(defn trim-coll-sides [coll n]
+(defn- trim-coll-sides [coll n]
   (reduce 
    (fn [acc i]
      (if (odd? i)
@@ -151,7 +170,7 @@
    coll 
    (range n)))
 
-(defn inflate-coll-sides [coll n]
+(defn- inflate-coll-sides [coll n]
   (into []
         (reduce 
          (fn [acc i]
@@ -161,32 +180,36 @@
          coll 
          (range n))))
 
-(defn inflate-color-coll [coll n]
+(defn- inflate-color-coll [coll n]
   (reduce (fn [acc v] (apply conj acc (repeat n v))) [] coll))
 
-(defn color-rows [gr cells]
-  (let [gr-count
+(defn- color-cells
+  [gr cells-int kw]
+  (let [cells-int
+        (if (and (= kw :rows) (> cells-int 1)) (dec cells-int) cells-int)
+
+        gr-count
         (count gr)
 
         debug?   
-        (start-dbg! #_color-rows) ;; Turn on/off, ignore/unignore color-rows arg
+        (start-dbg! #_color-cells) ;; Turn on/off, ignore/unignore first arg
 
         dbg
         (if debug? #(? :- %) (fn [_] nil))
 
         ret
         (cond
-          (< cells gr-count)
-          (do (dbg "Number of cells is less than number of colors in gradient range")
-              (dbg (keyed [cells gr-count]))
-              (trim-coll-sides gr (- gr-count cells)))
+          (< cells-int gr-count)
+          (do (dbg "Number of cells-int is less than number of colors in gradient range")
+              (dbg (keyed [cells-int gr-count]))
+              (trim-coll-sides gr (- gr-count cells-int)))
 
-          (> cells gr-count)
+          (> cells-int gr-count)
           (do 
             (dbg "Number of cells is more than number of colors in gradient range")
-            (when debug? (? :- (keyed [cells gr-count])))
-            (let [rm                   (rem cells gr-count)
-                  multiplier           (/ cells gr-count)
+            (when debug? (? :- (keyed [cells-int gr-count])))
+            (let [rm                   (rem cells-int gr-count)
+                  multiplier           (/ cells-int gr-count)
                   multiplier-ceil-int  (Math/round (Math/ceil (double multiplier)))
                   multiplier-floor-int (Math/round (Math/floor (double multiplier)))]
               (when debug? (? :- (keyed [rm multiplier multiplier-ceil-int multiplier-floor-int])))
@@ -198,7 +221,7 @@
 
                   (do (dbg "Remainder is greater than half the gradient-range.")
                       (let [coll (inflate-color-coll gr multiplier-ceil-int)
-                            diff (- (count coll) cells)]
+                            diff (- (count coll) cells-int)]
                         (dbg (str "Inflating the gradient range by repeating each color " multiplier " times")) 
                         (dbg (str "Then trimming the gradient range by alternately removing vals from the coll sides, " diff " times"))
                         (trim-coll-sides coll diff)))
@@ -214,22 +237,47 @@
     (stop-dbg! debug?)
     ret))
 
-(defn sgr-gradient
-  [char-height rows sgr-gradient-range]
+(defn- color-rows [gr n]
+  (color-cells gr n :rows))
+
+(defn- color-columns [gr n]
+  (color-cells gr n :columns))
+
+(defn- sgr-gradient
+  [char-height rows sgr-gradient-range font-weight]
   (let [row-colors  (color-rows sgr-gradient-range char-height)]
     (into []
           (map-indexed
            (fn [i s]
-             (str (m->sgr {:color (nth row-colors i (nth-not-found))})
+             (str (m->sgr {:color (nth row-colors i (nth-not-found))
+                           :font-weight font-weight})
                   s
                   "\033[0;m"))
            rows))))
 
+(def gradient-points
+  {:green [22 40 82] ;; to blue
+   :yellow [100 136 178] ;; to purple
+   :red [124 160 196] ;; to magenta
+   :orange [130 172 214] ;; to purple
+   })
+
+(def gradient-points-cool-warm
+  {:cool [27 33 39] ;; to warm
+   })
+
+(def gradient-pairs-cool-warm-map
+  {
+   :cool    :warm
+  ;;  :magenta :green
+   })
+
 (def gradient-pairs-map
-  {:green  :blue
-   :yellow :purple
-   :red    :magenta
-   :orange :purple})
+  (merge {:green   :blue
+          :yellow  :purple
+          :red     :magenta
+          :orange  :purple}
+         gradient-pairs-cool-warm-map))
 
 (def gradient-pairs-set
   (reduce 
@@ -244,41 +292,47 @@
              #{}
              gradient-pairs-map))
 
-
-(def gradient-points
-  {:green [22 40 82] ;; to blue
-   :yellow [100 136 178] ;; to purple
-   :red [124 160 196] ;; to magenta
-   :orange [130 172 214] ;; to purple
-   })
-
-
 (def shade-names ["dark" "medium" "light"])
 
-;; (def shade-names ["dark" "medium-dark" "medium" "medium-light" "light"])
 
-(defn shade-map [k i n]
-    (let [prefix (nth shade-names i (nth-not-found))
-          range  (range n (+ n 6))
-          c1     (str prefix "-" (name k))
-          c2     (str prefix "-" (-> k gradient-pairs-map name))]
-      (concat [[c1 c2] range
-               [c2 c1] (reverse range)]
-              (when (= "medium" prefix)
-                (let [c1 (name k)
-                      c2 (-> k gradient-pairs-map name)]
-                  [[c1 c2] range
-                   [c2 c1] (reverse range)])))))
+(defn- shade-map [pairs-map range-fn k i n]
+  (let [prefix    (nth shade-names i (nth-not-found))
+        grd-range (range-fn n)
+        c1        (str prefix "-" (name k))
+        c2        (str prefix "-" (-> k pairs-map name))]
+    (concat [[c1 c2] grd-range
+             [c2 c1] (reverse grd-range)]
+            (when (= "medium" prefix)
+              (let [c1 (name k)
+                    c2 (-> k pairs-map name)]
+                [[c1 c2] grd-range
+                 [c2 c1] (reverse grd-range)])))))
 
-(def gradient-ranges
-  (apply array-map
+(defn- shade-maps [acc shades range-fn k]
+ (->> shades
+      (map-indexed (partial shade-map
+                            gradient-pairs-map
+                            range-fn
+                            k))
+      (apply concat)
+      (apply conj acc)))
+
+
+(defn- gradient-ranges* [range-fn gradient-points-vec]
+  (apply array-map 
          (reduce-kv 
           (fn [acc k shades]
-            (let [shade-maps
-                  (map-indexed (partial shade-map k) shades)]
-              (apply conj acc (apply concat shade-maps))))
+            (shade-maps acc shades range-fn k))
           []
-          gradient-points)))
+          gradient-points-vec)))
+
+(def gradient-ranges
+  (gradient-ranges* #(range % (+ % 6))
+                    gradient-points))
+
+(def gradient-ranges-cool-warm
+  (gradient-ranges* #(range % (+ % (* 6 36)) 36)
+                    gradient-points-cool-warm))
 
 (def gradient-colors-set
   (reduce-kv
@@ -341,15 +395,19 @@
                                 (name v)
                                 "\"")) 
                          gradient-pairs-map)}))
+
 (defn gradient-map
   "Expects a string as first argument representing a linear-gradient in standard
    css syntax:
    \"to bottom, yellow, purple\"
 
-   Expects a boolean as second argument. If the user has BLING_THEME env
-   var set, the darker or lighter variant of the base color will be used,
-   depending on the value of BLING_THEME, which corresponds to the background
-   terminal. The purpose is to lower the contrast for a more subtle look.
+   Expects a map (banner opts) as second argument, from which a value for the
+   :contrast option may be provided.
+   
+   If the user has BLING_THEME env var set, the darker or lighter variant of the
+   base color will be used, depending on the value of BLING_THEME, which
+   corresponds to the background terminal. The purpose is to lower or heighten
+   the contrast.
 
    Returns a map:
    {:gradient-range       '(40 41 42 43 44 45) ;; <- range of sgr codes
@@ -364,24 +422,16 @@
                      (string/split #", "))]
     (let [valid-gradient-pairs? (contains? gradient-pairs-set #{c1 c2})]
           (if (and (contains? gradient-directions direction)
-                   valid-gradient-pairs?
-                   #_(let [prefix-c1 (re-find #"^light-|^dark-" c1)
-                           prefix-c2 (re-find #"^light-|^dark-" c2)]
-                       (if (= prefix-c1 prefix-c2)
-                         true
-                         (print-warning! 
-                          ['bling.banner/gradient-map
-                           ""
-                           (str "A gradient from "
-                                defs/bold-tag-open "\"" c1 "\"" defs/sgr-tag-close
-                                " to "
-                                defs/bold-tag-open "\"" c2 "\"" defs/sgr-tag-close
-                                " is not valid") ]) )))
-            (let [
-                  c1  (resolve-base-gradient-color-for-theme opts c1)
+                   valid-gradient-pairs?)
+            (let [c1  (resolve-base-gradient-color-for-theme opts c1)
                   c2  (resolve-base-gradient-color-for-theme opts c2)
                   k   (case direction "to top" [c2 c1] [c1 c2])
-                  gr  (get gradient-ranges k)
+                  gr  (or (get gradient-ranges k)
+                          (let [coll (get gradient-ranges-cool-warm k)
+                                gs   (:gradient-shift opts)]
+                            (if gs
+                              (mapv #(- % gs) coll)
+                              coll)))
                   go  (get gradient-directions direction :vertical)
                   vg? (and gr (= go :vertical))
                   hg? (and gr (= go :horizontal))]
@@ -394,9 +444,10 @@
               :gradient-pairs-map gradient-pairs-map
               :show-examples?     valid-gradient-pairs?})))))
 
+
 (defn horizontal-gradient [composed gr opts]
   (let [width      (-> composed first count)
-        col-colors (color-rows gr width)]
+        col-colors (color-columns gr width)]
 
     (keyed [width col-colors gr])
 
@@ -411,17 +462,9 @@
                  %)))
           composed)))
 
-;; TODO FIGURE OUT wtf is going on here.
+
 (defn- composed 
   [letter-spacing rest-chars first-char]
-
-  ;; (? [(count first-char) (mapv count rest-chars)])
-  ;; (pprint first-char)
-  ;; (println (string/join "\n" first-char ))
-
-  ;; (pprint (first rest-chars))
-  ;; (println (string/join "\n" (first rest-chars) ))
-
   (let [debug?   
         (start-dbg! #_composed) ;; Turn on/off, ignore/unignore first arg
 
@@ -446,12 +489,6 @@
   (some-> n
           (repeat (case kw :inline " " :block "\n" ""))
           string/join))
-
-;; (defn- validate-option [kw v fallback]
-;;   (if (pred v)
-;;     v
-;;     (do
-;;       fallback)))
 
 (defn- banner-margin-map
   [m]
@@ -542,7 +579,10 @@
 
 
 (defn banner-str-chars
-  [font-map char-height text display-missing-chars?]
+  [font-map
+   char-height
+   text
+   display-missing-chars?]
   (let [debug?   
         (start-dbg! #_banner-str-chars) ;; Turn on/off, ignore/unignore first arg 
         
@@ -580,101 +620,169 @@
         (stop-dbg! debug?)
         ret))
 
+(defn valid-font?* [font]
+  (let [{:keys [widest-char
+                char-height
+                max-char-width
+                chars-array-map]}
+        font]
+    (boolean (and (string? widest-char)
+                  (= 1 (count widest-char))
+                  (pos-int? char-height)
+                  (pos-int? max-char-width)
+                  (map? chars-array-map)
+                  (seq chars-array-map)))))
+
+(declare caught-exception!)
 
 (defn banner 
   [{:keys [text
            letter-spacing
+           font-weight
            gradient
            :dev/print-font!
-           display-missing-chars?]
+           display-missing-chars?
+           gradient-shift]
     :as opts
-    :or {display-missing-chars? true}
+    :or {display-missing-chars? true
+         letter-spacing         0
+         gradient-shift         0}
     user-font :font}]
-  (let [valid-text?  (and (string? text)
-                          (not (string/blank? text)))
-        default-font bling.fonts/ansi-shadow
-        font         (or user-font default-font)
-        valid-font?  true
-        ;; font scheming checking for devving of fonts
-        ;; valid-font?  (let [{:keys [widest-char
-        ;;                            char-height
-        ;;                            max-char-width
-        ;;                            chars-array-map]}
-        ;;                    font]
-        ;;                (boolean (and (string? widest-char)
-        ;;                              (= 1 (count widest-char))
-        ;;                              (pos-int? char-height)
-        ;;                              (pos-int? max-char-width)
-        ;;                              (map? chars-array-map)
-        ;;                              (seq chars-array-map))))
-        ]
 
-    (when-not valid-text?
-      (invalid-banner-opt-warning! 
-       {:option-key     :text
-        :option-value   text
-        :valid-desc     "A non-blank string"}))
+  (try
+    (let [valid-text?           (and (string? text) (not (string/blank? text)))
+          valid-letter-spacing? #(or (pos-int? letter-spacing)
+                                     (zero? letter-spacing))
+          valid-gradient-shift? #(or (pos-int? letter-spacing)
+                                     (zero? letter-spacing))
+          valid-font-weight?    #(contains? #{"normal" "bold"}
+                                            (as-str font-weight))
+          default-font          bling.fonts/ansi-shadow
+          font                  (or user-font default-font)
+          valid-font?           true
 
-    (when-not valid-font?
-      (invalid-banner-opt-warning! 
-       {:option-key      :font
-        :option-value    user-font
-        :valid-desc      "One of the Figlet fonts that ships with Bling."
-        :valid-examples  (map #(str "bling.fonts/" % ) defs/banner-fonts-vec)
-        :default-val-msg [""
-                          (str "The default font "
-                               "bling.fonts/" (:font-sym default-font)
-                               " will be used")]}))
+          ;; font scheming checking for devving of fonts
+          ;; valid-font? (valid-font?* font)
+          ]
+      
+      (when-not valid-font-weight?
+        (invalid-banner-opt-warning! 
+         {:option-key     :font-weight
+          :option-value   font-weight
+          :valid-desc     #{"bold" "normal"}}))
+
+      (when-not valid-gradient-shift?
+        (invalid-banner-opt-warning! 
+         {:option-key     :gradient-shift
+          :option-value   gradient-shift
+          :valid-desc     "A positive integer between 1 and 5 (inclusive)"}))
+
+      (when-not valid-letter-spacing?
+        (invalid-banner-opt-warning! 
+         {:option-key     :letter-spacing
+          :option-value   letter-spacing
+          :valid-desc     "A positive integer"}))
+
+      (when-not valid-text?
+        (invalid-banner-opt-warning! 
+         {:option-key     :text
+          :option-value   text
+          :valid-desc     "A non-blank string"}))
+
+      (when-not valid-font?
+        (invalid-banner-opt-warning! 
+         {:option-key      :font
+          :option-value    user-font
+          :valid-desc      "One of the Figlet fonts that ships with Bling."
+          :valid-examples  (map #(str "bling.fonts/" % ) defs/banner-fonts-vec)
+          :default-val-msg [""
+                            (str "The default font "
+                                 "bling.fonts/" (:font-sym default-font)
+                                 " will be used")]}))
 
     ;; (when print-font! (pprint valid-font?))
+      
+      (when (and valid-font? valid-text?)
+        (let [ {:keys [char-height]}
+              font
 
-    (when (and valid-font? valid-text?)
-      (let [{:keys [char-height]}
-            font
+              text-str-chars
+              (banner-str-chars font char-height text display-missing-chars?)
 
-            text-str-chars
-            (banner-str-chars font char-height text display-missing-chars?)
-
-            {:keys [gradient-range 
-                    vertical-gradient?
-                    horizontal-gradient?]}
-            (gradient-map gradient opts)
+              {:keys [gradient-range 
+                      vertical-gradient?
+                      horizontal-gradient?]}
+              (gradient-map gradient opts)
 
 
-              ;; TODO - get this working
-            
+              ;; ;; TODO - get this working
+              
+              ;; ;; ;; for light theme it is 0-4
+              ;; ;; ;; for dark theme it is 1-5
               ;; red-blue-range-level 
-              ;; ;; for light theme it is 0-4
-              ;; ;; for dark theme it is 1-5
-              ;; 0
-            
+              ;; 1
+              
               ;; gradient-range
-              ;; (map #(+ (* red-blue-range-level 6) %) '(21 56 91 126 161 196))
-            
-            first-char
-            (if vertical-gradient?
-              (sgr-gradient char-height (first text-str-chars) gradient-range)
-              (first text-str-chars))
+              ;; (map #(+ (* red-blue-range-level 6) %)
+              ;;     ;;  '[21 56 91 126 161 196]
+              ;;      '[22 59 96 133 170 207]
+              ;;     ;;  (reverse '[21 56 91 126 161 196]
+              ;;               )
+              
+              ;;     ;; green-pink
+              ;; '[40 76 112 148 184 220]
+              ;; '[45 81 117 153 189 225]
+              ;; '[36 72 108 144 180 216]
+              
+              
+              first-char
+              (if vertical-gradient?
+                (sgr-gradient char-height
+                              (first text-str-chars)
+                              gradient-range
+                              font-weight)
+                (first text-str-chars))
 
-            rest-chars
-            (if vertical-gradient?
-              (mapv #(sgr-gradient char-height % gradient-range)
-                    (rest text-str-chars))
-              (rest text-str-chars))
-            
-            composed
-            (composed letter-spacing rest-chars first-char)
+              rest-chars
+              (if vertical-gradient?
+                (mapv #(sgr-gradient char-height
+                                     % 
+                                     gradient-range
+                                     font-weight)
+                      (rest text-str-chars))
+                (rest text-str-chars))
+              
+              composed
+              (composed letter-spacing rest-chars first-char)
 
 
-            composed 
-            (if horizontal-gradient?
-              (horizontal-gradient composed gradient-range opts) 
-              composed)
+              composed 
+              (if horizontal-gradient?
+                (horizontal-gradient composed gradient-range opts) 
+                composed)
 
-            margins
-            (banner-margin-map opts)]
-        (->> composed
-             (maybe-with-inline-margins margins)
-             (maybe-with-block-margins margins))
-        ))))
+              margins
+              (banner-margin-map opts) ]
+          (->> composed
+               (maybe-with-inline-margins margins)
+               (maybe-with-block-margins margins)))))
 
+    (catch #?(:cljs js/Object :clj Exception)
+           e
+      (print-caught-exception! "bling.banner/banner")
+      (println "User-supplied options:")
+      (println (string/replace 
+                (with-out-str 
+                  (println 
+                   (reduce-kv (fn [m k v]
+                                (assoc m
+                                       k
+                                       (if (string? v)
+                                         (str "\"" v "\"")
+                                         v)))
+                              {} 
+                              opts)))
+                #", :"
+                "\n :"))
+      (println "Error from clojure:")
+      (println e))))
