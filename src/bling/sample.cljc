@@ -4,6 +4,8 @@
   ;;  [bling.macros :refer [let-map keyed ?]] ;;<-- just for debugging
    [clojure.string :as string]
    [clojure.pprint :as pprint]
+   [bling.banner :refer [banner]]
+   [bling.fontlib]
    #?(:cljs
       [bling.core :refer [bling bling! callout print-bling point-of-interest]]
       :clj
@@ -335,3 +337,73 @@
   (println)
   (all-the-colors))
 
+
+
+;; -----------------------------------------------------------------------------
+;; Banners
+;; -----------------------------------------------------------------------------
+
+
+;; TODO - Add top-level try, then error message
+(bling! 
+ (banner 
+  {:font        "ANSI Shadow"
+   :font-weight :bold
+   :text        "Hello"
+   :gradient    "to bottom, green, blue"
+   ;; :contrast       :medium
+  ;;  :display-missing-chars? true
+   }))
+
+
+
+;; TODO - Print basic demo example
+
+
+
+;; For QA
+;; Prints every bling banner font (all the characters), over six rows
+(defn print-bling-banner-font-collection! []
+ (doseq [font
+        (vals bling.fontlib/fonts-by-sym)
+        #_[
+              (get bling.fontlib/fonts-by-sym 'miniwi)
+              (get bling.fontlib/fonts-by-sym 'ansi-shadow)
+              (get bling.fontlib/fonts-by-sym 'drippy)
+              (get bling.fontlib/fonts-by-sym 'big)
+              (get bling.fontlib/fonts-by-sym 'big-money)
+              (get bling.fontlib/fonts-by-sym 'rounded)
+              (get bling.fontlib/fonts-by-sym 'isometric-1)
+              ]
+        :let [gs 3
+              ;; fw "normal"
+              fw "bold"]]
+  (dotimes [n (count bling.fontlib/ascii-chars-partitioned-6-rows-vec)]
+    (let [t (nth bling.fontlib/ascii-chars-partitioned-6-rows-vec n nil)]
+     (bling! 
+      (when (zero? n)
+       (bling "\n"
+              "\n"
+              "\n"
+              "===== " [:bold (:font-name font)] " =============================== " 
+              "\n"
+              "\n"))
+      (bling.banner/banner 
+       {:font           font
+        :text           t
+        :font-weight    fw
+        :gradient-shift gs}))))))
+
+#_(print-bling-banner-font-collection!)
+
+;; For QA
+;; Print all the gradients
+
+;; For QA
+;; Print with bold font
+
+;; For QA
+;; Print with bold font
+
+;; For QA
+;; Print with bad input for each option, to test warnings 
