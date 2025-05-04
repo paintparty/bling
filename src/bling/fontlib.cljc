@@ -115,6 +115,11 @@
    "ß"
    ])
 
+(def ascii-chars-partitioned-6-rows-vec
+  (->> bling.fontlib/ascii-chars
+       (partition 16) 
+       (mapv string/join)))
+
 (def ascii-chars-by-index-map
   (reduce 
    (fn [acc i]
@@ -7726,10 +7731,11 @@ $$@@
 ;; This is called during development of the fonts themselves, by code in
 ;; bling.test that is calling bling.banner/banner to try out new / changed fonts
 (def fonts-by-sym
- (reduce (fn [m sym]
-           (assoc m sym (banner-font-array-map sym)))
-         {}
-         defs/banner-fonts-vec))
+ (apply array-map
+        (reduce (fn [vc sym]
+                  (conj vc sym (banner-font-array-map sym)))
+                []
+                defs/banner-fonts-vec)))
 
 
 
