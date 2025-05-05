@@ -1031,7 +1031,7 @@
 (println)
 #_(bling.sample/sample)
 #_(visual-test-suite)
-(bling-basics)
+#_(bling-basics)
 #_(bling.sample/sample)
 (println)
 (println)
@@ -1249,4 +1249,3 @@
        [[1 2 3 4]
         [:a :b :c :d]
         [:x 'y 'z]]))
-

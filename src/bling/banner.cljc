@@ -256,9 +256,9 @@
            rows))))
 
 (def gradient-points
-  {:green [22 40 82] ;; to blue
+  {:green  [28 34 76] ;; to blue
    :yellow [100 136 178] ;; to purple
-   :red [124 160 196] ;; to magenta
+   :red    [124 160 196] ;; to magenta
    :orange [130 172 214] ;; to purple
    })
 
@@ -347,11 +347,14 @@
    "to left"   :horizontal})
 
 (defn resolve-base-gradient-color-for-theme 
-  [opts c]
+  [opts color-str]
+  ;; (? (:contrast opts))
+  ;; (? color-str)
+  ;; (? defs/bling-theme)
   (let [prefix (case (:contrast opts)
                  ;; :super-soft
 
-                 :soft
+                 :low
                  defs/bling-theme
 
                  :medium
@@ -364,7 +367,10 @@
                    "light" "dark"
                    "dark" "light"
                    "medium"))]
-    (str prefix "-" c)))
+
+    ;; (? prefix)
+
+    (str prefix "-" color-str)))
 
 (defn invalid-gradient-opt-warning!
   [{:keys [gradient
@@ -425,7 +431,9 @@
                    valid-gradient-pairs?)
             (let [c1  (resolve-base-gradient-color-for-theme opts c1)
                   c2  (resolve-base-gradient-color-for-theme opts c2)
-                  k   (case direction "to top" [c2 c1] [c1 c2])
+                  k   (if (contains? #{"to top" "to left"} direction)
+                        [c2 c1]
+                        [c1 c2])
                   gr  (or (get gradient-ranges k)
                           (let [coll (get gradient-ranges-cool-warm k)
                                 gs   (:gradient-shift opts)]
@@ -541,7 +549,12 @@
   [{:keys [chars-array-map]} char-str]
   (get chars-array-map
        char-str
-       (get chars-array-map
+ {:bands ["    " "    " "    " "    " "    " "    " "    "],
+  :i 0,
+  :character " ",
+  :width 4,
+  :height 7}
+       #_(get chars-array-map
             " "
             "")))
 
@@ -589,9 +602,31 @@
         dbg
         (if debug? #(? :- %) (fn [_] nil))
 
+        _ (do (when debug?
+                (println "Args to banner-str-chars"))
+              (dbg (let [font-map 
+                         (assoc font-map
+                                :chars-array-map
+                                '{... ...}
+                                :example
+                                "...")]
+                     (keyed [font-map
+                             char-height
+                             text
+                             display-missing-chars?]))))
+
         ret 
         (into []
-              (keep #(let [{:keys [bands height] :as char-map}
+              (keep #(let [char
+                           %
+
+                           char-map
+                           (get font-map %)
+
+                           char-map-exists?
+                           (boolean char-map)
+                           
+                           {:keys [bands height] :as char-map}
                            (char-map-or-space-char-map font-map %)
 
                            char-height-is-less-than-font-height?
@@ -599,26 +634,79 @@
                            
                            every-band-is-an-empty-string?
                            (every? (fn [s] (= "" s)) bands)
+
+                           every-band-is-a-blank-string?
+                           (every? (fn [s] (string/blank? s)) bands)
                            
                            skip?
                            (or char-height-is-less-than-font-height?
-                               every-band-is-an-empty-string?)
+                               every-band-is-an-empty-string?
+                               (and (not= % " ")
+                                    every-band-is-a-blank-string?))
 
                            display-substitute?
-                           (and display-missing-chars? skip?)]
-                       (when (= (:character char-map) "\"")
-                         (dbg (keyed [char-map
-                                          char-height-is-less-than-font-height?
-                                          every-band-is-an-empty-string?
-                                          skip?
-                                          display-substitute?])))
-                       (if skip?
-                         (when display-substitute?
-                           (replacement-char-vec font-map %))
-                         bands))
+                           (and display-missing-chars? skip?)
+                           
+                           bands
+                           (if skip?
+                             (when display-substitute?
+                               (replacement-char-vec font-map %))
+                             bands)]
+                       (dbg (keyed [char
+                                    char-map-exists?
+                                    char-map
+                                    char-height-is-less-than-font-height?
+                                    every-band-is-an-empty-string?
+                                    skip?
+                                    display-substitute?
+                                    display-missing-chars?
+                                    bands
+                                    ]))
+                       bands)
                     (string/split text #"")))]
         (stop-dbg! debug?)
         ret))
+
+#_{:display-missing-chars? true,
+ :skip? false,
+ :char-map
+ {:bands ["    " "    " "    " "    " "    " "    " "    "],
+  :i 0,
+  :character " ",
+  :width 4,
+  :height 7},
+ :char-height-is-less-than-font-height? false,
+ :display-substitute? false,
+ :char-map-exists? false,
+ :every-band-is-an-empty-string? false,
+ :bands ["    " "    " "    " "    " "    " "    " "    "],
+ :char "Ꮉ"}
+
+#_{:display-missing-chars? true,
+ :skip? true,
+ :char-map
+ {:bands ["    " "    " "    " "    " "    " "    " "    "],
+  :i 0,
+  :character " ",
+  :width 4,
+  :height 7},
+ :char-height-is-less-than-font-height? true,
+ :display-substitute? true,
+ :char-map-exists? false,
+ :every-band-is-an-empty-string? false,
+ :bands
+ ["     "
+  "     "
+  "     "
+  "     "
+  "     "
+  "  Ꮉ  "
+  "     "
+  "     "
+  "     "
+  "     "
+  "     "],
+ :char "Ꮉ"}
 
 (defn valid-font?* [font]
   (let [{:keys [widest-char
@@ -646,23 +734,40 @@
     :as opts
     :or {display-missing-chars? true
          letter-spacing         0
-         gradient-shift         0}
+         gradient-shift         0
+         font-weight            "normal"}
     user-font :font}]
 
   (try
     (let [valid-text?           (and (string? text) (not (string/blank? text)))
-          valid-letter-spacing? #(or (pos-int? letter-spacing)
-                                     (zero? letter-spacing))
-          valid-gradient-shift? #(or (pos-int? letter-spacing)
-                                     (zero? letter-spacing))
-          valid-font-weight?    #(contains? #{"normal" "bold"}
+          valid-letter-spacing? (or (pos-int? letter-spacing)
+                                    (when (number? letter-spacing)
+                                      (zero? letter-spacing)))
+          valid-gradient-shift? (or (pos-int? gradient-shift)
+                                    (when (number? gradient-shift)
+                                      (zero? gradient-shift)))
+          valid-font-weight?    (contains? #{"normal" "bold"}
                                             (as-str font-weight))
           default-font          bling.fonts/ansi-shadow
           font                  (or user-font default-font)
-          valid-font?           true
 
-          ;; font scheming checking for devving of fonts
-          ;; valid-font? (valid-font?* font)
+          valid-font?           (valid-font?* font)
+
+          ;; valid-gradient?       (when-let [[direction c1 c2]
+          ;;                                  (some-> gradient
+          ;;                                          (maybe string?)
+          ;;                                          (string/split #", "))]
+          ;;                         (let [valid-gradient-pairs? 
+          ;;                               (contains? gradient-pairs-set
+          ;;                                          #{c1 c2})
+          ;;                               valid-direction?     
+          ;;                               (contains? #{"to right"
+          ;;                                            "to left"
+          ;;                                            "to bottom"
+          ;;                                            "to top"}
+          ;;                                          (as-str direction))]
+          ;;                           (and valid-gradient-pairs?
+          ;;                                valid-direction?)))
           ]
       
       (when-not valid-font-weight?
@@ -675,7 +780,17 @@
         (invalid-banner-opt-warning! 
          {:option-key     :gradient-shift
           :option-value   gradient-shift
-          :valid-desc     "A positive integer between 1 and 5 (inclusive)"}))
+          :valid-desc     "A positive integer between 1 and 5 (inclusive)"
+          :default-val-msg [""
+                            "The default value of 0 will be used"]}))
+
+      #_(when-not valid-gradient?
+        (invalid-banner-opt-warning! 
+         {:option-key     :gradient
+          :option-value   gradient
+          :valid-desc     "A css gradient string"
+          :default-val-msg [""
+                            "No gradient will be applied"]}))
 
       (when-not valid-letter-spacing?
         (invalid-banner-opt-warning! 
@@ -703,7 +818,12 @@
     ;; (when print-font! (pprint valid-font?))
       
       (when (and valid-font? valid-text?)
-        (let [ {:keys [char-height]}
+        (let [opts
+             (if valid-gradient-shift?
+               opts
+               (assoc opts :gradient-shift 0))
+
+              {:keys [char-height]}
               font
 
               text-str-chars
@@ -713,7 +833,6 @@
                       vertical-gradient?
                       horizontal-gradient?]}
               (gradient-map gradient opts)
-
 
               ;; ;; TODO - get this working
               
@@ -781,8 +900,18 @@
                                          (str "\"" v "\"")
                                          v)))
                               {} 
-                              opts)))
+                              (-> opts
+                                  (assoc-in [:font :chars-array-map] "...")
+                                  (assoc-in [:font :example] "\"...\""))
+                              )))
                 #", :"
                 "\n :"))
       (println "Error from clojure:")
       (println e))))
+
+
+;; TODO currently, font-weight has no effect if no gradient is specified.
+;;      you can set it with bling though.
+
+
+;; TODO add :neutral gradient option, maybe "to right, neutral, gray"
