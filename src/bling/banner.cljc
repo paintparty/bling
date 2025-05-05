@@ -5,7 +5,8 @@
    [bling.util :as util :refer [sjr maybe as-str]]
    [clojure.pprint :refer [pprint]]
    [bling.defs :as defs]
-   [clojure.string :as string]))
+   [clojure.string :as string]
+   #?(:cljs [bling.js-env :refer [node?]])))
 
 
 (defn- print-caught-exception! [fn-name]
@@ -723,7 +724,7 @@
 
 (declare caught-exception!)
 
-(defn banner 
+(defn banner* 
   [{:keys [text
            letter-spacing
            font-weight
@@ -815,8 +816,6 @@
                                  "bling.fonts/" (:font-sym default-font)
                                  " will be used")]}))
 
-    ;; (when print-font! (pprint valid-font?))
-      
       (when (and valid-font? valid-text?)
         (let [opts
              (if valid-gradient-shift?
@@ -909,6 +908,22 @@
       (println "Error from clojure:")
       (println e))))
 
+
+(defn banner [m]
+ #?(:cljs
+    (if node?
+      (banner m)
+      (let [style (:browser-style m)]
+        (when style
+          (when-not (string? style)
+            (js/console.warn "bad style")))
+        (.apply js/console.log 
+                js/console 
+                #js[(str "%c" (:text m) "%c")
+                    (str style)
+                    "font-size:default;"])))
+    :clj
+    (banner m)))
 
 ;; TODO currently, font-weight has no effect if no gradient is specified.
 ;;      you can set it with bling though.

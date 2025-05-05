@@ -1,6 +1,5 @@
 (ns bling.js-env)
 
-(defonce BLING_THEME (some-> js/process .-env .-BLING_THEME))
 
 (defonce node?
   (boolean 
@@ -33,3 +32,5 @@
                    (exists? (some-> js/Deno .-version .-deno)))
           :deno))
     (contains? #{:deno :node}))))
+
+(when node? (defonce BLING_THEME (some-> js/process .-env .-BLING_THEME)))
