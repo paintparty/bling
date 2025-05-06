@@ -1,6 +1,6 @@
 
 <!-- TODO - Update images with new colors -->
-# bling
+# Bling
 
 **Rich text in the console.**  
 
@@ -13,7 +13,17 @@
 
 <div align="left">
 
-**[Features]**  &nbsp;•&nbsp; **[Setup]**  &nbsp;•&nbsp;  **[Basic Usage]** &nbsp;•&nbsp; **[Callout Blocks]** &nbsp;•&nbsp; **[Error Templates]**
+**[Features]**
+&nbsp;•&nbsp;
+**[Setup]**
+&nbsp;•&nbsp;
+**[Basic Usage]**
+&nbsp;•&nbsp;
+**[Callout Blocks]**
+&nbsp;•&nbsp; 
+**[Error Templates]**
+&nbsp;•&nbsp; 
+**[Figlet Banners]**
 </div>
 
 [Features]: #features
@@ -22,6 +32,7 @@
 [Callout Blocks]: #callout-blocks
 
 [Error Templates]: #templates-for-errors-and-warnings
+[Figlet Banners]: #figlet-banners
 [Interop]: #printing-conventions
 [Contributing]: #contributing
 
@@ -598,6 +609,94 @@ More example values of `2` for `:margin-left`, to increase the weight:
 <p align="center"><img src="resources/docs/chromed/callouts_gutter2_with-colored-labels_dark.png" width="700px" /></p>
 <p align="center"><img src="resources/docs/chromed/callouts_gutter2_with-colored-labels_dark.png"  width="700px" /></p>
 
+
+<br>
+
+## Figlet banners
+
+Bling features basic support for composing <a href="https://en.wikipedia.org/wiki/FIGlet" target="_blank">Figlet</a> ascii-art
+banners with <a href="https://github.com/busyloop/lolcat" target="_blank">lolcat-like gradient overlays</a>. Bling ships with a
+small handful of ported Figlet fonts. We will probably add a few more in the future but offering an exhaustive library of Figlet
+fonts is currently a non-goal. The implementation of the type composer is bare-bones and there is no support for standard figlet
+"smushing".
+
+### Usage
+
+Require:
+```Clojure
+(require '[bling.banner :refer [banner]])
+```
+
+Or add to your namespace `:requires`:
+```Clojure
+(ns myns.core
+ (:require [bling.banner :refer [banner]])
+```
+
+Available fonts:
+```Clojure
+bling.fonts/miniwi
+bling.fonts/ansi-shadow
+bling.fonts/drippy
+bling.fonts/big
+bling.fonts/big-money
+bling.fonts/rounded
+bling.fonts/isometric-1
+```
+
+Below are some example calls and a screenshot of the results.
+```Clojure
+{:font     miniwi
+ :text     "Miniwi"
+ :gradient "to right, purple, orange"}
+
+{:font     ansi-shadow
+ :text     "Ansi"
+ :gradient "to top, warm, cool"}
+
+{:font     drippy
+ :text     "Drippy"
+ :gradient "to bottom, red, magenta"}
+
+{:font        big
+ :text        "Big"
+ :gradient    "to top, yellow, purple"}
+
+{:font     big-money
+ :text     "Money"
+ :gradient "to top, green, blue"}
+
+{:font        rounded
+ :font-weight :bold
+ :text        "Rounded" 
+ :gradient    "to left, cool, warm"}
+
+{:font        isometric-1
+ :font-weight :bold
+ :text        "ABCDE"
+ :gradient    "to right, red, magenta"}
+```
+
+<p align="center">
+  <img src="resources/docs/chromed/bling-banner-fonts_dark-0.7.0.png"
+       width="700px" />
+</p>
+
+### All the options for `bling.banner/banner` 
+  
+
+| Key               | Pred       | Description   |
+| :---------------  | -----------| ------------- |
+| `:font`           | `map?`     | Must be one of the fonts that ships with Bling: `bling.fonts/ansi-shadow`,  `bling.fonts/big-money` , `bling.fonts/big`, `bling.fonts/miniwi`, `bling.fonts/drippy,` or `bling.fonts/isometric-1`. Defaults to `bling.fonts/ansi-shadow`. |
+| `:text`           | `string?`  | The text to set in the banner.
+| `:font-weight`    | `keyword?` | If set to bold, each subchar in figlet characters will be bolded. Only applies when a gradient is set.
+| `:gradient`       | `string?`  | Expects a string as first argument representing a linear-gradient in standard css syntax: `"to bottom, yellow, purple"`. Only the following color pairs are valid: `green, blue`, `red, magenta`, `yellow, purple`, `orange, purple`, `cool, warm`. Valid directions are: `to top`, `to bottom`, `to right`, and `to left`.  Only applies to terminal emulator printing|
+| `:gradient-shift` | `int?`     | If gradient is `warm` / `cool` pair, this will shift the hue. `0-5`. Defaults to `0`.|
+| `:contrast`       | `keyword?` | If gradient is set, this will force an overall lighter or darker tone. Defaults to `medium`. If the user has a `BLING_THEME` env var set, it will default to `high` in order to optimize contrast for the users terminal theme (light or dark) |
+| `:margin-top`     | `int?`     | Amount of margin (in newlines) at top, outside banner.<br>Defaults to `1`. Only applies to terminal emulator printing. |
+| `:margin-bottom`  | `int?`     | Amount of margin (in newlines) at bottom, outside banner.<br>Defaults to `0`. Only applies to terminal emulator printing. |
+| `:margin-left`    | `int?`     | Amount of margin (in blank character spaces) at left, outside banner.<br>Defaults to `0`. Only applies to terminal emulator printing. |
+| `:margin-right`   | `int?`     | Amount of margin (in blank character spaces) at right, outside banner.<br>Defaults to `0`. Only applies to terminal emulator printing. |
 
 <br>
 
