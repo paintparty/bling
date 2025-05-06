@@ -3120,16 +3120,16 @@ $ $@
 $ $@
 $ $@
 $ $@@
-$▐██▌$@
-$▐██▌$@
-$▐██▌$@
-$▓██▒$@
-$▒▄▄ $@
-$░▀▀▒$@
-$░  ░$@
-$   ░$@
-$░   $@
-$    $@@
+▐██▌@
+▐██▌@
+▐██▌@
+▓██▒@
+▒▄▄ @
+░▀▀▒@
+░  ░@
+   ░@
+░   @
+    @@
 @
 @
 @
@@ -6749,7 +6749,7 @@ __   @
 
 (def rounded 
 {
- :font-name "ANSI Shadow"
+ :font-name "Rounded"
  :example
 [
 " ______                            _             _"
@@ -7760,12 +7760,26 @@ $$@@
               "(def " (name font-sym) "\n"
               quoted-pretty-printed-font-map ")")))
 
-     (defn- font-defs []
-       (string/join "\n\n\n"
-                    (mapv #(font-def-source-code 
-                            (banner-font-array-map %)
-                            %)
-                          defs/banner-fonts-vec)))
+     (defn- font-defs [path]
+       (let [banner-fonts defs/banner-fonts-vec
+             banner-fonts-count (count banner-fonts)]
+         (string/join 
+          "\n\n\n"
+          (mapv #(font-def-source-code 
+                  (banner-font-array-map %)
+                  %)
+                (do (println 
+                     (str
+                      "Creating bling.fonts namespace...\n\n"
+                      "Writing defs for the following " banner-fonts-count " fonts to\n"
+                      path
+                      "\n\n"
+                      (string/join "\n"
+                                   (mapv #(symbol (str "bling.fonts/" %))
+                                         banner-fonts)))
+                     )
+                    banner-fonts)))))
+
      (defn write-fonts-ns!
        "This updates/generates a bling.fonts namespace.
       
@@ -7783,5 +7797,5 @@ $$@@
                   "\n"
                   "\n"
                   "\n"
-                  (font-defs))
+                  (font-defs "./src/bling/fonts.cljc"))
              :append false))))

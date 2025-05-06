@@ -118,12 +118,7 @@
         [""
          (str "Valid color pairs for " option-key " option:")])
       valid-colors
-      default-val-msg
-      ))))
-
-
-
-
+      default-val-msg))))
 
 (defn- x->sgr [x k]
   (when x
@@ -186,8 +181,11 @@
 
 (defn- color-cells
   [gr cells-int kw]
-  (let [cells-int
-        (if (and (= kw :rows) (> cells-int 1)) (dec cells-int) cells-int)
+  (let [dec-cells-int?
+        (and (= kw :rows) (> cells-int 1))
+
+        cells-int
+        (if dec-cells-int? (dec cells-int) cells-int)
 
         gr-count
         (count gr)
@@ -197,6 +195,9 @@
 
         dbg
         (if debug? #(? :- %) (fn [_] nil))
+
+        _
+        (dbg (str "Creating cells for " kw))
 
         ret
         (cond
@@ -208,13 +209,16 @@
           (> cells-int gr-count)
           (do 
             (dbg "Number of cells is more than number of colors in gradient range")
-            (when debug? (? :- (keyed [cells-int gr-count])))
+            (when debug? (keyed [cells-int gr-count]))
             (let [rm                   (rem cells-int gr-count)
                   multiplier           (/ cells-int gr-count)
                   multiplier-ceil-int  (Math/round (Math/ceil (double multiplier)))
                   multiplier-floor-int (Math/round (Math/floor (double multiplier)))]
-              (when debug? (? :- (keyed [rm multiplier multiplier-ceil-int multiplier-floor-int])))
-
+              (when debug? 
+                (keyed [rm
+                        multiplier
+                        multiplier-ceil-int
+                        multiplier-floor-int]))
               (if (zero? rm)
                 (do (dbg "Remainder is 0. Inflating the gradient range")
                     (inflate-color-coll gr multiplier-ceil-int))
@@ -234,7 +238,13 @@
                                           rm))))))
           :else
           (do (dbg "Number of cells is the same as the number of colors in gradient range. Returning the gradient range as-is.")
-              gr))]
+              gr))
+              
+        ret
+        (if dec-cells-int?
+          (concat ret (take-last 1 ret))
+          ret)]
+
     (stop-dbg! debug?)
     ret))
 
@@ -246,7 +256,7 @@
 
 (defn- sgr-gradient
   [char-height rows sgr-gradient-range font-weight]
-  (let [row-colors  (color-rows sgr-gradient-range char-height)]
+  (let [row-colors (color-rows sgr-gradient-range char-height)]
     (into []
           (map-indexed
            (fn [i s]
@@ -349,12 +359,9 @@
 
 (defn resolve-base-gradient-color-for-theme 
   [opts color-str]
-  ;; (? (:contrast opts))
-  ;; (? color-str)
-  ;; (? defs/bling-theme)
   (let [prefix (case (:contrast opts)
                  ;; :super-soft
-
+                 
                  :low
                  defs/bling-theme
 
@@ -362,14 +369,16 @@
                  "medium"
 
                  ;; :super-hard
-
+                 
                  ;; covers :hard 
                  (case defs/bling-theme
                    "light" "dark"
                    "dark" "light"
                    "medium"))]
 
-    ;; (? prefix)
+    #_(? {:opts/contrast    (:contrast opts)
+          :defs/bling-theme defs/bling-theme
+          :prefix           prefix})
 
     (str prefix "-" color-str)))
 
@@ -462,7 +471,7 @@
 
     (mapv #(string/join
             (map-indexed
-             (fn [i s]/
+             (fn [i s]
                (str (m->sgr {:color       (nth col-colors i (nth-not-found))
                              :font-weight (:font-weight opts)})
                     s
@@ -709,7 +718,7 @@
   "     "],
  :char "Ꮉ"}
 
-(defn valid-font?* [font]
+(defn- valid-font?* [font]
   (let [{:keys [widest-char
                 char-height
                 max-char-width
@@ -722,7 +731,28 @@
                   (map? chars-array-map)
                   (seq chars-array-map)))))
 
+
+(defn- valid-gradient?* [font gradient]
+  (when-let [[direction c1 c2]
+                  (some-> gradient
+                          (maybe string?)
+                          (string/split #", "))]
+         (let [valid-gradient-pairs? (contains? gradient-pairs-set
+                                                #{c1 c2})
+               valid-direction?      (contains? #{"to right"
+                                                  "to left"
+                                                  "to bottom"
+                                                  "to top"}
+                                                (as-str direction))]
+           (and valid-gradient-pairs?
+                valid-direction?))))
+
 (declare caught-exception!)
+
+(defn zero-or-pos-int? [n] 
+  (or (pos-int? n)
+      (when (number? n)
+        (zero? n))) )
 
 (defn banner* 
   [{:keys [text
@@ -736,46 +766,28 @@
     :or {display-missing-chars? true
          letter-spacing         0
          gradient-shift         0
-         font-weight            "normal"}
+         font-weight            :normal}
     user-font :font}]
 
   (try
     (let [valid-text?           (and (string? text) (not (string/blank? text)))
-          valid-letter-spacing? (or (pos-int? letter-spacing)
-                                    (when (number? letter-spacing)
-                                      (zero? letter-spacing)))
-          valid-gradient-shift? (or (pos-int? gradient-shift)
-                                    (when (number? gradient-shift)
-                                      (zero? gradient-shift)))
-          valid-font-weight?    (contains? #{"normal" "bold"}
-                                            (as-str font-weight))
+          valid-letter-spacing? (zero-or-pos-int? letter-spacing)
+          valid-gradient-shift? (zero-or-pos-int? letter-spacing)
+          valid-font-weight?    (or (nil? font-weight)
+                                    (contains? #{:normal :bold} font-weight))
           default-font          bling.fonts/ansi-shadow
           font                  (or user-font default-font)
-
           valid-font?           (valid-font?* font)
 
-          ;; valid-gradient?       (when-let [[direction c1 c2]
-          ;;                                  (some-> gradient
-          ;;                                          (maybe string?)
-          ;;                                          (string/split #", "))]
-          ;;                         (let [valid-gradient-pairs? 
-          ;;                               (contains? gradient-pairs-set
-          ;;                                          #{c1 c2})
-          ;;                               valid-direction?     
-          ;;                               (contains? #{"to right"
-          ;;                                            "to left"
-          ;;                                            "to bottom"
-          ;;                                            "to top"}
-          ;;                                          (as-str direction))]
-          ;;                           (and valid-gradient-pairs?
-          ;;                                valid-direction?)))
+          ;; Leave this off for now as it gets checked further down
+          ;; valid-gradient?       (valid-gradient?* font)       
           ]
       
       (when-not valid-font-weight?
         (invalid-banner-opt-warning! 
-         {:option-key     :font-weight
-          :option-value   font-weight
-          :valid-desc     #{"bold" "normal"}}))
+         {:option-key   :font-weight
+          :option-value font-weight
+          :valid-desc   #{:bold :normal}}))
 
       (when-not valid-gradient-shift?
         (invalid-banner-opt-warning! 
@@ -785,6 +797,7 @@
           :default-val-msg [""
                             "The default value of 0 will be used"]}))
 
+      ;; Leave this off for now as it gets checked further down
       #_(when-not valid-gradient?
         (invalid-banner-opt-warning! 
          {:option-key     :gradient
@@ -833,26 +846,6 @@
                       horizontal-gradient?]}
               (gradient-map gradient opts)
 
-              ;; ;; TODO - get this working
-              
-              ;; ;; ;; for light theme it is 0-4
-              ;; ;; ;; for dark theme it is 1-5
-              ;; red-blue-range-level 
-              ;; 1
-              
-              ;; gradient-range
-              ;; (map #(+ (* red-blue-range-level 6) %)
-              ;;     ;;  '[21 56 91 126 161 196]
-              ;;      '[22 59 96 133 170 207]
-              ;;     ;;  (reverse '[21 56 91 126 161 196]
-              ;;               )
-              
-              ;;     ;; green-pink
-              ;; '[40 76 112 148 184 220]
-              ;; '[45 81 117 153 189 225]
-              ;; '[36 72 108 144 180 216]
-              
-              
               first-char
               (if vertical-gradient?
                 (sgr-gradient char-height
@@ -909,10 +902,39 @@
       (println e))))
 
 
-(defn banner [m]
+;; TODO add :bands option for returning colorized vectors of character bands
+;; - then expose compose as a public fn
+
+(defn banner
+  "Returns a multi-line Figlet (ascii art) string with the provided `:text`
+   option. Intended to render a single-line of text.
+
+   Can be optionally colorized with the :gradient option, using a small set of
+   pre-defined gradients.
+   ```(banner {:text \"Hello\" :gradient \"to right, green, blue\"})```
+   
+   Only the following gradient color pairs are valid: `green, blue`, `red, magenta`, `yellow, purple`, `orange, purple`, `cool, warm`.
+   Only the following gradient directions are valid: `to top`, `to bottom`, `to right`, and `to left`.
+
+   Can be colorized solid with `bling.core/bling`.
+   ```(bling [:red (banner {:text \"Hello\"})])```
+
+   | Key               | Pred       | Description   |
+   | :---------------  | -----------| ------------- |
+   | `:font`           | `map?`     | Must be one of the fonts that ships with Bling: `bling.fonts/ansi-shadow`,  `bling.fonts/big-money` , `bling.fonts/big`, `bling.fonts/miniwi`, `bling.fonts/drippy,` or `bling.fonts/isometric-1`. Defaults to `bling.fonts/ansi-shadow`. |
+   | `:text`           | `string?`  | The text to set in the banner.
+   | `:font-weight`    | `keyword?` | If set to bold, each subchar in figlet characters will be bolded. Only applies when a gradient is set.
+   | `:gradient`       | `string?`  | Expects a string as first argument representing a linear-gradient in standard css syntax: \"to bottom, yellow, purple\". Only the following color pairs are valid: `green, blue`, `red, magenta`, `yellow, purple`, `orange, purple`, `cool, warm`. Valid directions are: `to top`, `to bottom`, `to right`, and `to left`.  Only applies to terminal emulator printing|
+   | `:gradient-shift` | `int?`     | If gradient is `warm` / `cool` pair, this will shift the hue. `0-5`. Defaults to `0`.|
+   | `:contrast`       | `keyword?` | If gradient is set, this will force an overall lighter or darker tone. Defaults to `medium`. If the user has a `BLING_THEME` env var set, it will default to `high` in order to optimize contrast for the users terminal theme (light or dark) |
+   | `:margin-top`     | `int?`     | Amount of margin (in newlines) at top, outside banner.<br>Defaults to `1`. Only applies to terminal emulator printing. |
+   | `:margin-bottom`  | `int?`     | Amount of margin (in newlines) at bottom, outside banner.<br>Defaults to `0`. Only applies to terminal emulator printing. |
+   | `:margin-left`    | `int?`     | Amount of margin (in blank character spaces) at left, outside banner.<br>Defaults to `0`. Only applies to terminal emulator printing. |
+   | `:margin-right`   | `int?`     | Amount of margin (in blank character spaces) at right, outside banner.<br>Defaults to `0`. Only applies to terminal emulator printing. |"
+  [m]
  #?(:cljs
     (if node?
-      (banner m)
+      (banner* m)
       (let [style (:browser-style m)]
         (when style
           (when-not (string? style)
@@ -923,10 +945,10 @@
                     (str style)
                     "font-size:default;"])))
     :clj
-    (banner m)))
+    (banner* m)))
 
 ;; TODO currently, font-weight has no effect if no gradient is specified.
 ;;      you can set it with bling though.
 
 
-;; TODO add :neutral gradient option, maybe "to right, neutral, gray"
+;; TODO add :neutral gradient option, maybe \"to right, neutral, gray\"
