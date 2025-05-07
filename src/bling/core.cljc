@@ -140,7 +140,7 @@
     "white"   {:sgr 231}]))
 
 ;; TODO Add the light and dark variants to x-term-colors-by-id
-(def ^:private bling-colors*
+(def ^:public bling-colors*
   (apply
    array-map
    ["red"        {:sgr      196
@@ -151,7 +151,6 @@
     "olive"      {:sgr 106}
     "green"      {:sgr      40
                   :semantic "positive"}
-    "teal"       {:sgr      43}
     "blue"       {:sgr      39
                   :semantic "accent"}
     "purple"     {:sgr 141}
