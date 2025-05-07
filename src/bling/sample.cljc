@@ -1,7 +1,6 @@
 (ns bling.sample
   (:require 
-
-  ;;  [bling.macros :refer [let-map keyed ?]] ;;<-- just for debugging
+   ;; [bling.macros :refer [let-map keyed ?]] ;; <-- just for debugging
    [clojure.string :as string]
    [clojure.pprint :refer [pprint]]
    [bling.banner :refer [banner]]
@@ -10,11 +9,10 @@
    [bling.macros :refer [keyed ? start-dbg! stop-dbg! nth-not-found]]
 
    #?(:cljs
-      [bling.core :refer [bling bling! callout print-bling point-of-interest]]
+      [bling.core :refer [bling  callout print-bling point-of-interest]]
       :clj
-      [bling.core :refer [bling bling! callout point-of-interest]
-       
-       ])))
+      [bling.core :refer [bling print-bling callout point-of-interest]]
+      )))
 
 (def ^:private colors-ordered
   ["system-black"   
@@ -54,7 +52,7 @@
   ([{:keys [label variant]}]
    (let [colors   (filter #(not (re-find #"^system-" %)) colors-ordered)
          max-char (apply max (map count colors))]
-     (when label (bling! "\n" [:italic label] "\n"))
+     (when label (print-bling "\n" [:italic label] "\n"))
      (doseq [s     colors #_(take 1 colors)
              :when (not (re-find #"^system-" s))]
        (let [spaces (string/join (repeat (- max-char (count s)) " "))
@@ -164,12 +162,6 @@
 (defn print-comment [s]
   (printer (bling [:italic.subtle s])))
 
-#_(defn sample []
-  (callout+ {:theme       :gutter #_:sideline-bold
-             :colorway    :positive
-             :label       [1 2 3 4 5]
-             :label-theme :marquee
-             }))
 
 (defn sample []
   (println)
@@ -436,7 +428,7 @@
               fw "bold"]]
   (dotimes [n (count bling.fontlib/ascii-chars-partitioned-6-rows-vec)]
     (let [t (nth bling.fontlib/ascii-chars-partitioned-6-rows-vec n nil)]
-     (bling! 
+     (print-bling 
       (when (zero? n)
        (bling "\n"
               "\n"
@@ -462,12 +454,12 @@
       (doseq [direction ["right" "left" "top" "bottom"]]
         (let [grd (str "to " direction ", " (name k) ", " (name v))]
           (when display-labels? (println grd))
-          (bling! (bling.banner/banner 
-                   {:font     font
-                    :text     (->> font
-                                   :font-sym
-                                   (get example-text-by-font-sym))
-                    :gradient grd})))))))
+          (print-bling (bling.banner/banner 
+                        {:font     font
+                         :text     (->> font
+                                        :font-sym
+                                        (get example-text-by-font-sym))
+                         :gradient grd})))))))
 
 
 
@@ -476,25 +468,25 @@
   (doseq [n (range 6)]
     (let [dir "to right"]
       (println (str "\"" dir ", cool, warm\", with gradient-shift " n))
-      (bling! (bling.banner/banner 
-               {:font           bling.fonts/ansi-shadow
-                :font-weight    :bold
-                :text           "ABCDEFG"
-                :gradient       (str dir ", cool, warm")
-                :gradient-shift n
-                :contrast       :medium
-              ;; :display-missing-chars? true
-                })))))
+      (print-bling (bling.banner/banner 
+                    {:font           bling.fonts/ansi-shadow
+                     :font-weight    :bold
+                     :text           "ABCDEFG"
+                     :gradient       (str dir ", cool, warm")
+                     :gradient-shift n
+                     :contrast       :medium
+                     ;; :display-missing-chars? true
+                     })))))
 
 ;; For QA
 ;; Print with bold font
 (defn print-bling-banner-bold-font! []
   (doseq [k [:bold :normal]]
-    (bling! (bling.banner/banner 
-             {:font        bling.fonts/big-money
-              :font-weight k
-              :gradient    "to bottom, red, magenta"
-              :text        "ABCDEFG"}))))
+    (print-bling (bling.banner/banner 
+                  {:font        bling.fonts/big-money
+                   :font-weight k
+                   :gradient    "to bottom, red, magenta"
+                   :text        "ABCDEFG"}))))
 
 
 ;; For QA
@@ -504,11 +496,11 @@
     (let [grd (str "to bottom, " (name k) ", " (name v))]
       (doseq [k [:high :medium :low]]
         (println (str "\"" grd "\", with " (name k) " contrast"))
-        (bling! (bling.banner/banner 
-                 {:font     bling.fonts/ansi-shadow
-                  :gradient grd
-                  :contrast k
-                  :text     "ABCDEFG"}))))))
+        (print-bling (bling.banner/banner 
+                      {:font     bling.fonts/ansi-shadow
+                       :gradient grd
+                       :contrast k
+                       :text     "ABCDEFG"}))))))
 
 ;; For QA
 ;; Print with bad input for each option, to test warnings 
@@ -523,19 +515,36 @@
            {:gradient "to lleft, green, blue"}
            ]]
     (println (str "\nBad option for " (ffirst m)))
-    (bling! (bling.banner/banner 
-             (merge {:font bling.fonts/ansi-shadow
-                     :text "TEST"}
-                    m)))))
+    (print-bling (bling.banner/banner 
+                  (merge {:font bling.fonts/ansi-shadow
+                          :text "TEST"}
+                         m)))))
 
 (defn print-bling-banner-samples! []
   (doseq [k [:bold :normal]]
-    (bling! (bling.banner/banner 
-             {:font        bling.fonts/big-money
-              :font-weight k
-              :gradient    "to bottom, red, magenta"
-              :text        "ABCDEFG"}))))
+    (print-bling (bling.banner/banner 
+                  {:font        bling.fonts/big-money
+                   :font-weight k
+                   :gradient    "to bottom, red, magenta"
+                   :text        "ABCDEFG"}))))
 
+(defn print-bling-color-contrast! []
+  (doseq [color 
+          ["red"    
+           "orange" 
+           "yellow" 
+           "olive"  
+           "green"  
+           "blue"   
+           "purple" 
+           "magenta"
+           "gray"   
+           ]]
+    (doseq [contrast [:high :low :medium]]
+      (println (bling [{:contrast         contrast 
+                        :background-color color 
+                        :color            :white}
+                       "Mean"])))))  
 
 ;; Make example figlets for banner images
 
@@ -543,31 +552,29 @@
 
 ;; docs for banner
 
-(println "\n")
 
 ;; Prints the entire font collection
 ;; (print-bling-banner-font-collection!)
 
 ;; (print-bling-banner-font-samples!)
 
-(print-bling-banner-gradients! 
- {
-  :select-fonts ['isometric-1]
-  :display-labels? false})
+;; (print-bling-banner-gradients! 
+;;  {
+;;   :select-fonts ['isometric-1]
+;;   :display-labels? false})
 
 ;; (print-bling-banner-gradient-warm-cool!)
 ;; (print-bling-banner-bold-font!)
 ;; (print-bling-banner-gradient-contrast-options!)
 ;; (print-bling-banners-with-bad-option-values!)
 
-
-(println)
-
 ;; (pprint
 ;;  (get-in bling.fonts/isometric-1 
 ;;          [:chars-array-map "a"]))
 
-(println)
+
+;; What does this do in browser? 
+;; (pprint (callout {:data? true} "hi"))
 
 ;; (pprint (dissoc bling.fonts/isometric-1
 ;;                 :chars-array-map
@@ -575,8 +582,14 @@
 ;;                 :desc
 ;;                 :missing-chars))
 
-;; (println
-;;  (banner {:text     "A" 
-;;           :font     bling.fonts/isometric-1
-;;           :gradient "to top, red, magenta"}))
+;; (print-bling-color-contrast!)
+
+(print-bling [:light-magenta "go"])
+(print-bling [:dark-magenta "go"])
+(print-bling [:medium-magenta "go"])
+
+(print-bling
+ (banner {:text     "A" 
+          :font     bling.fonts/isometric-1
+          :gradient "to top, red, magenta"}))
 

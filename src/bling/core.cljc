@@ -18,8 +18,8 @@
 
 (ns bling.core
   (:require [clojure.string :as string]
-            ;; [bling.macros :refer [let-map keyed ?]] ;;<-- just for debugging
-            [bling.macros :refer [let-map keyed]]
+            [bling.macros :refer [let-map keyed ?]] ;;<-- just for debugging
+            ;; [bling.macros :refer [let-map keyed]]
             [bling.defs :as defs]
             [bling.util :as util]
             #?(:cljs [goog.object])
@@ -31,7 +31,6 @@
 (def ^:private OSC "\u001B]")
 (def ^:private BEL "\u0007")
 (def ^:private SEP ";")
-
 
 (defn hyperlink [text url]
   #?(:cljs
@@ -135,15 +134,10 @@
     "green"   {:sgr 82}
     "blue"    {:sgr 81}
     "purple"  {:sgr 147}
-    "magenta" {:sgr 219}
+    "magenta" {:sgr 213}
     "gray"    {:sgr 249}
     "black"   {:sgr 16}
     "white"   {:sgr 231}]))
-
-;; (? (reduce-kv (fn [acc k v]
-;;                 (conj acc k {:sgr (:sgr-dark v)}))
-;;               [] 
-;;               bling-colors-dark))
 
 ;; TODO Add the light and dark variants to x-term-colors-by-id
 (def ^:private bling-colors*
@@ -167,10 +161,6 @@
     "black"      {:sgr 16}
     "white"      {:sgr 231}]))
 
-;; (? (reduce-kv (fn [acc k v]
-;;                 (conj acc k (select-keys v [:sgr :semantic])))
-;;               [] 
-;;               bling-colors*))
 
 (defn concatv
   "Concatenate `xs` and return the result as a vector."
@@ -501,7 +491,7 @@
    If `LIGHT` OR `DARK` values are detected for the `BLING_THEME` env var, the
    value of the `:sgr-or-css-kw` will be changed inside this function, from
    `:sgr` to `:sgr-light` or `:sgr-dark`"
-  [sgr-or-css-kw m]
+  [sgr-or-css-kw {:keys [contrast] :as m}]
   (let [sgr?
         (= sgr-or-css-kw :sgr)]
     (reduce-kv (fn [m k v]
@@ -509,11 +499,21 @@
                         (if (map? v)
                           (if (and sgr? (= :color k))
                             (or (let [kw
-                                      ;; TODO support :soft here like in banner
-                                      (case defs/bling-theme
-                                        "light" :sgr-dark
-                                        "dark" :sgr-light
-                                        :sgr)]
+                                      (case contrast
+                                        :low
+                                        (case defs/bling-theme
+                                          "light" :sgr-light
+                                          "dark" :sgr-dark
+                                          :sgr)
+
+                                        :medium
+                                        :sgr
+
+                                        ;; covers :high
+                                        (case defs/bling-theme
+                                          "light" :sgr-dark
+                                          "dark" :sgr-light
+                                          :sgr))]
                                   (kw v))
                                 (:sgr v))
                             (sgr-or-css-kw v))
@@ -642,17 +642,6 @@
 ;; Shared cljs fns -------------------------------------------------------------
 #?(:cljs
    (do
-     (defn ^:public print-bling
-           "For browser usage, sugar for the the following:
-            `(.apply js/console.log js/console (goog.object/get o \"consoleArray\"))`
-
-            Example:
-            `(print-bling (bling [:bold.blue \"my blue text\"]))"
-           ([o]
-            (print-bling o js/console.log))
-           ([o f]
-            (.apply f js/console (goog.object/get o "consoleArray"))))
-
      (deftype
        ^{:doc
          "A js object with the the following fields:
@@ -1662,7 +1651,19 @@
                          args)))
        :clj (f))))
 
-(defn ^:public bling!
-  "Equivalent to (println (apply bling args))"
-  [& args]
-  (println (apply bling args)))
+#?(:cljs
+   (defn ^:public print-bling
+     "For browser usage, sugar for the the following:
+        `(.apply js/console.log js/console (goog.object/get o \"consoleArray\"))`
+
+        Example:
+        `(print-bling (bling [:bold.blue \"my blue text\"]))"
+     ([o]
+      (print-bling o js/console.log))
+     ([o f]
+      (.apply f js/console (goog.object/get o "consoleArray"))))
+   :clj
+   (defn ^:public print-bling
+     "Equivalent to (println (apply bling args))"
+     [& args]
+     (println (apply bling args))))
