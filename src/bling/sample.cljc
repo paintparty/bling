@@ -584,12 +584,12 @@
 
 ;; (print-bling-color-contrast!)
 
-(print-bling [:light-magenta "go"])
-(print-bling [:dark-magenta "go"])
-(print-bling [:medium-magenta "go"])
+;; (print-bling [:light-magenta "go"])
+;; (print-bling [:dark-magenta "go"])
+;; (print-bling [:medium-magenta "go"])
 
-(print-bling
- (banner {:text     "A" 
-          :font     bling.fonts/isometric-1
-          :gradient "to top, red, magenta"}))
+;; (print-bling
+;;  (banner {:text     "A" 
+;;           :font     bling.fonts/isometric-1
+;;           :gradient "to top, red, magenta"}))
 
