@@ -161,11 +161,6 @@
     "white"      {:sgr 231}]))
 
 
-(defn concatv
-  "Concatenate `xs` and return the result as a vector."
-  [& xs]
-  (into [] cat xs))
-
 (def ^:private bling-colors
   (apply
    array-map
@@ -173,17 +168,17 @@
                 (let [dark   (get-in bling-colors-dark [k :sgr])
                       light  (get-in bling-colors-light [k :sgr])
                       medium (:sgr v)]
-                  (concatv (conj acc
-                                 k
-                                 (assoc v
-                                        :sgr-dark
-                                        dark
-                                        :sgr-light
-                                        light))
-                           (when-not (contains? #{"black" "white"} k) 
-                             [(str "medium-" k) {:sgr medium}
-                              (str "dark-" k)   {:sgr dark}
-                              (str "light-" k)  {:sgr light}]))))
+                  (util/concatv (conj acc
+                                      k
+                                      (assoc v
+                                             :sgr-dark
+                                             dark
+                                             :sgr-light
+                                             light))
+                                (when-not (contains? #{"black" "white"} k) 
+                                  [(str "medium-" k) {:sgr medium}
+                                   (str "dark-" k)   {:sgr dark}
+                                   (str "light-" k)  {:sgr light}]))))
               [] 
               bling-colors*)))
 
@@ -207,9 +202,9 @@
 (def ^:private all-color-names
   ;; TODO - perf use reduce here?
   (into #{}
-        (concatv (keys semantics-by-semantic-type)
-                (vals semantics-by-semantic-type)
-                (keys colors-source))))
+        (util/concatv (keys semantics-by-semantic-type)
+                      (vals semantics-by-semantic-type)
+                      (keys colors-source))))
 
 (def ^:private color-names-by-semantic*
   (reduce-kv (fn [m color {:keys [semantic]}]
@@ -770,11 +765,11 @@
                             underline-styled
                             mb]) 
         ret              (apply bling
-                                (concatv header
-                                         (when header ["\n"])
-                                         diagram
-                                         (when body ["\n"])
-                                         body))]
+                                (util/concatv header
+                                              (when header ["\n"])
+                                              diagram
+                                              (when body ["\n"])
+                                              body))]
     ret))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -806,7 +801,7 @@
     (string/join
      (interpose
       "\n"
-      (concatv
+      (util/concatv
        [(bling [bs
                 (str
                  (char-repeat (inc margin-left) "▄")
@@ -865,7 +860,7 @@
     (string/join
      (interpose
       "\n"
-      (concatv
+      (util/concatv
        [(bling [bs
                 (str margin-left-str
                      padding-left-str
@@ -975,10 +970,10 @@
   (let [body-lns (string/split-lines (:value m))]
     (string/join
       "\n"
-      (concatv
-        (repeat (:padding-top m) (ln m ""))
-        (mapv (partial ln m) body-lns)
-        (repeat (:padding-bottom m) (ln m ""))))))
+      (util/concatv
+       (repeat (:padding-top m) (ln m ""))
+       (mapv (partial ln m) body-lns)
+       (repeat (:padding-bottom m) (ln m ""))))))
 
 (defn- sideline-callout
   [m]
@@ -1577,7 +1572,7 @@
      (updated-css css x)]))
 
 
-(defn- bling-data* [args]
+(defn bling-data* [args]
   (let [[coll css] (reduce enriched-data-inner
                            [[] []]
                            args)
@@ -1588,7 +1583,7 @@
     ;;    :clj
     ;;    ())
     
-    {:console-array (into-array (concatv [tagged] css))
+    {:console-array (into-array (util/concatv [tagged] css))
      :tagged        tagged
      :css           css
      :args          args}))
@@ -1653,14 +1648,18 @@
 #?(:cljs
    (defn ^:public print-bling
      "For browser usage, sugar for the the following:
-        `(.apply js/console.log js/console (goog.object/get o \"consoleArray\"))`
+      `(.apply js/console.log js/console (goog.object/get o \"consoleArray\"))`
 
-        Example:
-        `(print-bling (bling [:bold.blue \"my blue text\"]))"
-     ([o]
-      (print-bling o js/console.log))
-     ([o f]
-      (.apply f js/console (goog.object/get o "consoleArray"))))
+      Example:
+      `(print-bling (bling [:bold.blue \"my blue text\"]))"
+     [& args]
+     (if node?
+       (println (apply bling args))
+       (let [o (apply bling args)]
+         (.apply js/console.log
+                 js/console 
+                 (goog.object/get o "consoleArray")))))
+
    :clj
    (defn ^:public print-bling
      "Equivalent to (println (apply bling args))"

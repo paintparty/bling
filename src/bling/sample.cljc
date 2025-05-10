@@ -7,12 +7,8 @@
    [bling.fontlib]
    [bling.fonts]
    [bling.macros :refer [keyed ? start-dbg! stop-dbg! nth-not-found]]
-
-   #?(:cljs
-      [bling.core :refer [bling  callout print-bling point-of-interest]]
-      :clj
-      [bling.core :refer [bling print-bling callout point-of-interest]]
-      )))
+   [bling.core :refer [?sgr bling bling-data bling-data* callout print-bling point-of-interest]]
+   ))
 
 (def ^:private colors-ordered
   ["system-black"   
@@ -117,7 +113,7 @@
     (callout callout-opts message)))
 
 #?(:clj
-   (defn print-commented-example-call! [m k body]
+   (defn print-commented-example-call [m k body]
      (println 
       (str
        "\n\n\n"
@@ -156,7 +152,7 @@
                          "This is not a real "
                          (name callout-type))))
         k :italic.subtle]
-      #?(:clj (print-commented-example-call! m k body))
+      #?(:clj (print-commented-example-call m k body))
       (callout (assoc m :margin-top 0 :margin-bottom 0) body)))
 
 (defn print-comment [s]
@@ -373,7 +369,7 @@
 
 ;; For QA
 ;; Prints one banner per font, in neutral
-(defn print-bling-banner-font-samples! []
+(defn print-bling-banner-font-samples []
  (doseq [{:keys [font] :as m}
          [
           {:font     miniwi
@@ -414,7 +410,7 @@
 
 ;; For QA
 ;; Prints every bling banner font (all the characters), over six rows
-(defn print-bling-banner-font-collection! []
+(defn print-bling-banner-font-collection []
  (doseq [font
          [miniwi
           ansi-shadow
@@ -443,7 +439,7 @@
         :gradient-shift gs}))))))
 
 ;; Prints all gradients 
-(defn print-bling-banner-gradients! 
+(defn print-bling-banner-gradients 
   [{:keys [select-fonts display-labels?]}]
   (doseq [[_ {:keys [font-name]
               :as   font}]
@@ -462,12 +458,12 @@
                          :gradient grd})))))))
 
 
-
 ;; Prints cool to warm gradients with shifts
-(defn print-bling-banner-gradient-warm-cool! []
+(defn print-bling-banner-gradient-warm-cool []
+  (println "\n")
   (doseq [n (range 6)]
     (let [dir "to right"]
-      (println (str "\"" dir ", cool, warm\", with gradient-shift " n))
+      (println (str "\n\"" dir ", cool, warm\", with gradient-shift " n "\n"))
       (print-bling (bling.banner/banner 
                     {:font           bling.fonts/ansi-shadow
                      :font-weight    :bold
@@ -475,23 +471,25 @@
                      :gradient       (str dir ", cool, warm")
                      :gradient-shift n
                      :contrast       :medium
+                     :margin-bottom  1
                      ;; :display-missing-chars? true
                      })))))
 
 ;; For QA
 ;; Print with bold font
-(defn print-bling-banner-bold-font! []
+(defn print-bling-banner-bold-font []
+  (println "\n\n")
   (doseq [k [:bold :normal]]
+    (println (str "with font-weight " k "\n"))
     (print-bling (bling.banner/banner 
                   {:font        bling.fonts/big-money
                    :font-weight k
                    :gradient    "to bottom, red, magenta"
                    :text        "ABCDEFG"}))))
 
-
 ;; For QA
 ;; Print with contrast options
-(defn print-bling-banner-gradient-contrast-options! []
+(defn print-bling-banner-gradient-contrast-options []
   (doseq [[k v] bling.banner/gradient-pairs-map]
     (let [grd (str "to bottom, " (name k) ", " (name v))]
       (doseq [k [:high :medium :low]]
@@ -504,7 +502,7 @@
 
 ;; For QA
 ;; Print with bad input for each option, to test warnings 
-(defn print-bling-banners-with-bad-option-values! []
+(defn print-bling-banners-with-bad-option-values []
   (doseq [m
           [
           ;;  {:letter-spacing "example-bad-option-value"}
@@ -520,7 +518,7 @@
                           :text "TEST"}
                          m)))))
 
-(defn print-bling-banner-samples! []
+(defn print-bling-banner-samples []
   (doseq [k [:bold :normal]]
     (print-bling (bling.banner/banner 
                   {:font        bling.fonts/big-money
@@ -528,7 +526,7 @@
                    :gradient    "to bottom, red, magenta"
                    :text        "ABCDEFG"}))))
 
-(defn print-bling-color-contrast! []
+(defn print-bling-color-contrast []
   (doseq [color 
           ["red"    
            "orange" 
@@ -554,42 +552,34 @@
 
 
 ;; Prints the entire font collection
-;; (print-bling-banner-font-collection!)
+;; (print-bling-banner-font-collection)
 
-;; (print-bling-banner-font-samples!)
+;; (print-bling-banner-font-samples)
 
-;; (print-bling-banner-gradients! 
-;;  {
-;;   :select-fonts ['isometric-1]
+;; (print-bling-banner-gradients 
+;;  {:select-fonts ['isometric-1]
 ;;   :display-labels? false})
 
-;; (print-bling-banner-gradient-warm-cool!)
-;; (print-bling-banner-bold-font!)
-;; (print-bling-banner-gradient-contrast-options!)
-;; (print-bling-banners-with-bad-option-values!)
+;; (print-bling-banner-gradient-warm-cool)
+
+;; (print-bling-banner-bold-font)
+
+;; (print-bling-banner-gradient-contrast-options)
+
+;; (print-bling-banners-with-bad-option-values)
 
 ;; (pprint
 ;;  (get-in bling.fonts/isometric-1 
 ;;          [:chars-array-map "a"]))
 
+;; (print-bling-color-contrast)
 
-;; What does this do in browser? 
-;; (pprint (callout {:data? true} "hi"))
+;; (?sgr (bling [:bold.red "hello"]))
 
-;; (pprint (dissoc bling.fonts/isometric-1
-;;                 :chars-array-map
-;;                 :example
-;;                 :desc
-;;                 :missing-chars))
 
-;; (print-bling-color-contrast!)
 
-;; (print-bling [:light-magenta "go"])
-;; (print-bling [:dark-magenta "go"])
-;; (print-bling [:medium-magenta "go"])
+ 
 
-;; (print-bling
-;;  (banner {:text     "A" 
-;;           :font     bling.fonts/isometric-1
-;;           :gradient "to top, red, magenta"}))
+
+
 

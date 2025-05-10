@@ -4,7 +4,6 @@
   (:require
    #?(:cljs [bling.core :refer [print-bling]])
    #?(:cljs [bling.js-env :refer [node?]])
-
    [bling.macros :refer [?]] ;;<-- just for debugging
    [bling.core :refer [bling callout point-of-interest bling-colors*]]
    [bling.sample]
@@ -330,13 +329,7 @@
    (examples-warnings-for-bad-arg-to-callout))
 
 
-(println)
-(println)
-(visual-test-suite)
+#_(visual-test-suite)
 #_(bling-basics)
 #_(bling.sample/sample)
-(println)
-(println)
-(println)
-(println)
 
