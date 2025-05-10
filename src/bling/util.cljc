@@ -45,3 +45,8 @@
         ret))))
 
 (defn sjr [n s] (string/join (repeat n s)))
+
+(defn concatv
+  "Concatenate `xs` and return the result as a vector."
+  [& xs]
+  (into [] cat xs))

@@ -83,7 +83,7 @@
                                  option-value-shortened
                                  option-value-is-string?)]
     (print-warning!
-     (concat
+     (util/concatv
       [""
        "bling.banner/banner"
        ""
@@ -171,8 +171,8 @@
         (reduce 
          (fn [acc i]
            (if (odd? i)
-             (concat acc [(last acc)])
-             (concat [(first acc)] acc)))
+             (util/concatv acc [(last acc)])
+             (util/concatv [(first acc)] acc)))
          coll 
          (range n))))
 
@@ -242,7 +242,7 @@
               
         ret
         (if dec-cells-int?
-          (concat ret (take-last 1 ret))
+          (util/concatv ret (take-last 1 ret))
           ret)]
 
     (stop-dbg! debug?)
@@ -311,13 +311,13 @@
         grd-range (range-fn n)
         c1        (str prefix "-" (name k))
         c2        (str prefix "-" (-> k pairs-map name))]
-    (concat [[c1 c2] grd-range
-             [c2 c1] (reverse grd-range)]
-            (when (= "medium" prefix)
-              (let [c1 (name k)
-                    c2 (-> k pairs-map name)]
-                [[c1 c2] grd-range
-                 [c2 c1] (reverse grd-range)])))))
+    (util/concatv [[c1 c2] grd-range
+                   [c2 c1] (reverse grd-range)]
+                  (when (= "medium" prefix)
+                    (let [c1 (name k)
+                          c2 (-> k pairs-map name)]
+                      [[c1 c2] grd-range
+                       [c2 c1] (reverse grd-range)])))))
 
 (defn- shade-maps [acc shades range-fn k]
  (->> shades
@@ -325,7 +325,7 @@
                             gradient-pairs-map
                             range-fn
                             k))
-      (apply concat)
+      (apply util/concatv)
       (apply conj acc)))
 
 
@@ -593,12 +593,12 @@
 
           (if (odd? height)
             (let [block-pad (repeat (/ (dec height) 2) band-str)]
-              (concat block-pad
-                      [s]
-                      block-pad))
-            (concat (repeat (dec (/ height 2)) band-str)
-                    [s]
-                    (repeat (/ height 2) band-str))))))
+              (util/concatv block-pad
+                            [s]
+                            block-pad))
+            (util/concatv (repeat (dec (/ height 2)) band-str)
+                          [s]
+                          (repeat (/ height 2) band-str))))))
 
 
 (defn banner-str-chars
