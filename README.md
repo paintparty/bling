@@ -701,7 +701,9 @@ Below are some example calls and a screenshot of the results.
 > [!NOTE]
 Figlet banners only work in terminal context (JVM Clojure or Node.js ClojureScript).
 If you want a simple banner in a browser dev console, you can do the following:
-`(banner {:text "Hello" :browser-style "font-color:red;font-size:24px"})`
+```Clojure
+(banner {:text "Hello" :browser-style "font-color:red;font-size:24px"})
+```
 
 
 ## Testing
