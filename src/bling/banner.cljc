@@ -938,7 +938,19 @@
       (let [style (:browser-style m)]
         (when style
           (when-not (string? style)
-            (js/console.warn "bad style")))
+            (js/console.warn 
+             (str "Warning"
+                   "\n\n"
+                  "bling.banner/banner."
+                  "\n\n"
+                  "The :browser-style option must be a valid css style string."
+                  "\n\n"
+                  "Example:"
+                  "\n\n"
+                  "(bling.banner/banner\n"
+                  " {:text  \"My Banner\"})"
+                  "\n  :style \"color: blue; font-size: 24px;\""
+                  ))))
         (.apply js/console.log 
                 js/console 
                 #js[(str "%c" (:text m) "%c")
