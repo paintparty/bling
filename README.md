@@ -682,8 +682,6 @@ Below are some example calls and a screenshot of the results.
 </p>
 
 ### All the options for `bling.banner/banner` 
-Note: figlet banners only work in terminal context (JVM Clojure or Node.js ClojureScript), if you want a simple banner in a browser dev console, you can do the following:
-`(banner {:text "Hello" :browser-style "font-color:red;font-size:24px"}).
 
 | Key               | Pred       | Description   |
 | :---------------  | -----------| ------------- |
@@ -699,6 +697,12 @@ Note: figlet banners only work in terminal context (JVM Clojure or Node.js Cloju
 | `:margin-right`   | `int?`     | Amount of margin (in blank character spaces) at right, outside banner.<br>Defaults to `0`. Only applies to terminal emulator printing. |
 
 <br>
+
+> [!NOTE]
+Figlet banners only work in terminal context (JVM Clojure or Node.js ClojureScript).
+If you want a simple banner in a browser dev console, you can do the following:
+`(banner {:text "Hello" :browser-style "font-color:red;font-size:24px"})`
+
 
 ## Testing
 There is a set of visual test suites in `bling.core-test`.
