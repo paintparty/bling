@@ -704,7 +704,7 @@ If you want a simple banner in a browser dev console, you can do the following:
 ```Clojure
 (banner {:text "Hello" :browser-style "font-color:red;font-size:24px"})
 ```
-
+<br>
 
 ## Testing
 There is a set of visual test suites in `bling.core-test`.
