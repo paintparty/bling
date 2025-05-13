@@ -605,11 +605,17 @@ More example values of `2` for `:margin-left`, to increase the weight:
 
 ## Figlet banners
 
+<p align="center">
+  <img src="resources/docs/chromed/bling-banner-fonts_dark-0.7.0.png"
+       width="700px" />
+</p>
+
+<br>
+
 Bling features basic support for composing <a href="https://en.wikipedia.org/wiki/FIGlet" target="_blank">Figlet</a> ascii-art
 banners with <a href="https://github.com/busyloop/lolcat" target="_blank">lolcat-like gradient overlays</a>. Bling ships with a
-small handful of ported Figlet fonts. We will probably add a few more in the future but offering an exhaustive library of Figlet
-fonts is currently a non-goal. The glyph layout implementation is bare-bones and there is currently no support for standard figlet
-"smushing". Figlet banners only work in terminal context (JVM Clojure or Node.js ClojureScript).
+small handful of ported Figlet fonts. The glyph layout implementation is bare-bones and there is currently no support for standard figlet
+smushing. Figlet banners only work in terminal context (JVM Clojure or Node.js ClojureScript).
 
 For a quick sample in your terminal:
 ```clojure
@@ -679,10 +685,6 @@ Below are some example calls and a screenshot of the results.
   :gradient    "to right, red, magenta"}
 ```
 
-<p align="center">
-  <img src="resources/docs/chromed/bling-banner-fonts_dark-0.7.0.png"
-       width="700px" />
-</p>
 
 ### All the options for `bling.banner/banner` 
 
