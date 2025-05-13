@@ -113,7 +113,7 @@
   (apply 
    array-map 
    ["red"     {:sgr 124}
-    "orange"  {:sgr 166}
+    "orange"  {:sgr 172}
     "yellow"  {:sgr 136}
     "olive"   {:sgr 100}
     "green"   {:sgr 28}
