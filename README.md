@@ -39,13 +39,14 @@
 <br>
 <br>
 
-<p align="left">
-  <img src="resources/docs/chromed/bling-banner-light-0.6.0.png" width="700px" />
-</p>
 
-The same example as above, in a terminal emulator with a dark background.
 <p align="left">
   <img src="resources/docs/chromed/bling-banner-dark-0.6.0.png" width="700px" />
+</p>
+
+The same example as above, in a terminal emulator with a light background.
+<p align="left">
+  <img src="resources/docs/chromed/bling-banner-light-0.6.0.png" width="700px" />
 </p>
 
 ## Features
@@ -71,11 +72,13 @@ The same example as above, in a terminal emulator with a dark background.
 Add as a dependency to your project:
 
 
+lein:
 ```Clojure
-;; lein
 [io.github.paintparty/bling "0.7.0-SNAPSHOT"]
+```
 
-;; deps
+deps:
+```Clojure
 io.github.paintparty/bling {:mvn/version "0.7.0-SNAPSHOT"}
 ```
 <br>
