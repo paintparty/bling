@@ -1,11 +1,10 @@
 (ns bling.banner
   (:require
    [bling.macros :refer [keyed ? start-dbg! stop-dbg! nth-not-found]]
-   [bling.fonts]
    [bling.util :as util :refer [sjr maybe as-str]]
-   [clojure.pprint :refer [pprint]]
    [bling.defs :as defs]
    [clojure.string :as string]
+   #?(:clj [bling.fonts])
    #?(:cljs [bling.js-env :refer [node?]])))
 
 
