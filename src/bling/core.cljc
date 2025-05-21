@@ -22,6 +22,7 @@
             ;; [bling.macros :refer [let-map keyed]]
             [bling.defs :as defs]
             [bling.util :as util]
+            [fireworks.core]
             #?(:cljs [goog.object])
             #?(:cljs [bling.js-env :refer [node?]])))
 
@@ -1665,3 +1666,30 @@
      "Equivalent to (println (apply bling args))"
      [& args]
      (println (apply bling args))))
+
+
+(defn hifi-impl [x user-opts]
+  (->> x 
+       (fireworks.core/_p2 (merge user-opts
+                                  {:user-opts user-opts
+                                   :mode      :data
+                                   :p-data?   true
+                                   :template  [:result]}))
+       :formatted
+       :string))
+
+(defn ^:public hifi
+  "Pretty-printed string with syntax-coloring. Dispatches to fireworks.core/_p2"
+  ([x]
+   (hifi x nil))
+  ([x opts]
+  (hifi-impl x opts)))
+
+
+(defn ^:public print-hifi
+  "Prints a pretty-printed string with syntax-coloring. Dispatches to
+   fireworks.core/_p2. Sugar for (println (bling.core/hifi x))"
+  ([x]
+   (print-hifi x nil))
+  ([x opts]
+   (println (hifi-impl x opts))))
