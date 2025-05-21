@@ -372,7 +372,7 @@
                  ;; :super-soft
                  
                  :low
-                 defs/bling-theme
+                 defs/bling-mood
 
                  :medium
                  "medium"
@@ -380,13 +380,13 @@
                  ;; :super-hard
                  
                  ;; covers :hard 
-                 (case defs/bling-theme
+                 (case defs/bling-mood
                    "light" "dark"
                    "dark" "light"
                    "medium"))]
 
     #_(? {:opts/contrast    (:contrast opts)
-          :defs/bling-theme defs/bling-theme
+          :defs/bling-mood defs/bling-mood
           :prefix           prefix})
 
     (str prefix "-" color-str)))
@@ -429,8 +429,8 @@
    Expects a map (banner opts) as second argument, from which a value for the
    :contrast option may be provided.
    
-   If the user has BLING_THEME env var set, the darker or lighter variant of the
-   base color will be used, depending on the value of BLING_THEME, which
+   If the user has BLING_MOOD env var set, the darker or lighter variant of the
+   base color will be used, depending on the value of BLING_MOOD, which
    corresponds to the background terminal. The purpose is to lower or heighten
    the contrast.
 
@@ -935,7 +935,7 @@
    | `:font-weight`    | `keyword?` | If set to bold, each subchar in figlet characters will be bolded. Only applies when a gradient is set.
    | `:gradient`       | `string?`  | Expects a string as first argument representing a linear-gradient in standard css syntax: \"to bottom, yellow, purple\". Only the following color pairs are valid: `green, blue`, `red, magenta`, `yellow, purple`, `orange, purple`, `cool, warm`. Valid directions are: `to top`, `to bottom`, `to right`, and `to left`.  Only applies to terminal emulator printing|
    | `:gradient-shift` | `int?`     | If gradient is `warm` / `cool` pair, this will shift the hue. `0-5`. Defaults to `0`.|
-   | `:contrast`       | `keyword?` | If gradient is set, this will force an overall lighter or darker tone. Defaults to `medium`. If the user has a `BLING_THEME` env var set, it will default to `high` in order to optimize contrast for the users terminal theme (light or dark) |
+   | `:contrast`       | `keyword?` | If gradient is set, this will force an overall lighter or darker tone. Defaults to `medium`. If the user has a `BLING_MOOD` env var set, it will default to `high` in order to optimize contrast for the users terminal theme (light or dark) |
    | `:margin-top`     | `int?`     | Amount of margin (in newlines) at top, outside banner.<br>Defaults to `1`. Only applies to terminal emulator printing. |
    | `:margin-bottom`  | `int?`     | Amount of margin (in newlines) at bottom, outside banner.<br>Defaults to `0`. Only applies to terminal emulator printing. |
    | `:margin-left`    | `int?`     | Amount of margin (in blank character spaces) at left, outside banner.<br>Defaults to `0`. Only applies to terminal emulator printing. |

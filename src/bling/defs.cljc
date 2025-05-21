@@ -37,10 +37,10 @@
 (def bold-tag-open "\033[1m")
 (def sgr-tag-close "\033[0;m")
 
-(def bling-theme-names-set #{"light" "dark" "medium"})
+(def bling-mood-names-set #{"light" "dark" "medium"})
 
 ;; TODO - Refactor with warning template in bling.core
-(defn invalid-bling-theme-warning!
+(defn invalid-bling-mood-warning!
   [s]
   (let [[border-char-top
          border-char
@@ -64,11 +64,11 @@
                         % 
                         "\n")
                   [""
-                   "bling.core/bling-theme"
+                   "bling.core/bling-mood"
                    ""
-                   "Invalid BLING_THEME environmental variable:"
+                   "Invalid BLING_MOOD environmental variable:"
                    ""
-                   (str "BLING_THEME=" 
+                   (str "BLING_MOOD=" 
                         bold-tag-open 
                         "\"" s "\""
                         sgr-tag-close)
@@ -77,8 +77,8 @@
                         (apply str (repeat (+ 2 (count s)) "^"))
                         sgr-tag-close)
                    ""
-                   "Valid values for BLING_THEME:"
-                   (str bling-theme-names-set "")
+                   "Valid values for BLING_MOOD:"
+                   (str bling-mood-names-set "")
                    ""
                    "\"light\" will increase the contrast of bling-styled"
                    "messages on terminals with a light background."
@@ -93,14 +93,14 @@
           border-char-bottom
           sgr-tag-close))))
 
-(def ^:public BLING_THEME
-  #?(:clj  (System/getenv "BLING_THEME")
-     :cljs bling.js-env/BLING_THEME))
+(def ^:public BLING_MOOD
+  #?(:clj  (System/getenv "BLING_MOOD")
+     :cljs bling.js-env/BLING_MOOD))
 
-(def ^:public bling-theme 
- (if (contains? bling-theme-names-set BLING_THEME)
-   BLING_THEME
+(def ^:public bling-mood 
+ (if (contains? bling-mood-names-set BLING_MOOD)
+   BLING_MOOD
    (do
-     (when (string? BLING_THEME)
-       (invalid-bling-theme-warning! BLING_THEME))
+     (when (string? BLING_MOOD)
+       (invalid-bling-mood-warning! BLING_MOOD))
      "medium")))

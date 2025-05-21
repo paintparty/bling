@@ -471,9 +471,9 @@
    For terminal environments, a light or dark theme can be optionally specified
    via an environmental variable:
    
-   `BLING_THEME=light`
-   `BLING_THEME=dark`
-   `BLING_THEME=universal`.
+   `BLING_MOOD=light`
+   `BLING_MOOD=dark`
+   `BLING_MOOD=universal`.
 
    `UNIVERSAL` would be equivalent to the default (not setting it at all).
    
@@ -483,7 +483,7 @@
    `DARK` theme will use a lighter version of the color, which would improve the
    contrast for users that develop with a dark-themed terminal.
    
-   If `LIGHT` OR `DARK` values are detected for the `BLING_THEME` env var, the
+   If `LIGHT` OR `DARK` values are detected for the `BLING_MOOD` env var, the
    value of the `:sgr-or-css-kw` will be changed inside this function, from
    `:sgr` to `:sgr-light` or `:sgr-dark`"
   [sgr-or-css-kw {:keys [contrast] :as m}]
@@ -496,7 +496,7 @@
                             (or (let [kw
                                       (case contrast
                                         :low
-                                        (case defs/bling-theme
+                                        (case defs/bling-mood
                                           "light" :sgr-light
                                           "dark" :sgr-dark
                                           :sgr)
@@ -505,7 +505,7 @@
                                         :sgr
 
                                         ;; covers :high
-                                        (case defs/bling-theme
+                                        (case defs/bling-mood
                                           "light" :sgr-dark
                                           "dark" :sgr-light
                                           :sgr))]
