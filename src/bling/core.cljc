@@ -742,7 +742,9 @@
                              :text-underline-str)
         bolded-form      [{:font-weight :bold} form-as-str]
         underline-styled [{:font-weight :bold
-                           :color       underline-color} underline-str]
+                           :color       underline-color
+                           :contrast    :medium}
+                          underline-str]
         header           (enriched-args header)
         body             (enriched-args body)
         mb*              (or (some-> margin-block (maybe pos-int?))
@@ -1009,7 +1011,9 @@
   (let [sideline-variant? (contains? #{"sideline" "sideline-bold"} theme)
         sideline-variant-with-body? (boolean (and value sideline-variant?))
         sideline-variant-just-label? (and (nil? value) sideline-variant?)
-        gutter-theme? (contains? #{"rainbow-gutter" "gutter"} theme)]
+        gutter-theme? (contains? #{"rainbow-gutter" "gutter"} theme)
+        m (assoc-in m [:border-style :contrast] :medium)
+        ]
     ;; (? (keyed [sideline-variant?
     ;;            sideline-variant-with-body?
     ;;            sideline-variant-just-label?
@@ -1048,12 +1052,13 @@
 (defn callout*
   [{:keys [theme] :as m}]
   (let [char                 defs/gutter-char
-        style                {:color (:color m)}
+        border-style         {:color (:color m)
+                              :contrast :medium}
         gutter?              (= "gutter" theme)
         rainbow?             (= "rainbow-gutter" theme)
         gutter-str           (if rainbow? 
                                (bling [{:color (last rainbow-colors)} char])
-                               (bling [style char]))
+                               (bling [border-style char]))
         rainbow-gutter-str   (apply bling
                                   (for [s (drop-last rainbow-colors)]
                                     [{:color s} char]))
@@ -1062,7 +1067,7 @@
                                     [{:color s} char]))
 
         cr                   (fn [k ch] (char-repeat (or (k m) 0) ch))
-        gutter-str-zero      (bling [style
+        gutter-str-zero      (bling [border-style
                                      (string/join 
                                       (cr :margin-left
                                           defs/gutter-char-lower-seven-eighths))])
@@ -1071,7 +1076,7 @@
         s                    (ansi-callout-str
                               (merge
                                m
-                               {:border-style      style
+                               {:border-style      border-style
                                 :border-left-str   (case theme
                                                      "sideline"
                                                      "│"
