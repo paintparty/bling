@@ -293,10 +293,10 @@
    })
 
 (def gradient-pairs-map
-  (merge {:green   :blue
-          :yellow  :purple
+  (merge {:yellow  :purple
+          :orange  :purple
           :red     :magenta
-          :orange  :purple}
+          :green   :blue}
          gradient-pairs-cool-warm-map))
 
 (def gradient-pairs-set

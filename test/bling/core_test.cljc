@@ -358,7 +358,7 @@
 
 (sample/print-bling-banner-gradients 
  {:select-fonts [
-                ;;  'isometric-1
+                 ;; 'isometric-1
                  'ansi-shadow
                  ]
   :display-labels? true})
@@ -377,10 +377,10 @@
 
 ;; (sample/print-bling-color-contrast)
 
-
-
 ;; (print-bling [:bold.light-blue "Hello"])
+
 ;; (print-bling [:bold.blue "Hello"])
+
 ;; (print-bling [:bold.dark-blue "Hello"])
 
 ;; (print-bling [:bold.blue "Hello"])
