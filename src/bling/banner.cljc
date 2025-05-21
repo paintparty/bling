@@ -1,12 +1,22 @@
 (ns bling.banner
   (:require
-   [bling.macros :refer [keyed ? start-dbg! stop-dbg! nth-not-found]]
+   [bling.macros :refer [keyed start-dbg! stop-dbg! nth-not-found]]
    [bling.util :as util :refer [sjr maybe as-str]]
    [bling.defs :as defs]
    [clojure.string :as string]
    #?(:clj [bling.fonts])
    #?(:cljs [bling.js-env :refer [node?]])))
 
+;; Change to true for dev, for local debugging inside functions
+(when false
+  (require '[bling.macros :refer [?]])
+  (defn ? [_ _]
+    (println "Stub for dev debugging macro :: bling.banner/?. Comment me out")))
+
+
+
+#?(:cljs (when node?
+           (require '[bling.fonts])))
 
 (defn- print-caught-exception! [fn-name]
   (let [[border-char-top
