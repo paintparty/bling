@@ -2,11 +2,10 @@
 
 (ns bling.core-test
   (:require
-   #?(:cljs [bling.core :refer [print-bling]])
    #?(:cljs [bling.js-env :refer [node?]])
    [bling.macros :refer [?]] ;;<-- just for debugging
-   [bling.core :refer [bling callout point-of-interest bling-colors*]]
-   [bling.sample]
+   [bling.core :refer [bling print-bling callout point-of-interest bling-colors*]]
+   [bling.sample :as sample]
    [clojure.pprint :refer [pprint]]
    [clojure.string :as string]))
 
@@ -323,13 +322,67 @@
    (callout [1 2 3]))
 
 
+
+;; Single callout
+#_(callout {:theme :sideline-bold
+          :label-theme :marquee
+          :type        :warning
+          ;; :theme    :gutter
+             ;; :label "foo"
+          }
+         "Hello")
+
+;; Single callout , gutter
+#_(callout
+  {:type :info
+   :label-theme :minimal
+   :margin-left 2
+   :theme :gutter})
+
 (defn visual-test-suite []
    (random-callouts)
    (bling-basics)
-   (examples-warnings-for-bad-arg-to-callout))
+   (examples-warnings-for-bad-arg-to-callout)
+  )
 
 
 #_(visual-test-suite)
-#_(bling-basics)
+
+
+
 #_(bling.sample/sample)
 
+;; (sample/print-bling-banner-font-collection)
+
+;; (sample/print-bling-banner-font-samples)
+
+(sample/print-bling-banner-gradients 
+ {:select-fonts [
+                ;;  'isometric-1
+                 'ansi-shadow
+                 ]
+  :display-labels? true})
+
+#_(sample/print-bling-banner-gradient-warm-cool)
+
+;; (sample/print-bling-banner-bold-font)
+
+;; (sample/print-bling-banner-gradient-contrast-options)
+
+;; (sample/print-bling-banners-with-bad-option-values)
+
+;; (pprint
+;;  (get-in bling.fonts/isometric-1 
+;;          [:chars-array-map "a"]))
+
+;; (sample/print-bling-color-contrast)
+
+
+
+;; (print-bling [:bold.light-blue "Hello"])
+;; (print-bling [:bold.blue "Hello"])
+;; (print-bling [:bold.dark-blue "Hello"])
+
+;; (print-bling [:bold.blue "Hello"])
+
+;; (?sgr (bling [:bold.red "hello"]))

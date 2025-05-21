@@ -493,7 +493,7 @@
   (doseq [[k v] bling.banner/gradient-pairs-map]
     (let [grd (str "to bottom, " (name k) ", " (name v))]
       (doseq [k [:high :medium :low]]
-        (println (str "\"" grd "\", with " (name k) " contrast"))
+        (println (str "\n\"" grd "\", with " (name k) " contrast\n"))
         (print-bling (bling.banner/banner 
                       {:font     bling.fonts/ansi-shadow
                        :gradient grd
@@ -538,11 +538,10 @@
            "magenta"
            "gray"   
            ]]
-    (doseq [contrast [:high :low :medium]]
+    (doseq [contrast [:low :medium :high ]]
       (println (bling [{:contrast         contrast 
-                        :background-color color 
-                        :color            :white}
-                       "Mean"])))))  
+                        :color            color}
+                       (str "Contrast " contrast)])))))  
 
 ;; Make example figlets for banner images
 
@@ -550,31 +549,6 @@
 
 ;; docs for banner
 
-
-;; Prints the entire font collection
-;; (print-bling-banner-font-collection)
-
-;; (print-bling-banner-font-samples)
-
-;; (print-bling-banner-gradients 
-;;  {:select-fonts ['isometric-1]
-;;   :display-labels? false})
-
-;; (print-bling-banner-gradient-warm-cool)
-
-;; (print-bling-banner-bold-font)
-
-;; (print-bling-banner-gradient-contrast-options)
-
-;; (print-bling-banners-with-bad-option-values)
-
-;; (pprint
-;;  (get-in bling.fonts/isometric-1 
-;;          [:chars-array-map "a"]))
-
-;; (print-bling-color-contrast)
-
-;; (?sgr (bling [:bold.red "hello"]))
 
 
 
