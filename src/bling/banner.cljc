@@ -74,9 +74,16 @@
                  defs/sgr-tag-close))))))
 
 (defn- maybe-wrap-in-double-quotes [x option-value-is-string?]
-  (if option-value-is-string? 
-    (str "\"" x "\"")
-    x))
+  (cond (and option-value-is-string?
+             (string/starts-with? x "\"")
+             (string/ends-with? x "\""))
+        x
+
+        option-value-is-string? 
+        (str "\"" x "\"")
+
+        :else
+        x))
 
 (defn- invalid-banner-opt-warning!
   [{:keys [option-key 
@@ -88,9 +95,11 @@
   (let [option-key              (str option-key)
         option-value-is-string? (string? option-value)
         option-value-shortened  (util/shortened option-value 33)
-        option-value-wrapped    (maybe-wrap-in-double-quotes
-                                 option-value-shortened
-                                 option-value-is-string?)]
+        option-value-wrapped    (if (nil? option-value)
+                                  (str "nil")
+                                  (maybe-wrap-in-double-quotes
+                                   option-value-shortened
+                                   option-value-is-string?))]
     (print-warning!
      (util/concatv
       [""
