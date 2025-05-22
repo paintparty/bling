@@ -18,7 +18,7 @@
 
 (ns bling.core
   (:require [clojure.string :as string]
-            [bling.macros :refer [let-map keyed ?]] ;;<-- just for debugging
+            [bling.macros :refer [let-map keyed]] ;; <-- just for debugging
             ;; [bling.macros :refer [let-map keyed]]
             [bling.defs :as defs]
             [bling.util :as util]

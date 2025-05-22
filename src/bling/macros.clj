@@ -62,8 +62,7 @@
        (into {} (map (juxt transform identity) vars))))))
 
 ;; macro for debugging bling
-(do 
-  (defn- ns+ln+col-str
+ (defn- ns+ln+col-str
     [form-meta]
     (let [{:keys [line column]} form-meta
           ns-str                (some-> *ns*
@@ -144,33 +143,6 @@
            (str ~ns-str " " :nth-not-found))
           nil))))
   
-
-  (defmacro ? 
-    ([x]
-     (let [ns-str (ns+ln+col-str (meta &form))]
-       `(do
-          (println
-           (str ~ns-str
-                "\n"
-                (shortened (quote ~x) 25)
-                "\n"
-                (with-out-str (pprint ~x))))
-          ~x)))
-    ([label x]
-     (let [label  (or (:label label) label)
-           ns-str (ns+ln+col-str (meta &form))]
-      ;;  (println "FOOO" ns-str)
-       `(do
-          (println
-           (if (= :- ~label)
-             (with-out-str (pprint ~x))
-             #_(string/replace (with-out-str (pprint ~x)) #"\n$" "")
-             (str ~ns-str
-                  "\n"
-                  ~label
-                  "\n"
-                  (with-out-str (pprint ~x)))))
-          ~x)))))
 
 (defn interleave-all
   "Returns a lazy seq of the first item in each coll, then the second, etc.

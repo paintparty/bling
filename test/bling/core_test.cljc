@@ -3,7 +3,7 @@
 (ns bling.core-test
   (:require
    #?(:cljs [bling.js-env :refer [node?]])
-   [bling.macros :refer [?]] ;;<-- just for debugging
+   ;; [fireworks.core :refer [? !? ?> !?>]] ;; <-just for debugging
    [bling.core :refer [bling print-bling callout point-of-interest bling-colors*]]
    [bling.sample :as sample]
    [bling.fonts]
@@ -351,7 +351,7 @@
    :gradient-colors    [:cool :warm]
   ;;  :gradient-direction nil
   ;;  :gradient-shift      0
-   :contrast           :blow
+  ;;  :contrast           :low
   ;;  :margin-bottom      1
    ;; :display-missing-chars? true
    }))
@@ -372,7 +372,7 @@
 
 #_(visual-test-suite)
 
-#_(bling.sample/sample)
+(bling.sample/sample)
 
 #_(sample/print-bling-banner-font-collection)
 
@@ -380,8 +380,8 @@
 
 #_(sample/print-bling-banner-gradients 
  {:select-fonts [
-                 ;; 'isometric-1
-                 'ansi-shadow
+                 ;; :isometric-1
+                 :ansi-shadow
                  ]
   :display-labels? true})
 

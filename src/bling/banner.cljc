@@ -1,22 +1,23 @@
 (ns bling.banner
   (:require
+   [fireworks.core :refer [? !? ?> !?>]]
    [bling.macros :refer [keyed start-dbg! stop-dbg! nth-not-found]]
-   [bling.util :as util :refer [sjr maybe as-str]]
+   [bling.util :as util :refer [sjr maybe]]
    [bling.defs :as defs]
    [clojure.string :as string]
-   #?(:clj [bling.fonts])
    #?(:cljs [bling.js-env :refer [node?]])))
 
+#?(:clj  (require '[bling.fonts])
+   :cljs (when node?
+           (require '[bling.fonts])))
+
 ;; Change to true for dev, for local debugging inside functions
-(when false
+#_(when false
   (require '[bling.macros :refer [?]])
   (defn ? [_ _]
     (println "Stub for dev debugging macro :: bling.banner/?. Comment me out")))
 
 
-
-#?(:cljs (when node?
-           (require '[bling.fonts])))
 
 (defn- print-caught-exception! [fn-name]
   (let [[border-char-top
@@ -740,18 +741,25 @@
   "     "],
  :char "Ꮉ"}
 
-(defn- valid-font?* [font]
-  (let [{:keys [widest-char
-                char-height
-                max-char-width
-                chars-array-map]}
-        font]
-    (boolean (and (string? widest-char)
-                  (= 1 (count widest-char))
-                  (pos-int? char-height)
-                  (pos-int? max-char-width)
-                  (map? chars-array-map)
-                  (seq chars-array-map)))))
+(defn- valid-font-kw?* [kw]
+  (contains? bling.fonts/fonts-by-kw kw))
+
+
+(defn- valid-font?*
+  "Validate the shape of a bling banner figlet font map"
+  [font]
+  (boolean
+   (when-let [{:keys [widest-char
+                      char-height
+                      max-char-width
+                      chars-array-map]}
+              (get bling.fonts/fonts-by-kw font)]
+     (and (string? widest-char)
+          (= 1 (count widest-char))
+          (pos-int? char-height)
+          (pos-int? max-char-width)
+          (map? chars-array-map)
+          (seq chars-array-map)))))
 
 
 (defn- split-css-gradient-str [s]
@@ -805,7 +813,7 @@
          gradient-shift         0
          gradient-direction     :to-bottom
          font-weight            :normal}
-    user-font :font}]
+    user-font-kw :font}]
 
   ;; TODO - All these validations should happen in malli
   (try
@@ -813,9 +821,12 @@
           valid-letter-spacing?     (zero-or-pos-int? letter-spacing)
           valid-font-weight?        (or (nil? font-weight)
                                         (contains? #{:normal :bold} font-weight))
-          default-font              bling.fonts/ansi-shadow
-          font                      (or user-font default-font)
-          valid-font?               (valid-font?* font)
+          valid-font-kw?            (valid-font-kw?* user-font-kw)
+          resolved-user-font        (get bling.fonts/fonts-by-kw user-font-kw)
+          default-font-kw           :ansi-shadow
+          default-font              (get bling.fonts/fonts-by-kw default-font-kw)
+          font                      (or resolved-user-font default-font)
+          ;; valid-font?            (? (valid-font?* font))
           no-gradient?              (nil? gradient-colors)
           gradient-colors*          gradient-colors
           gradient-shift*           gradient-shift
@@ -917,18 +928,20 @@
           :option-value   text
           :valid-desc     "A non-blank string"}))
 
-      (when-not valid-font?
+      (when-not valid-font-kw?
         (invalid-banner-opt-warning! 
          {:option-key      :font
-          :option-value    user-font
-          :valid-desc      "One of the Figlet fonts that ships with Bling."
-          :valid-examples  (map #(str "bling.fonts/" % ) defs/banner-fonts-vec)
+          :option-value    user-font-kw
+          :valid-desc      (concat [""
+                                    "A keyword alias for one of Bling's Figlet fonts:"
+                                    ""]
+                                   (map #(keyword %) defs/banner-fonts-vec))
           :default-val-msg [""
                             (str "The default font "
-                                 "bling.fonts/" (:font-sym default-font)
+                                 default-font-kw
                                  " will be used")]}))
 
-      (when (and valid-font? valid-text?)
+      (when (and valid-font-kw? valid-text?)
         (let [opts
              (if valid-gradient-shift?
                opts

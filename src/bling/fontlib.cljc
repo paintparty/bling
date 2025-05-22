@@ -1,11 +1,11 @@
 (ns bling.fontlib
   (:require [clojure.data]
-            [clojure.pprint :refer [pprint]]
             [clojure.repl]
             [clojure.set]
             [clojure.string :as string]
             [bling.defs :as defs]
-            [bling.macros :refer [? keyed]]
+            [bling.macros :refer [keyed]]
+            [fireworks.core :refer [pprint]]
             [bling.util :refer [sjr]]))
 
 (def ascii-chars
@@ -134,6 +134,8 @@
 (def isometric-1
  {:font-name      
   "Isometric 1"
+  :example-text 
+  "ABCDE"
   :example        
 [
  "                 ___           ___           ___           ___           ___           ___                       ___"
@@ -1307,6 +1309,8 @@ $       $@@
  :more-info
  "https://web.archive.org/web/20120819044459/http://www.roysac.com/thedrawfonts-tdf.asp"
  :url ""
+ :example-text 
+ "ANSI"
  :example
 [
 " █████╗ ███╗   ██╗███████╗██╗    ███████╗██╗  ██╗ █████╗ ██████╗  ██████╗ ██╗    ██╗"
@@ -1955,6 +1959,8 @@ $       $@@
 {
  :font-name      
  "Big Money"
+ :example-text 
+ "Money"
  :example        
  [
 "$$$$$$$\\  $$\\                $$\\      $$\\"
@@ -3095,6 +3101,7 @@ $$ |      @
 
 (def drippy
   {:font-name      "Drippy"
+   :example-text   "Drippy"
    :example        [
 "▓█████▄  ██▀███   ██▓ ██▓███   ██▓███  ▓██   ██▓"
 "▒██▀ ██▌▓██ ▒ ██▒▓██▒▓██░  ██▒▓██░  ██▒ ▒██  ██▒"
@@ -4135,6 +4142,7 @@ $ ░ $@@
 (def big
  {
   :font-name      "Big"
+  :example-text   "Big"
   :example        [
                    " ____   _"
                    "|  _ \\ (_)"
@@ -6349,6 +6357,7 @@ __   @
 (def miniwi
  {
  :font-name "Miniwi"
+ :example-text "Miniwi"
  :example
 [
 "▖  ▖▘  ▘   ▘"
@@ -6750,6 +6759,7 @@ __   @
 (def rounded 
 {
  :font-name "Rounded"
+ :example-text "Rounded"
  :example
 [
 " ______                            _             _"
@@ -7660,6 +7670,15 @@ $$@@
    'isometric-1 isometric-1
    'rounded     rounded})
 
+(def font-maps-by-kw
+  {:big-money   big-money
+   :ansi-shadow ansi-shadow
+   :drippy      drippy
+   :big         big
+   :miniwi      miniwi
+   :isometric-1 isometric-1
+   :rounded     rounded})
+
 (def font-maps-by-name
   (reduce (fn [acc [_ v]]
             (assoc acc (:font-name v) v))
@@ -7677,6 +7696,7 @@ $$@@
                      more-info
                      url
                      example
+                     example-text
                      figlet-metrics
                      figlet-string]
               :as   font-map}
@@ -7719,6 +7739,7 @@ $$@@
                (some->> desc (vector :desc))
                (some->> more-info (vector :more-info))
                (some->> url (vector :url))
+               (some->> example-text (vector :example-text))
                [:font-sym font-sym]
                [:widest-char widest-char]
                [:char-height max-height]
@@ -7763,22 +7784,41 @@ $$@@
      (defn- font-defs [path]
        (let [banner-fonts defs/banner-fonts-vec
              banner-fonts-count (count banner-fonts)]
-         (string/join 
-          "\n\n\n"
-          (mapv #(font-def-source-code 
-                  (banner-font-array-map %)
-                  %)
-                (do (println 
-                     (str
-                      "Creating bling.fonts namespace...\n\n"
-                      "Writing defs for the following " banner-fonts-count " fonts to\n"
-                      path
-                      "\n\n"
-                      (string/join "\n"
-                                   (mapv #(symbol (str "bling.fonts/" %))
-                                         banner-fonts)))
-                     )
-                    banner-fonts)))))
+         (str (string/join 
+               "\n\n\n"
+               (mapv #(font-def-source-code 
+                       (banner-font-array-map %)
+                       %)
+                     (do (println 
+                          (str
+                           "Creating bling.fonts namespace...\n\n"
+                           "Writing defs for the following " banner-fonts-count " fonts to\n"
+                           path
+                           "\n\n"
+                           (string/join "\n"
+                                        (mapv #(symbol (str "bling.fonts/" %))
+                                              banner-fonts)))
+                          )
+                         banner-fonts)))
+
+              ;; This creates fonts lut
+
+              ;; (def fonts-by-kw
+              ;;  {:miniwi miniwi,
+              ;;   :ansi-shadow ansi-shadow,
+              ;;   :drippy drippy,
+              ;;   :big big,
+              ;;   :big-money big-money,
+              ;;   :rounded rounded,
+              ;;   :isometric-1 isometric-1})
+
+              "\n\n"
+              (str (with-out-str 
+                     (pprint (list 'def
+                                   'fonts-by-kw 
+                                   (into {} 
+                                         (map (fn [sym] [(keyword sym) sym])
+                                              defs/banner-fonts-vec)))))))))
 
      (defn write-fonts-ns!
        "This updates/generates a bling.fonts namespace.

@@ -22,6 +22,7 @@
   "▌▌▌▌▌▌▌▚▚▘▌"],
  :desc "miniwi font\n        after the miniwi bitmap font",
  :url "http://github.com/sshbio/miniwi",
+ :example-text "Miniwi",
  :font-sym miniwi,
  :widest-char "M",
  :char-height 4,
@@ -35,11 +36,7 @@
    :width 2,
    :height 4},
   "!"
-  {:bands ["▌" "▌" "▖" " "],
-   :i 1,
-   :character "!",
-   :width 1,
-   :height 4},
+  {:bands ["▌" "▌" "▖" " "], :i 1, :character "!", :width 1, :height 4},
   "\""
   {:bands ["▌▌" "  " "  " "  "],
    :i 2,
@@ -71,11 +68,7 @@
    :width 2,
    :height 4},
   "'"
-  {:bands ["▌" " " " " " "],
-   :i 7,
-   :character "'",
-   :width 1,
-   :height 4},
+  {:bands ["▌" " " " " " "], :i 7, :character "'", :width 1, :height 4},
   "("
   {:bands ["▗▘" "▐ " "▐ " "▝▖"],
    :i 8,
@@ -620,6 +613,7 @@
  :more-info
  "https://web.archive.org/web/20120819044459/http://www.roysac.com/thedrawfonts-tdf.asp",
  :url "",
+ :example-text "ANSI",
  :font-sym ansi-shadow,
  :widest-char "M",
  :char-height 7,
@@ -1700,6 +1694,7 @@
   "   ░       ░      ░                     ░ ░"
   " ░                                      ░ ░"],
  :desc "Original font name: \"Bloody\"",
+ :example-text "Drippy",
  :font-sym drippy,
  :widest-char "M",
  :char-height 10,
@@ -3456,6 +3451,7 @@
   "           |___/"],
  :desc
  "Big by Glenn Chappell 4/93 -- based on Standard\nIncludes ISO Latin-1\nGreek characters by Bruce Jakeway <pbjakeway@neumann.uwaterloo.ca>\nfiglet release 2.2 -- November 1996\nPermission is hereby given to modify this font, as long as the\nmodifier's name is placed on a comment line.\n\nModified by Paul Burton <solution@earthlink.net> 12/96 to include new parameter\nsupported by FIGlet and FIGWin.  May also be slightly modified for better use\nof new full-width/kern/smush alternatives, but default output is NOT changed.",
+ :example-text "Big",
  :font-sym big,
  :widest-char "W",
  :char-height 8,
@@ -4730,6 +4726,7 @@
   "               \\______/                                                  \\______/"],
  :desc
  "bigmoney-nw : by nathan bloomfield (xzovik@gmail.com)\n  based on art from the legendary MAKEMONEYFAST chain letter\n\n  History:\n  5-30-2007 : first version (required characters only)",
+ :example-text "Money",
  :font-sym big-money,
  :widest-char "@",
  :char-height 11,
@@ -6504,6 +6501,7 @@
   "|_|   |_| \\_____/  \\_____/ |_|   |_||_____/  |_______)|_____/"],
  :desc
  "Rounded by Nick Miners N.M.Miners@durham.ac.uk\n        May 1994",
+ :example-text "Rounded",
  :font-sym rounded,
  :widest-char "#",
  :char-height 7,
@@ -7709,6 +7707,7 @@
   "                \\/__/         \\/__/         \\/__/         \\/__/                       \\|__|                     \\/__/"],
  :desc
  "Figlet conversion by Kent Nassen (kentn@cyberspace.org), 8-10-94, based\non the fonts posted by Lennert Stock:\n\nFrom: stock@fwi.uva.nl (Lennert Stock)\nDate: 15 Jul 1994 00:04:25 GMT\n\nHere are some fonts. Non-figlet I'm afraid, if you wanna convert them, be\nmy guest. I posted the isometric fonts before.\n\n------------------------------------------------------------------------------\n\n     .x%%%%%%x.                                             .x%%%%%%x.\n    ,%%%%%%%%%%.                                           .%%%%%%%%%%.\n   ,%%%'  )'  \\)                                           :(  `(  `%%%.\n  ,%x%)________) --------- L e n n e r t   S t o c k       ( _   __ (%x%.\n  (%%%~^88P~88P|                                           |~=> .=-~ %%%)\n  (%%::. .:,\\ .'                                           `. /,:. .::%%)\n  `;%:`\\. `-' |                                             | `-' ./':%:'\n   ``x`. -===.'                   stock@fwi.uva.nl -------- `.===- .'x''\n    / `:`.__.;                                               :.__.':' \\\n .d8b.     ..`.                                             .'..     .d8b.",
+ :example-text "ABCDE",
  :font-sym isometric-1,
  :widest-char "A",
  :char-height 11,
@@ -9545,3 +9544,13 @@
    :width 0,
    :height 11,
    :missing? true}}})
+
+(def
+ fonts-by-kw
+ {:miniwi miniwi,
+  :ansi-shadow ansi-shadow,
+  :drippy drippy,
+  :big big,
+  :big-money big-money,
+  :rounded rounded,
+  :isometric-1 isometric-1})

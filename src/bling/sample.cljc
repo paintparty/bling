@@ -358,55 +358,48 @@
   (def rounded bling.fonts/rounded)
   (def isometric-1 bling.fonts/isometric-1))
 
-(def example-text-by-font-sym
-  {'miniwi      "Miniwi"
-   'ansi-shadow "Ansi"
-   'drippy      "Drippy"
-   'big         "Big"
-   'big-money   "Money"
-   'rounded     "Rounded"
-   'isometric-1 "ABCDE"})
 
 ;; For QA
 ;; Prints one banner per font, in neutral
 (defn print-bling-banner-font-samples []
  (doseq [{:keys [font] :as m}
          [
-          {:font               miniwi
+          {:font               :miniwi
            :gradient-colors    [:purple :orange]
            :gradient-direction :to-right}
-          {:font               ansi-shadow
+          {:font               :ansi-shadow
            :gradient-colors    [:warm :cool]
            :gradient-direction :to-top}
-          {:font               drippy
+          {:font               :drippy
            :gradient-colors    [:red :magenta]
            :gradient-direction :to-bottom}
-          {:font               big
+          {:font               :big
            :font-weight        :bold
            :gradient-colors    [:yellow :purple]
            :gradient-direction :to-top}
-          {:font               big-money
+          {:font               :big-money
            :gradient-colors    [:green :blue]
            :gradient-direction :to-top}
-          {:font               rounded
+          {:font               :rounded
            :gradient-colors    [:cool :warm]
            :gradient-direction :to-left
            :gradient-shift     2}
-          {:font        isometric-1
+          {:font        :isometric-1
            :font-weight :bold
            :gradient-colors    [:red :magenta]
            :gradient-direction :to-right}
           ]]
    (do
      (println (str "\n\n"
-                   (symbol (str "bling.fonts/" (:font-sym font)))
+                   font
                    "\n"))
      (println (bling.banner/banner
                (assoc m
                       :text
-                      (->> font
-                           :font-sym
-                           (get example-text-by-font-sym)))))
+                      (or (some->> font
+                                   (get bling.fonts/fonts-by-kw)
+                                   :example-text)
+                          "Example"))))
 
      ;; For showing upper-case
      #_(when-not (contains? #{"ANSI Shadow" "Isometric 1" "Drippy"} font-name)
@@ -418,13 +411,13 @@
 ;; Prints every bling banner font (all the characters), over six rows
 (defn print-bling-banner-font-collection []
  (doseq [font
-         [miniwi
-          ansi-shadow
-          drippy
-          big
-          big-money
-          rounded
-          isometric-1]
+         [:miniwi
+          :ansi-shadow
+          :drippy
+          :big
+          :big-money
+          :rounded
+          :isometric-1]
         :let [gs 3
               ;; fw "normal"
               fw :bold]]
@@ -445,25 +438,28 @@
         :gradient-shift gs}))))))
 
 ;; Prints all gradients 
+;; TODO use the actual font
+;; - put :example text in the font
+;; 
 (defn print-bling-banner-gradients 
   [{:keys [select-fonts display-labels?]}]
-  (doseq [[_ {:keys [font-name]
-              :as   font}]
+  (doseq [[font-kw font]
           (if (seq select-fonts)
-            (select-keys bling.fontlib/fonts-by-sym select-fonts)
-            bling.fontlib/fonts-by-sym)]
+            (select-keys bling.fonts/fonts-by-kw select-fonts)
+            bling.fonts/fonts-by-kw)]
     (doseq [[k v] bling.banner/gradient-pairs-map]
       (doseq [direction [:to-right :to-left :to-top :to-bottom]]
-        (let [grd {:gradient-colors    [k v]
-                   :gradient-direction direction}]
-          (when display-labels? (println grd))
+        (let [opts {:gradient-colors    [k v]
+                    :gradient-direction direction
+                    :font               font-kw
+                    :text               (or (some->> font :example-text)
+                                            "Example")}]
+          (when display-labels?
+            (println)
+            (pprint (assoc opts :font font-kw) {:max-width 33})
+            (println))
           (print-bling 
-           (bling.banner/banner 
-            (merge grd
-                   {:font font
-                    :text (->> font
-                               :font-sym
-                               (get example-text-by-font-sym))}))))))))
+           (bling.banner/banner opts)))))))
 
 
 ;; Prints cool to warm gradients with shifts
@@ -491,13 +487,14 @@
 (defn print-bling-banner-bold-font []
   (println "\n\n")
   (doseq [k [:bold :normal]]
-    (println (str "with font-weight " k "\n"))
-    (print-bling (bling.banner/banner 
-                  {:font               bling.fonts/big-money
-                   :font-weight        k
-                   :gradient-colors    [:cool :warm]
-                   :gradient-direction :to-right
-                   :text               "ABCDEFG"}))))
+    (let [opts {:font               :big-money
+                :font-weight        k
+                :gradient-colors    [:cool :warm]
+                :gradient-direction :to-right
+                :text               "ABCDEFG"}]
+      (pprint opts)
+      (println)
+      (print-bling (bling.banner/banner opts)))))
 
 ;; For QA
 ;; Print with contrast options
@@ -512,7 +509,7 @@
           (println)
           (print-bling (bling.banner/banner 
                         (merge opts 
-                               {:font     bling.fonts/ansi-shadow
+                               {:font     :ansi-shadow
                                 :gradient grd
                                 :contrast k
                                 :text     "ABCDEFG"}))))))))
@@ -534,7 +531,7 @@
            ]]
     (println (str "\nBad option for " (ffirst m)))
     (print-bling (bling.banner/banner 
-                  (merge {:font bling.fonts/ansi-shadow
+                  (merge {:font :ansi-shadow
                           :text "TEST"}
                          m)))))
 
