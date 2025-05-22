@@ -1044,19 +1044,20 @@
    ```(bling [:red (banner {:text \"Hello\"})])```
 
    
-   | Key                   | Pred       | Description   |
-   | :---------------      | -----------| ------------- |
-   | `:font`               | `map?`     | Must be one of the fonts that ships with Bling: `bling.fonts/ansi-shadow`,  `bling.fonts/big-money` , `bling.fonts/big`, `bling.fonts/miniwi`, `bling.fonts/drippy,` or `bling.fonts/isometric-1`. Defaults to `bling.fonts/ansi-shadow`. |
-   | `:text`               | `string?`  | The text to set in the banner.
-   | `:font-weight`        | `keyword?` | If set to bold, each subchar in figlet characters will be bolded. Only applies when a gradient is set.
-   | `:gradient-colors`    | `vector?`  | Expects a vector of 2 keywords. Only the following color pairs are valid: `[:green :blue]`, `[:red :magenta]`, `[:yellow :purple]`, `[:orange :purple]`, `[:cool :warm]`.  Only applies to terminal emulator printing|
-   | `:gradient-direction` | `keyword?` | Expects a keyword. Must be one of: `:to-top`, `:to-bottom`, `:to-right`, and `:to-left`.  Only applies to terminal emulator printing|
-   | `:gradient-shift`     | `int?`     | If gradient is `warm` / `cool` pair, this will shift the hue. `0-5`. Defaults to `0`.|
-   | `:contrast`           | `keyword?` | If gradient is set, this will force an overall lighter or darker tone. Defaults to `medium`. If the user has a `BLING_MOOD` env var set, it will default to `high` in order to optimize contrast for the users terminal theme (light or dark) |
-   | `:margin-top`         | `int?`     | Amount of margin (in newlines) at top, outside banner. <br>Defaults to `1`. Only applies to terminal emulator printing. |
-   | `:margin-bottom`      | `int?`     | Amount of margin (in newlines) at bottom, outside banner. <br>Defaults to `0`. Only applies to terminal emulator printing. |
-   | `:margin-left`        | `int?`     | Amount of margin (in blank character spaces) at left, outside banner. <br>Defaults to `0`. Only applies to terminal emulator printing. |
-   | `:margin-right`       | `int?`     | Amount of margin (in blank character spaces) at right, outside banner. <br>Defaults to `0`. Only applies to terminal emulator printing. |"
+| Key                   | Pred       | Description   |
+| :---------------      | -----------| ------------- |
+| `:font`               | `map?`     | Must be one of the fonts that ships with Bling: `bling.fonts/ansi-shadow`,  `bling.fonts/big-money` , `bling.fonts/big`, `bling.fonts/miniwi`, `bling.fonts/drippy,` or `bling.fonts/isometric-1`. Defaults to `bling.fonts/ansi-shadow`. |
+| `:text`               | `string?`  | The text to set in the banner.
+| `:font-weight`        | `keyword?` | If set to `:bold`, each subchar in figlet characters will be bolded. Only applies when a gradient is set.
+| `:gradient-colors`    | `vector?`  | Expects a vector of 2 keywords. Only the following color pairs are valid: `[:green :blue]`, `[:red :magenta]`, `[:yellow :purple]`, `[:orange :purple]`, `[:cool :warm]`.  Only applies to terminal emulator printing|
+| `:gradient-direction` | `keyword?` | Expects a keyword. Must be one of: `:to-top`, `:to-bottom`, `:to-right`, and `:to-left`.  Only applies to terminal emulator printing|
+| `:gradient-shift`     | `int?`     | If gradient is `[:warm :cool]` pair, this will shift the hue. `0-5`. Defaults to `0`.|
+| `:contrast`           | `keyword?` | If gradient is set, this will force an overall lighter or darker tone. Defaults to `:medium`. If the user has a `BLING_MOOD` env var set, it will default to `:high` in order to optimize contrast for the users terminal theme (light or dark) |
+| `:margin-top`         | `int?`     | Amount of margin (in newlines) at top, outside banner. <br>Defaults to `1`. Only applies to terminal emulator printing. |
+| `:margin-bottom`      | `int?`     | Amount of margin (in newlines) at bottom, outside banner. <br>Defaults to `0`. Only applies to terminal emulator printing. |
+| `:margin-left`        | `int?`     | Amount of margin (in blank character spaces) at left, outside banner. <br>Defaults to `0`. Only applies to terminal emulator printing. |
+| `:margin-right`       | `int?`     | Amount of margin (in blank character spaces) at right, outside banner. <br>Defaults to `0`. Only applies to terminal emulator printing. |"
+
   [m]
  #?(:cljs
     (if node?
