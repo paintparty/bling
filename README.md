@@ -619,7 +619,7 @@ smushing. Figlet banners only work in terminal context (JVM Clojure or Node.js C
 
 For a quick sample in your terminal:
 ```clojure
-clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.7.0-SNAPSHOT"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
+clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.7.0-SNAPSHOT"}}}' -e "(require '[bling.sample]) (println (bling.sample/print-bling-banner-font-samples))"
 ```
 ### Banner usage
 
@@ -688,18 +688,19 @@ Below are some example calls and a screenshot of the results.
 
 ### All the options for `bling.banner/banner` 
 
-| Key               | Pred       | Description   |
-| :---------------  | -----------| ------------- |
-| `:font`           | `map?`     | Must be one of the fonts that ships with Bling:<br><br> `bling.fonts/ansi-shadow`<br> `bling.fonts/big-money`<br> `bling.fonts/big`<br> `bling.fonts/miniwi`<br> `bling.fonts/drippy`<br>`bling.fonts/isometric-1`<br><br>Defaults to `bling.fonts/ansi-shadow`.<br>|
-| `:text`           | `string?`  | The text to set in the banner.
-| `:font-weight`    | `keyword?` | If set to bold, each sub character within figlet character will be bolded. Only applies when a gradient is set.
-| `:gradient`       | `string?`  | Expects a string as first argument representing a linear-gradient in standard CSS syntax such as:<br>`"to bottom, green, blue"`<br>`"to bottom, blue, green"`<br>`"to right, warm, cool"`<br>`"to left, red, magenta"`<br><br>Only the following color pairs are valid (order can be reversed):<br>`green, blue`<br>`red, magenta`<br>`yellow, purple`<br>`orange, purple`<br>`cool, warm`.<br><br>Valid directions are:<br>`to top`<br>`to bottom`<br>`to right`<br>`to left`.<br><br>Only applies to terminal emulator printing.|
-| `:gradient-shift` | `int?`     | If gradient is `warm` / `cool` pair, this will shift the hue. `0-5`. Defaults to `0`.|
-| `:contrast`       | `keyword?` | If gradient is set, this will force an overall lighter or darker tone. Defaults to `medium`. If the user has a `BLING_MOOD` env var set, it will default to `high` in order to optimize contrast for the users terminal theme (light or dark) |
-| `:margin-top`     | `int?`     | Amount of margin (in newlines) at top, outside banner.<br>Defaults to `1`. Only applies to terminal emulator printing. |
-| `:margin-bottom`  | `int?`     | Amount of margin (in newlines) at bottom, outside banner.<br>Defaults to `0`. Only applies to terminal emulator printing. |
-| `:margin-left`    | `int?`     | Amount of margin (in blank character spaces) at left, outside banner.<br>Defaults to `0`. Only applies to terminal emulator printing. |
-| `:margin-right`   | `int?`     | Amount of margin (in blank character spaces) at right, outside banner.<br>Defaults to `0`. Only applies to terminal emulator printing. |
+| Key                   | Pred       | Description   |
+| :---------------      | -----------| ------------- |
+| `:font`               | `map?`     | Must be one of the fonts that ships with Bling: `bling.fonts/ansi-shadow`,  `bling.fonts/big-money` , `bling.fonts/big`, `bling.fonts/miniwi`, `bling.fonts/drippy,` or `bling.fonts/isometric-1`. Defaults to `bling.fonts/ansi-shadow`. |
+| `:text`               | `string?`  | The text to set in the banner.
+| `:font-weight`        | `keyword?` | If set to `:bold`, each subchar in figlet characters will be bolded. Only applies when a gradient is set.
+| `:gradient-colors`    | `vector?`  | Expects a vector of 2 keywords. Only the following color pairs are valid: `[:green :blue]`, `[:red :magenta]`, `[:yellow :purple]`, `[:orange :purple]`, `[:cool :warm]`.  Only applies to terminal emulator printing|
+| `:gradient-direction` | `keyword?` | Expects a keyword. Must be one of: `:to-top`, `:to-bottom`, `:to-right`, and `:to-left`.  Only applies to terminal emulator printing|
+| `:gradient-shift`     | `int?`     | If gradient is `[:warm :cool]` pair, this will shift the hue. `0-5`. Defaults to `0`.|
+| `:contrast`           | `keyword?` | If gradient is set, this will force an overall lighter or darker tone. Defaults to `:medium`. If the user has a `BLING_MOOD` env var set, it will default to `:high` in order to optimize contrast for the users terminal theme (light or dark) |
+| `:margin-top`         | `int?`     | Amount of margin (in newlines) at top, outside banner. <br>Defaults to `1`. Only applies to terminal emulator printing. |
+| `:margin-bottom`      | `int?`     | Amount of margin (in newlines) at bottom, outside banner. <br>Defaults to `0`. Only applies to terminal emulator printing. |
+| `:margin-left`        | `int?`     | Amount of margin (in blank character spaces) at left, outside banner. <br>Defaults to `0`. Only applies to terminal emulator printing. |
+| `:margin-right`       | `int?`     | Amount of margin (in blank character spaces) at right, outside banner. <br>Defaults to `0`. Only applies to terminal emulator printing. |"
 
 <br>
 
