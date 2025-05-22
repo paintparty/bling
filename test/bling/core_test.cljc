@@ -6,6 +6,8 @@
    [bling.macros :refer [?]] ;;<-- just for debugging
    [bling.core :refer [bling print-bling callout point-of-interest bling-colors*]]
    [bling.sample :as sample]
+   [bling.fonts]
+   [bling.banner]
    [clojure.pprint :refer [pprint]]
    [clojure.string :as string]))
 
@@ -339,24 +341,44 @@
    :margin-left 2
    :theme :gutter})
 
-(defn visual-test-suite []
-   (random-callouts)
-   (bling-basics)
-   (examples-warnings-for-bad-arg-to-callout)
-  )
+;; Single banner
+#_(print-bling 
+ (bling.banner/banner 
+  {
+   :font               bling.fonts/ansi-shadow
+  ;;  :font-weight        :bold
+   :text               "ABCDEFG"
+   :gradient-colors    [:cool :warm]
+  ;;  :gradient-direction nil
+  ;;  :gradient-shift      0
+   :contrast           :blow
+  ;;  :margin-bottom      1
+   ;; :display-missing-chars? true
+   }))
 
+
+;; Single colors
+;; (print-bling [:bold.light-blue "Hello"])
+;; (print-bling [:bold.blue "Hello"])
+;; (print-bling [:bold.dark-blue "Hello"])
+;; (print-bling [:bold.blue "Hello"])
+;; (?sgr (bling [:bold.red "hello"]))
+
+
+(defn visual-test-suite []
+  (random-callouts)
+  (bling-basics)
+  (examples-warnings-for-bad-arg-to-callout))
 
 #_(visual-test-suite)
 
-
-
 #_(bling.sample/sample)
 
-;; (sample/print-bling-banner-font-collection)
+#_(sample/print-bling-banner-font-collection)
 
-;; (sample/print-bling-banner-font-samples)
+#_(sample/print-bling-banner-font-samples)
 
-(sample/print-bling-banner-gradients 
+#_(sample/print-bling-banner-gradients 
  {:select-fonts [
                  ;; 'isometric-1
                  'ansi-shadow
@@ -365,24 +387,14 @@
 
 #_(sample/print-bling-banner-gradient-warm-cool)
 
-;; (sample/print-bling-banner-bold-font)
+#_(sample/print-bling-banner-bold-font)
 
-;; (sample/print-bling-banner-gradient-contrast-options)
+#_(sample/print-bling-banner-gradient-contrast-options)
 
-;; (sample/print-bling-banners-with-bad-option-values)
+#_(sample/print-bling-banners-with-bad-option-values)
 
-;; (pprint
-;;  (get-in bling.fonts/isometric-1 
-;;          [:chars-array-map "a"]))
+#_(pprint
+   (get-in bling.fonts/isometric-1 
+           [:chars-array-map "a"]))
 
-;; (sample/print-bling-color-contrast)
-
-;; (print-bling [:bold.light-blue "Hello"])
-
-;; (print-bling [:bold.blue "Hello"])
-
-;; (print-bling [:bold.dark-blue "Hello"])
-
-;; (print-bling [:bold.blue "Hello"])
-
-;; (?sgr (bling [:bold.red "hello"]))
+#_(sample/print-bling-color-contrast)
