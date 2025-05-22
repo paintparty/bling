@@ -1684,7 +1684,8 @@
        :string))
 
 (defn ^:public hifi
-  "Pretty-printed string with syntax-coloring. Dispatches to fireworks.core/_p2"
+  "Hi-fidelity, pretty-printed string with syntax-coloring. Dispatches to
+   fireworks.core/_p2"
   ([x]
    (hifi x nil))
   ([x opts]
@@ -1692,8 +1693,8 @@
 
 
 (defn ^:public print-hifi
-  "Prints a pretty-printed string with syntax-coloring. Dispatches to
-   fireworks.core/_p2. Sugar for (println (bling.core/hifi x))"
+  "Prints a hi-fidelity, pretty-printed string with syntax-coloring. Dispatches
+   to fireworks.core/_p2. Sugar for (println (bling.core/hifi x))"
   ([x]
    (print-hifi x nil))
   ([x opts]
