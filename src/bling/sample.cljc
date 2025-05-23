@@ -6,9 +6,17 @@
    [bling.banner :refer [banner]]
    [bling.fontlib]
    [bling.fonts]
-   [bling.macros :refer [keyed start-dbg! stop-dbg! nth-not-found]]
-   [bling.core :refer [?sgr bling bling-data bling-data* callout print-bling point-of-interest]]
-   ))
+   [bling.macros :refer [keyed
+                         start-dbg!
+                         stop-dbg!
+                         nth-not-found]]
+   [bling.core :refer [?sgr
+                       bling
+                       bling-data
+                       bling-data*
+                       callout
+                       print-bling
+                       point-of-interest]]))
 
 (def ^:private colors-ordered
   ["system-black"   
@@ -116,25 +124,28 @@
    (defn print-commented-example-call [m k body]
      (println 
       (str
-       "\n\n\n"
+       "\n\n\n\n"
        (bling [k ";; (callout "])
        (string/join
         (bling [k "\n;; "]) 
-        (map-indexed (fn [i s]
-                       (bling [k
-                               (str (if (zero? i)
-                                      ""
-                                      "         ")
-                                    s)])) 
-                     (string/split (string/replace 
-                                    (with-out-str (println m))
-                                    #"\n$"
-                                    "")
-                                   #",")))
+        (map-indexed 
+         (fn [i s]
+           (bling [k
+                   (str (if (zero? i)
+                          ""
+                          "         ")
+                        s)])) 
+         (string/split (string/replace 
+                        (with-out-str (println m))
+                        #"\n$"
+                        "")
+                       #",")))
        "\n"
        (bling [k (str ";;          \"" (string/replace body #"\n" "\\\\n"))])
        (bling [k "\""])
-       (bling [k "\n;; =>\n"])))))
+       #_(bling [k "\n;; =>\n"])
+       (bling [k "\n"])))))
+
 
 (defn callout+
   [{callout-type  :type
@@ -154,6 +165,7 @@
         k :italic.subtle]
       #?(:clj (print-commented-example-call m k body))
       (callout (assoc m :margin-top 0 :margin-bottom 0) body)))
+
 
 (defn print-comment [s]
   (printer (bling [:italic.subtle s])))
@@ -546,8 +558,7 @@
            "blue"   
            "purple" 
            "magenta"
-           "gray"   
-           ]]
+           "gray"]]
     (doseq [contrast [:low :medium :high ]]
       (println (bling [{:contrast         contrast 
                         :color            color}

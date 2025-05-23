@@ -39,6 +39,7 @@
 
 (def bling-mood-names-set #{"light" "dark" "medium"})
 
+;; Maybe move this to fireworks, as fireworks needs to check for BLING_MOOD as well?
 ;; TODO - Refactor with warning template in bling.core
 (defn invalid-bling-mood-warning!
   [s]

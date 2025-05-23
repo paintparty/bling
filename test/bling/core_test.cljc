@@ -3,7 +3,7 @@
 (ns bling.core-test
   (:require
    #?(:cljs [bling.js-env :refer [node?]])
-   ;; [fireworks.core :refer [? !? ?> !?>]] ;; <-just for debugging
+   [fireworks.core :refer [? !? ?> !?>]] ;; <-just for debugging
    [bling.core :refer [bling print-bling callout point-of-interest bling-colors*]]
    [bling.sample :as sample]
    [bling.fonts]
@@ -372,7 +372,7 @@
 
 #_(visual-test-suite)
 
-(bling.sample/sample)
+#_(bling.sample/sample)
 
 #_(sample/print-bling-banner-font-collection)
 
