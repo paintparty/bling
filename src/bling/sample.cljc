@@ -16,7 +16,8 @@
                        bling-data*
                        callout
                        print-bling
-                       point-of-interest]]))
+                       point-of-interest
+                       explain-malli]]))
 
 (def ^:private colors-ordered
   ["system-black"   
@@ -564,17 +565,138 @@
                         :color            color}
                        (str "Contrast " contrast)])))))  
 
+
+(def Address
+  [:map
+   [:id string?]
+   [:tags [:set keyword?]]
+   [:address
+    [:map
+     [:street string?]
+     [:city string?]
+     [:zip int?]
+     [:lonlat [:tuple double? double?]]]]])
+
+(def Address-quoted
+  '[:map
+    [:id string?]
+    [:tags [:set keyword?]]
+    [:address
+     [:map
+      [:street string?]
+      [:city string?]
+      [:zip int?]
+      [:lonlat [:tuple double? double?]]]]])
+
+(defn- print-explain-malli-example-header
+  ([s v]
+   (print-explain-malli-example-header s v nil))
+  ([s v opts]
+   (println 
+    (str "\n"
+         s
+         "\n\n"
+         (with-out-str
+           (pprint 
+            (if opts
+              (list 'explain-malli Address-quoted v opts)
+              (list 'explain-malli Address-quoted v))))))))
+
+(defn explain-malli-missing-map-key
+  []
+  (let [v {:id      "Lillan"
+           :tags    #{:artesan :coffee :garden}
+           :address {:street "Ahlmanintie 29"
+                     :zip    33100
+                     :lonlat [61.4858322, 87.34]}}]
+    (print-explain-malli-example-header
+     "The result of bling.core/explain-malli, highlighting a collection with a missing key."
+     v)
+    (explain-malli Address v)))
+
+(defn explain-malli-default []
+  (let [v {:id      "Lillan"
+           :tags    #{:artesan "coffee" :garden}
+           :address {:street "Ahlmanintie 29"
+                     :city   "Tempare"
+                     :zip    33100
+                     :lonlat [61.4858322, 87.34]}}]
+    (print-explain-malli-example-header
+     "The result of bling.core/explain-malli, with default options:"
+     v)
+    (explain-malli Address v)))
+
+
+(defn explain-malli-no-schema []
+  (let [v {:id      "Lillan"
+           :tags    #{:artesan "coffee" :garden}
+           :address {:street "Ahlmanintie 29"
+                     :city   "Tempare"
+                     :zip    33100
+                     :lonlat [61.4858322, 87.34]}}
+        opts {:display-schema? false}]
+    (print-explain-malli-example-header
+     "The result of bling.core/explain-malli, with :display-schema? set to false:"
+     v
+     opts)
+    (explain-malli Address v opts)))
+
+
+(defn explain-malli-with-source-info []
+  (let [v {:id      "Lillan"
+           :tags    #{:artesan "coffee" :garden}
+           :address {:street "Ahlmanintie 29"
+                     :city   "Tempare"
+                     :zip    33100
+                     :lonlat [61.4858322, 87.34]}}
+        opts {:file            "myns.core"
+              :function-name   "my-function"
+              :line            21
+              :column          33
+              ;; :display-explain-data? true
+              ;; :spacing         :compact
+              }]
+
+    (print-explain-malli-example-header
+     "The result of bling.core/explain-malli, with :display-schema? set to false:"
+     v
+     opts)
+    (explain-malli Address v opts)))
+
+
+(defn explain-malli-with-explain-data []
+  (let [v {:id      "Lillan"
+           :tags    #{:artesan "coffee" :garden}
+           :address {:street "Ahlmanintie 29"
+                     :city   "Tempare"
+                     :zip    33100
+                     :lonlat [61.4858322, 87.34]}}
+        opts {:file            "myns.core"
+              :function-name   "my-function"
+              :line            21
+              :column          33
+              :display-explain-data? true
+              ;; :spacing         :compact
+              }]
+    (print-explain-malli-example-header
+     "The result of bling.core/explain-malli, with :display-schema? set to false:"
+     v
+     opts)
+    (explain-malli Address v opts)))
+
+
+(defn explain-malli-examples []
+  (explain-malli-default)
+  (explain-malli-missing-map-key)
+  (explain-malli-no-schema)
+  (explain-malli-with-source-info)
+  (explain-malli-with-explain-data))
+
+
+
 ;; Make example figlets for banner images
 
 ;; Make exhaustive banner example image
 
 ;; docs for banner
-
-
-
-
- 
-
-
-
 

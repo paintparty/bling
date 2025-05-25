@@ -398,3 +398,5 @@
            [:chars-array-map "a"]))
 
 #_(sample/print-bling-color-contrast)
+
+#_(sample/explain-malli-examples)

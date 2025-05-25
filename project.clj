@@ -8,7 +8,8 @@
                  "../fireworks/src"
                  ]
   :dependencies [[org.clojure/clojure "1.10.3"]
-                 [io.github.paintparty/fireworks "0.12.0-SNAPSHOT"]]
+                 [io.github.paintparty/fireworks "0.12.0-SNAPSHOT"]
+                 [metosin/malli "0.18.0"]]
   :repl-options {:init-ns bling.core}
   :deploy-repositories [["clojars" {:url           "https://clojars.org/repo"
                                     :sign-releases false}]])
