@@ -10,14 +10,14 @@
                          start-dbg!
                          stop-dbg!
                          nth-not-found]]
+   [bling.explain :refer [explain-malli]]
    [bling.core :refer [?sgr
                        bling
                        bling-data
                        bling-data*
                        callout
                        print-bling
-                       point-of-interest
-                       explain-malli]]))
+                       point-of-interest]]))
 
 (def ^:private colors-ordered
   ["system-black"   

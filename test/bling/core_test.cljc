@@ -370,7 +370,9 @@
   (bling-basics)
   (examples-warnings-for-bad-arg-to-callout))
 
-#_(visual-test-suite)
+(visual-test-suite)
+
+#_(sample/explain-malli-examples)
 
 #_(bling.sample/sample)
 
