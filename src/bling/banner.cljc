@@ -1,15 +1,13 @@
 (ns bling.banner
   (:require
-   [fireworks.core :refer [? !? ?> !?>]]
-   [bling.macros :refer [keyed start-dbg! stop-dbg! nth-not-found]]
+   [bling.macros :refer [keyed start-dbg! stop-dbg! nth-not-found ?]]
    [bling.util :as util :refer [sjr maybe]]
    [bling.defs :as defs]
    [clojure.string :as string]
-   #?(:cljs [bling.js-env :refer [node?]])))
+   [bling.fonts]
+   #?(:cljs [bling.js-env :refer [node?]])
+   ))
 
-#?(:clj  (require '[bling.fonts])
-   :cljs (when node?
-           (require '[bling.fonts])))
 
 ;; Change to true for dev, for local debugging inside functions
 #_(when false
@@ -826,7 +824,6 @@
           default-font-kw           :ansi-shadow
           default-font              (get bling.fonts/fonts-by-kw default-font-kw)
           font                      (or resolved-user-font default-font)
-          ;; valid-font?            (? (valid-font?* font))
           no-gradient?              (nil? gradient-colors)
           gradient-colors*          gradient-colors
           gradient-shift*           gradient-shift
