@@ -4,7 +4,7 @@
   (:require
    #?(:cljs [bling.js-env :refer [node?]])
    [fireworks.core :refer [? !? ?> !?>]] ;; <-just for debugging
-   [bling.core :refer [bling print-bling callout point-of-interest bling-colors*]]
+   [bling.core :refer [?sgr bling print-bling callout point-of-interest bling-colors*]]
    [bling.sample :as sample]
    [bling.fonts]
    [bling.banner]
@@ -370,7 +370,7 @@
   (bling-basics)
   (examples-warnings-for-bad-arg-to-callout))
 
-(visual-test-suite)
+#_(visual-test-suite)
 
 #_(sample/explain-malli-examples)
 
