@@ -588,6 +588,7 @@
       [:zip int?]
       [:lonlat [:tuple double? double?]]]]])
 
+
 (defn- print-explain-malli-example-header
   ([s v]
    (print-explain-malli-example-header s v nil))
@@ -602,6 +603,21 @@
               (list 'explain-malli Address-quoted v opts)
               (list 'explain-malli Address-quoted v))))))))
 
+
+(defn explain-malli-bad-map-value
+  []
+  (let [v {:id      "Lillan"
+           :tags    #{:artesan :coffee :garden}
+           :address {:street "Ahlmanintie 29"
+                     :zip    "33100"
+                     :city   "Tempare"
+                     :lonlat [61.4858322, 87.34]}}]
+    (print-explain-malli-example-header
+     "The result of bling.core/explain-malli, highlighting a bad value in a map."
+     v)
+    (explain-malli Address v)))
+
+
 (defn explain-malli-missing-map-key
   []
   (let [v {:id      "Lillan"
@@ -613,6 +629,7 @@
      "The result of bling.core/explain-malli, highlighting a collection with a missing key."
      v)
     (explain-malli Address v)))
+
 
 (defn explain-malli-default []
   (let [v {:id      "Lillan"
@@ -684,19 +701,24 @@
      opts)
     (explain-malli Address v opts)))
 
+(defn explain-malli-bad-key-in-map []
+  (println "\nThe result of bling.core/explain-malli, with bad key value in map:")
+  (explain-malli [:map-of :keyword :int] {"foo" 2}))
 
 (defn explain-malli-examples []
   (explain-malli-default)
   (explain-malli-missing-map-key)
+  (explain-malli-bad-map-value)
+  (explain-malli-bad-key-in-map)
   (explain-malli-no-schema)
   (explain-malli-with-source-info)
-  (explain-malli-with-explain-data))
+  (explain-malli-with-explain-data)
+  )
+
 
 
 
 ;; Make example figlets for banner images
-
 ;; Make exhaustive banner example image
-
 ;; docs for banner
 
