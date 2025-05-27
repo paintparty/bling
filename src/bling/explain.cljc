@@ -40,7 +40,7 @@
   (cond missing-key?
         (->> problem :in drop-last (into []))
         (target-key? problem v)
-        (conj (:in problem) :fireworks.truncate/map-key)
+        (conj (:in problem) :fireworks.highlight/map-key)
         :else
         (:in problem)))
 
