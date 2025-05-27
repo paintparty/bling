@@ -19,9 +19,13 @@
 &nbsp;•&nbsp;
 **[Basic Usage]**
 &nbsp;•&nbsp;
+**[Colors]**
+&nbsp;•&nbsp;
 **[Callout Blocks]**
 &nbsp;•&nbsp; 
 **[Error Templates]**
+&nbsp;•&nbsp; 
+**[Hifi]**
 &nbsp;•&nbsp; 
 **[Figlet Banners]**
 </div>
@@ -29,9 +33,11 @@
 [Features]: #features
 [Setup]: #setup
 [Basic Usage]: #basic-usage
+[Colors]: #the-bling-pallette
 [Callout Blocks]: #callout-blocks
 
 [Error Templates]: #templates-for-errors-and-warnings
+[Hifi]: #figlet-banners
 [Figlet Banners]: #figlet-banners
 [Interop]: #printing-conventions
 [Contributing]: #contributing
@@ -107,12 +113,25 @@ You can view an exhaustive sampling of Bling output by pasting this snippet into
 clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.7.0-SNAPSHOT"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
 ```
 <br>
-<br>
 
 To view the above sample with Babashka, paste this snippet into your terminal:
 
 ```clojure
 bb -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.7.0-SNAPSHOT"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
+```
+<br>
+
+### Enhanced contrast
+You can optionally set a `BLING_MOOD` environmental variable on your system, which will enhance the contrast of bling output on your computer.
+
+If you use a dark terminal theme:
+```
+export BLING_MOOD="dark"
+```
+
+If you use a light terminal theme:
+```
+export BLING_MOOD="light"
 ```
 
 <br>
@@ -299,7 +318,7 @@ If, for example, you wanted to print `[1 2 3]` in red, you will need to stringif
 <br>
 <br>
 
-### The Bling pallette 
+## The Bling pallette 
 
 Eleven carefully selected colors, from the [8-bit(256 colors)](https://en.m.wikipedia.org/wiki/Xterm#/media/File%3AXterm_256color_chart.svg), range(16-255) are available for use. All of these colors should display consistantly across most consoles on the end-user side. Don't expect all of the colors to pass the [strictest APCA contrast criterion](https://www.myndex.com/APCA/), but you can be sure of reasonable visibility on both light and dark backgrounds:
 
@@ -603,6 +622,26 @@ More example values of `2` for `:margin-left`, to increase the weight:
 
 <br>
 
+## High Fidelity printing
+
+Bling offers `bling.hifi` for colorized pretty-printing of Clojure, Java, and JavaScript data structures.
+`bling.hifi/hifi` will return an ansi-sgr decorated string, while `bling.hifi/print-hifi` will print such a string.
+
+Under the hood, the formatting/colorizing is achieved with <a href="https://github.com/paintparty/fireworks" target="_blank">Fireworks ↗</a>. By default, the theme of this output will be `Universal Neutral`. If you [set a valid `BLING_MOOD` env var](#enhanced-contrast), the theme of the `hifi` output will be `Alabaster Light` or `Alabaster Dark`. You can choose <a href="https://github.com/paintparty/fireworks?tab=readme-ov-file#theming" target="_blank">one of the other available themes ↗</a> by following the instructions in the Fireworks readme and <a href="https://github.com/paintparty/fireworks?tab=readme-ov-file#step-3" target="_blank">setting up a `config.edn` on your system ↗</a>. This config will also let you control many other aspects of the formatting with the `hifi` output.
+
+<br>
+
+<div align="center"><sub><b><i>Alabaster Dark&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</i></b></sub></div>
+<div align="center"><img src="resources/docs/chromed/themes/dark/Alabaster-Dark.png" width="534px"/></div>
+
+<div align="center"><sub><b><i>Alabaster Light&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</i></b></sub></div>
+<div align="center"><img src="resources/docs/chromed/themes/light/Alabaster-Light.png" width="534px"/></div>
+
+Check out <a href="https://github.com/paintparty/fireworks?tab=readme-ov-file#theming" target="_blank">the other available themes here ↗</a>
+
+<br>
+
+
 ## Figlet banners
 
 <p align="center">
@@ -625,13 +664,14 @@ clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.7.0-SNAPSHOT"}}}
 
 Require:
 ```Clojure
-(require '[bling.banner :refer [banner]])
+(require '[bling.banner :refer [banner]] 'bling.fonts)
 ```
 
 Or add to your namespace `:requires`:
 ```Clojure
 (ns myns.core
- (:require [bling.banner :refer [banner]])
+ (:require [bling.banner :refer [banner]]
+           bling.fonts])
 ```
 
 Available fonts:
@@ -645,48 +685,56 @@ bling.fonts/rounded
 bling.fonts/isometric-1
 ```
 
-Below are some example calls and a screenshot of the results.
+Below are the example calls that render the screenshot at the the top of this section.
 ```Clojure
 (banner 
- {:font     miniwi
-  :text     "Miniwi"
-  :gradient "to right, purple, orange"})
+ {:font               bling.fonts/miniwi
+  :text               "Miniwi"
+  :gradient-direction :to-right})
+  :gradient-colors    [:purple :orange]
 
 (banner
- {:font     ansi-shadow
-  :text     "Ansi"
-  :gradient "to top, warm, cool"}
+ {:font               bling.fonts/ansi-shadow
+  :text               "Ansi"
+  :gradient-direction :to-top}
+  :gradient-colors    [:warm :cool]
 
 (banner
- {:font     drippy
-  :text     "Drippy"
-  :gradient "to bottom, red, magenta"}
+ {:font               bling.fonts/drippy
+  :text               "Drippy"
+  :gradient-direction :to-bottom
+  :gradient-colors    [:red :magenta]}
 
 (banner
- {:font     big
-  :text     "Big"
-  :gradient "to top, yellow, purple"}
+ {:font               bling.fonts/big
+  :text               "Big"
+  :gradient-direction :to-top}
+  :gradient-colors    [:yellow :purple]}
 
 (banner
- {:font     big-money
-  :text     "Money"
-  :gradient "to top, green, blue"}
+ {:font               bling.fonts/big-money
+  :text               "Money"
+  :gradient-direction :to-top
+  :gradient-colors    [:green :blue]}
 
 (banner
- {:font        rounded
-  :font-weight :bold
-  :text        "Rounded" 
-  :gradient    "to left, cool, warm"}
+ {:font               bling.fonts/rounded
+  :font-weight        :bold
+  :text               "Rounded" 
+  :gradient-direction :to-left
+  :gradient-colors    [:cool :warm]}
 
 (banner
- {:font        isometric-1
-  :font-weight :bold
-  :text        "ABCDE"
-  :gradient    "to right, red, magenta"}
+ {:font               bling.fonts/isometric-1
+  :font-weight        :bold
+  :text               "ABCDE"
+  :gradient-direction :to-right
+  :gradient-colors    [:red :magenta]}
 ```
 
+<br>
 
-### All the options for `bling.banner/banner` 
+### All the options for `banner` 
 
 | Key                   | Pred       | Description   |
 | :---------------      | -----------| ------------- |
@@ -713,9 +761,9 @@ If you want a simple banner in a browser dev console, you can do the following:
 <br>
 
 ## Testing
-There is a set of visual test suites in `bling.core-test`.
+There is a visual test suite that can be run by calling `bling.core-test/visual-test-suite`.
 
-For visual testing of output in node / deno context first do:
+For visual testing of output in node / deno context first do (from the root of this repo):
 
 `shadow-cljs compile node-script`
 
