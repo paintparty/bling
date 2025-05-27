@@ -37,7 +37,7 @@
 [Callout Blocks]: #callout-blocks
 
 [Error Templates]: #templates-for-errors-and-warnings
-[Hifi]: #figlet-banners
+[Hifi]: #high-fidelity-printing
 [Figlet Banners]: #figlet-banners
 [Interop]: #printing-conventions
 [Contributing]: #contributing
