@@ -622,7 +622,7 @@ More example values of `2` for `:margin-left`, to increase the weight:
 
 <br>
 
-## High Fidelity printing
+## High Fidelity Printing
 
 Bling offers `bling.hifi` for colorized pretty-printing of Clojure, Java, and JavaScript data structures.
 `bling.hifi/hifi` will return an ansi-sgr decorated string, while `bling.hifi/print-hifi` will print such a string.
@@ -681,7 +681,7 @@ Or add to your namespace `:requires`:
            [bling.fonts.ansi-shadow :refer [ansi-shadow]]])
 ```
 
-The above `require` show usage of the `ansi-shadow` font. For performance reasons,
+The above `require` examples show usage of the `ansi-shadow` font. For performance reasons,
 each font is in its own namespace and must be explicitly required. All of the available fonts:
 ```Clojure
 bling.fonts.miniwi/miniwi
