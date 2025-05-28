@@ -7,6 +7,14 @@
    [bling.core :refer [?sgr bling print-bling callout point-of-interest bling-colors*]]
    [bling.sample :as sample]
    [bling.fonts]
+   [bling.fonts.miniwi :refer [miniwi]]
+   [bling.fonts.ansi-shadow :refer [ansi-shadow]]
+   [bling.fonts.drippy :refer [drippy]]
+   [bling.fonts.big :refer [big]]
+   [bling.fonts.big-money :refer [big-money]]
+   [bling.fonts.rounded :refer [rounded]]
+   [bling.fonts.isometric-1 :refer [isometric-1]]
+   [bling.fontlib]
    [bling.banner]
    [clojure.pprint :refer [pprint]]
    [clojure.string :as string]))
@@ -396,7 +404,7 @@
 #_(sample/print-bling-banners-with-bad-option-values)
 
 #_(pprint
-   (get-in bling.fonts/isometric-1 
+   (get-in isometric-1
            [:chars-array-map "a"]))
 
 #_(sample/print-bling-color-contrast)

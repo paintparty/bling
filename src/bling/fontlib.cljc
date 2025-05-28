@@ -7763,6 +7763,9 @@ $$@@
 ;; For manually generating bling.fonts namespace from babashka -----------------
 #?(:clj
    (do
+     (defn- pp-str [x]
+       (with-out-str (pprint x)))
+
      (defn- font-def-source-code [m font-sym]
        (let [commented-example-of-output    (some->> m
                                                      :example
@@ -7770,8 +7773,7 @@ $$@@
                                                      (str ";;  ")) 
 
              quoted-pretty-printed-font-map (-> m
-                                                pprint
-                                                with-out-str
+                                                pp-str
                                                 (string/replace #"\n$" "")
                                                 (->> (str "'")))]
          
@@ -7781,46 +7783,8 @@ $$@@
               "(def " (name font-sym) "\n"
               quoted-pretty-printed-font-map ")")))
 
-     (defn- font-defs [path]
-       (let [banner-fonts defs/banner-fonts-vec
-             banner-fonts-count (count banner-fonts)]
-         (str (string/join 
-               "\n\n\n"
-               (mapv #(font-def-source-code 
-                       (banner-font-array-map %)
-                       %)
-                     (do (println 
-                          (str
-                           "Creating bling.fonts namespace...\n\n"
-                           "Writing defs for the following " banner-fonts-count " fonts to\n"
-                           path
-                           "\n\n"
-                           (string/join "\n"
-                                        (mapv #(symbol (str "bling.fonts/" %))
-                                              banner-fonts)))
-                          )
-                         banner-fonts)))
 
-              ;; This creates fonts lut
-
-              ;; (def fonts-by-kw
-              ;;  {:miniwi miniwi,
-              ;;   :ansi-shadow ansi-shadow,
-              ;;   :drippy drippy,
-              ;;   :big big,
-              ;;   :big-money big-money,
-              ;;   :rounded rounded,
-              ;;   :isometric-1 isometric-1})
-
-              "\n\n"
-              (str (with-out-str 
-                     (pprint (list 'def
-                                   'fonts-by-kw 
-                                   (into {} 
-                                         (map (fn [sym] [(keyword sym) sym])
-                                              defs/banner-fonts-vec)))))))))
-
-     (defn write-fonts-ns!
+     (defn- write-fonts-ns!
        "This updates/generates a bling.fonts namespace.
       
         Used ocasionally during dev, when fonts are modified or added.
@@ -7830,12 +7794,58 @@ $$@@
         
         To call from bb (from the bling project root dir):
         bb bb-script.cljc"
+       [coll]
+       (let [reqs*           (map (fn [{:keys [font-sym font-ns]}]
+                                    [(symbol font-ns) :refer [font-sym]])
+                                  coll)
+             reqs            (cons :require reqs*)
+             ns-form         (list 'ns 'bling.fonts reqs)
+             fonts-by-kw-def (list 'def
+                                   'fonts-by-kw 
+                                   (into {} 
+                                         (map (fn [{:keys [font-sym]}]
+                                                [(keyword font-sym) font-sym])
+                                              coll)))
+             fonts-ns        "./src/bling/fonts.cljc"]
+         (println (str "Creating bling.fonts namespace @ " fonts-ns "\n\n"))
+         (spit fonts-ns
+               (str (pp-str ns-form)
+                    "\n\n\n"
+                    (pp-str fonts-by-kw-def))
+               :append false)))
+     
+
+     (defn write-font-namespaces!
+       "This updates/generates a namespace for each font, as well as a
+        bling.fonts namespace with contains a `fonts-by-kw` def.
+      
+        Used ocasionally during dev, when fonts are modified or added.
+  
+        This is intended to be called from repl or babashka script in
+        dev/font-namespaces.cljc.
+        
+        To call from bb (from the bling project root dir):
+        bb dev/font-namespaces.cljc"
        []
-       (spit "./src/bling/fonts.cljc"
-             (str "(ns bling.fonts)"
-                  "\n"
-                  "\n"
-                  "\n"
-                  "\n"
-                  (font-defs "./src/bling/fonts.cljc"))
-             :append false))))
+       (let [coll 
+             (mapv (fn [font-sym]
+                     (let [font-path        (str "./src/bling/fonts/" 
+                                                 (-> font-sym
+                                                     name
+                                                     (string/replace #"-" "_"))
+                                                 ".cljc" )
+                           font-ns          (str "bling.fonts." font-sym)
+                           font-ns-contents (str "(ns " font-ns ")"
+                                                 "\n\n\n\n"
+                                                 (font-def-source-code
+                                                  (banner-font-array-map font-sym)
+                                                  font-sym))]
+                       (keyed [font-sym font-path font-ns font-ns-contents])))
+                   defs/banner-fonts-vec)]
+
+         (doseq [{:keys [font-path font-ns font-ns-contents]} coll]
+           (do 
+             (println (str "Creating " font-ns " namespace @ " font-path "\n"))
+             (spit font-path font-ns-contents :append false)))
+         
+         (write-fonts-ns! coll)))))

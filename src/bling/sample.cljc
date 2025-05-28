@@ -6,6 +6,13 @@
    [bling.banner :refer [banner]]
    [bling.fontlib]
    [bling.fonts]
+   [bling.fonts.miniwi :refer [miniwi]]
+   [bling.fonts.ansi-shadow :refer [ansi-shadow]]
+   [bling.fonts.drippy :refer [drippy]]
+   [bling.fonts.big :refer [big]]
+   [bling.fonts.big-money :refer [big-money]]
+   [bling.fonts.rounded :refer [rounded]]
+   [bling.fonts.isometric-1 :refer [isometric-1]]
    [bling.macros :refer [keyed
                          start-dbg!
                          stop-dbg!
@@ -358,60 +365,64 @@
   (def big (gf 'big))
   (def big-money (gf 'big-money))
   (def rounded (gf 'rounded))
-  (def isometric-1 (gf 'isometric-1))
-    )
+  (def isometric-1 (gf 'isometric-1)))
 
-;; fonts from fonts, for release
-(do 
-  (def miniwi bling.fonts/miniwi)
-  (def ansi-shadow bling.fonts/ansi-shadow)
-  (def drippy bling.fonts/drippy)
-  (def big bling.fonts/big)
-  (def big-money bling.fonts/big-money)
-  (def rounded bling.fonts/rounded)
-  (def isometric-1 bling.fonts/isometric-1))
+; If user can choose fonts by keyword, set this to true, otherwise false -------
+(def fonts-by-name? false)
+(def fonts-by-keyword
+  {:miniwi      miniwi
+   :ansi-shadow ansi-shadow
+   :drippy      drippy
+   :big         big
+   :big-money   big-money
+   :rounded     rounded
+   :isometric-1 isometric-1})
 
+(defn- resolve-font [k]
+  (if fonts-by-name? k (get fonts-by-keyword k)))
 
 ;; For QA
 ;; Prints one banner per font, in neutral
 (defn print-bling-banner-font-samples []
  (doseq [{:keys [font] :as m}
          [
-          {:font               :miniwi
+          {:font               (resolve-font :miniwi)
            :gradient-colors    [:purple :orange]
            :gradient-direction :to-right}
-          {:font               :ansi-shadow
+          {:font               (resolve-font :ansi-shadow)
            :gradient-colors    [:warm :cool]
            :gradient-direction :to-top}
-          {:font               :drippy
+          {:font               (resolve-font :drippy)
            :gradient-colors    [:red :magenta]
            :gradient-direction :to-bottom}
-          {:font               :big
+          {:font               (resolve-font :big)
            :font-weight        :bold
            :gradient-colors    [:yellow :purple]
            :gradient-direction :to-top}
-          {:font               :big-money
+          {:font               (resolve-font :big-money)
            :gradient-colors    [:green :blue]
            :gradient-direction :to-top}
-          {:font               :rounded
+          {:font               (resolve-font :rounded)
            :gradient-colors    [:cool :warm]
            :gradient-direction :to-left
            :gradient-shift     2}
-          {:font        :isometric-1
+          {:font        (resolve-font :isometric-1)
            :font-weight :bold
            :gradient-colors    [:red :magenta]
            :gradient-direction :to-right}
           ]]
    (do
      (println (str "\n\n"
-                   font
+                   (if fonts-by-name? font (str "bling.fonts/" (:font-sym font)))
                    "\n"))
      (println (bling.banner/banner
                (assoc m
                       :text
-                      (or (some->> font
-                                   (get bling.fonts/fonts-by-kw)
-                                   :example-text)
+                      (or (if fonts-by-name? 
+                            (some->> font
+                                     (get bling.fonts/fonts-by-kw)
+                                     :example-text)
+                            (:example-text font))
                           "Example"))))
 
      ;; For showing upper-case
@@ -424,13 +435,13 @@
 ;; Prints every bling banner font (all the characters), over six rows
 (defn print-bling-banner-font-collection []
  (doseq [font
-         [:miniwi
-          :ansi-shadow
-          :drippy
-          :big
-          :big-money
-          :rounded
-          :isometric-1]
+         [(resolve-font :miniwi)
+          (resolve-font :ansi-shadow)
+          (resolve-font :drippy)
+          (resolve-font :big)
+          (resolve-font :big-money)
+          (resolve-font :rounded)
+          (resolve-font :isometric-1)]
         :let [gs 3
               ;; fw "normal"
               fw :bold]]
@@ -464,7 +475,7 @@
       (doseq [direction [:to-right :to-left :to-top :to-bottom]]
         (let [opts {:gradient-colors    [k v]
                     :gradient-direction direction
-                    :font               font-kw
+                    :font               (resolve-font font-kw)
                     :text               (or (some->> font :example-text)
                                             "Example")}]
           (when display-labels?
@@ -487,7 +498,7 @@
       (println)
       (print-bling (bling.banner/banner 
                     (merge opts
-                           {:font          bling.fonts/ansi-shadow
+                           {:font          (resolve-font :ansi-shadow)
                             :font-weight   :bold
                             :text          "ABCDEFG"
                             :contrast      :medium
@@ -500,32 +511,29 @@
 (defn print-bling-banner-bold-font []
   (println "\n\n")
   (doseq [k [:bold :normal]]
-    (let [opts {:font               :big-money
+    (let [opts {:font               (resolve-font :big-money)
                 :font-weight        k
                 :gradient-colors    [:cool :warm]
                 :gradient-direction :to-right
                 :text               "ABCDEFG"}]
-      (pprint opts)
+      (pprint (dissoc opts :font))
       (println)
       (print-bling (bling.banner/banner opts)))))
 
 ;; For QA
 ;; Print with contrast options
 (defn print-bling-banner-gradient-contrast-options []
-  (doseq [[k v] bling.banner/gradient-pairs-map]
-    (let [grd (str "to bottom, " (name k) ", " (name v))]
-      (doseq [k [:high :medium :low]]
-        (let [opts {:gradient-colors    [:cool :warm]
-                    :gradient-direction :to-bottom
-                    :contrast           k}]
-          (pprint opts)
-          (println)
-          (print-bling (bling.banner/banner 
-                        (merge opts 
-                               {:font     :ansi-shadow
-                                :gradient grd
-                                :contrast k
-                                :text     "ABCDEFG"}))))))))
+  (doseq [[c1 c2] bling.banner/gradient-pairs-map]
+    (doseq [k [:high :medium :low]]
+      (let [opts {:gradient-colors    [c1 c2]
+                  :gradient-direction :to-bottom
+                  :contrast           k}]
+        (pprint opts)
+        (println)
+        (print-bling (bling.banner/banner 
+                      (merge opts 
+                             {:font (resolve-font :ansi-shadow)
+                              :text "ABCDEFG"})))))))
 
 ;; For QA
 ;; Print with bad input for each option, to test warnings 
@@ -544,7 +552,7 @@
            ]]
     (println (str "\nBad option for " (ffirst m)))
     (print-bling (bling.banner/banner 
-                  (merge {:font :ansi-shadow
+                  (merge {:font (resolve-font :ansi-shadow)
                           :text "TEST"}
                          m)))))
 

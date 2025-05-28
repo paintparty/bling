@@ -4,7 +4,7 @@
    [bling.util :as util :refer [sjr maybe]]
    [bling.defs :as defs]
    [clojure.string :as string]
-   [bling.fonts]
+   [bling.fonts.ansi-shadow :refer [ansi-shadow]]
    #?(:cljs [bling.js-env :refer [node?]])
    ))
 
@@ -739,25 +739,20 @@
   "     "],
  :char "Ꮉ"}
 
-(defn- valid-font-kw?* [kw]
-  (contains? bling.fonts/fonts-by-kw kw))
+;; (defn- valid-font-kw?* [kw]
+;;   (contains? bling.fonts/fonts-by-kw kw))
 
 
 (defn- valid-font?*
   "Validate the shape of a bling banner figlet font map"
-  [font]
+  [{:keys [widest-char char-height max-char-width chars-array-map]}]
   (boolean
-   (when-let [{:keys [widest-char
-                      char-height
-                      max-char-width
-                      chars-array-map]}
-              (get bling.fonts/fonts-by-kw font)]
-     (and (string? widest-char)
-          (= 1 (count widest-char))
-          (pos-int? char-height)
-          (pos-int? max-char-width)
-          (map? chars-array-map)
-          (seq chars-array-map)))))
+   (and (string? widest-char)
+        (= 1 (count widest-char))
+        (pos-int? char-height)
+        (pos-int? max-char-width)
+        (map? chars-array-map)
+        (seq chars-array-map))))
 
 
 (defn- split-css-gradient-str [s]
@@ -811,7 +806,9 @@
          gradient-shift         0
          gradient-direction     :to-bottom
          font-weight            :normal}
-    user-font-kw :font}]
+    ;; user-font-kw :font
+    user-font :font
+    }]
 
   ;; TODO - All these validations should happen in malli
   (try
@@ -819,11 +816,21 @@
           valid-letter-spacing?     (zero-or-pos-int? letter-spacing)
           valid-font-weight?        (or (nil? font-weight)
                                         (contains? #{:normal :bold} font-weight))
-          valid-font-kw?            (valid-font-kw?* user-font-kw)
-          resolved-user-font        (get bling.fonts/fonts-by-kw user-font-kw)
-          default-font-kw           :ansi-shadow
-          default-font              (get bling.fonts/fonts-by-kw default-font-kw)
-          font                      (or resolved-user-font default-font)
+
+          ;; Use these if user can choose fonts by keyword ---------------------
+          ;; valid-font-kw?            (valid-font-kw?* user-font-kw)
+          ;; resolved-user-font        (get bling.fonts/fonts-by-kw user-font-kw)
+          ;; default-font-kw           :ansi-shadow
+          ;; default-font              (get bling.fonts/fonts-by-kw default-font-kw)
+          ;; font                      (or resolved-user-font default-font)
+          ;; -------------------------------------------------------------------
+          
+          ;; Use these if we are forcing user to explicitly require fonts ------
+          default-font              ansi-shadow
+          valid-font?               (valid-font?* user-font)
+          font                      (if valid-font? user-font default-font)
+          ;; -------------------------------------------------------------------
+
           no-gradient?              (nil? gradient-colors)
           gradient-colors*          gradient-colors
           gradient-shift*           gradient-shift
@@ -925,20 +932,52 @@
           :option-value   text
           :valid-desc     "A non-blank string"}))
 
-      (when-not valid-font-kw?
+
+      ;; Use this if user can choose fonts by keyword --------------------------
+      ;; (when-not valid-font-kw?
+      ;;   (invalid-banner-opt-warning! 
+      ;;    {:option-key      :font
+      ;;     :option-value    user-font-kw
+      ;;     :valid-desc      (concat [""
+      ;;                               "A keyword alias for one of Bling's Figlet fonts:"
+      ;;                               ""]
+      ;;                              (map #(keyword %) defs/banner-fonts-vec))
+      ;;     :default-val-msg [""
+      ;;                       (str "The default font "
+      ;;                            default-font-kw
+      ;;                            " will be used")]}))
+      ;; -----------------------------------------------------------------------
+
+
+      ;; Use these if we are forcing user to explicitly require fonts ----------
+      (when-not valid-font?
         (invalid-banner-opt-warning! 
          {:option-key      :font
-          :option-value    user-font-kw
-          :valid-desc      (concat [""
-                                    "A keyword alias for one of Bling's Figlet fonts:"
-                                    ""]
-                                   (map #(keyword %) defs/banner-fonts-vec))
+          :option-value    user-font
+          :valid-desc      "One of the Figlet fonts that ships with Bling."
+          :valid-examples  (map #(str "bling.fonts." % "/" % ) 
+                                defs/banner-fonts-vec)
           :default-val-msg [""
                             (str "The default font "
-                                 default-font-kw
+                                 "bling.fonts."
+                                 (:font-sym default-font)
+                                 "/"
+                                 (:font-sym default-font)
                                  " will be used")]}))
+      ;; -----------------------------------------------------------------------
 
-      (when (and valid-font-kw? valid-text?)
+
+
+      
+
+      ;; Use this if user can choose fonts by keyword --------------------------
+      ;; (when (and valid-font-kw? valid-text?)
+      ;; -----------------------------------------------------------------------
+
+      ;; Use these if we are forcing user to explicitly require fonts ----------
+      (when (and valid-font? valid-text?)
+      ;; -----------------------------------------------------------------------
+
         (let [opts
              (if valid-gradient-shift?
                opts
@@ -1056,7 +1095,7 @@
    
 | Key                   | Pred       | Description   |
 | :---------------      | -----------| ------------- |
-| `:font`               | `map?`     | Must be one of the fonts that ships with Bling: `bling.fonts/ansi-shadow`,  `bling.fonts/big-money` , `bling.fonts/big`, `bling.fonts/miniwi`, `bling.fonts/drippy,` or `bling.fonts/isometric-1`. Defaults to `bling.fonts/ansi-shadow`. |
+| `:font`               | `map?`     | Must be one of the fonts that ships with Bling: `bling.fonts.ansi-shadow/ansi-shadow`,  `bling.fonts.big-money.big-money/big-money` , `bling.fonts.big/big`, `bling.fonts.miniwi/miniwi`, `bling.fonts.drippy/drippy,` or `bling.fonts.isometric-1/isometric-1`. Defaults to `bling.fonts.ansi-shadow/ansi-shadow`. |
 | `:text`               | `string?`  | The text to set in the banner.
 | `:font-weight`        | `keyword?` | If set to `:bold`, each subchar in figlet characters will be bolded. Only applies when a gradient is set.
 | `:gradient-colors`    | `vector?`  | Expects a vector of 2 keywords. Only the following color pairs are valid: `[:green :blue]`, `[:red :magenta]`, `[:yellow :purple]`, `[:orange :purple]`, `[:cool :warm]`.  Only applies to terminal emulator printing|

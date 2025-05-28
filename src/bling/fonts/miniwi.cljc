@@ -1,0 +1,593 @@
+(ns bling.fonts.miniwi)
+
+
+
+;;  ▖  ▖▘  ▘   ▘
+;;  ▛▖▞▌▌▛▌▌▌▌▌▌
+;;  ▌▝ ▌▌▌▌▌▚▚▘▌
+;;  
+;;     ▘  ▘   ▘
+;;  ▛▛▌▌▛▌▌▌▌▌▌
+;;  ▌▌▌▌▌▌▌▚▚▘▌
+
+(def miniwi
+'{:font-name "Miniwi",
+ :example
+ ["▖  ▖▘  ▘   ▘"
+  "▛▖▞▌▌▛▌▌▌▌▌▌"
+  "▌▝ ▌▌▌▌▌▚▚▘▌"
+  ""
+  "   ▘  ▘   ▘"
+  "▛▛▌▌▛▌▌▌▌▌▌"
+  "▌▌▌▌▌▌▌▚▚▘▌"],
+ :desc "miniwi font\n        after the miniwi bitmap font",
+ :url "http://github.com/sshbio/miniwi",
+ :example-text "Miniwi",
+ :font-sym miniwi,
+ :widest-char "M",
+ :char-height 4,
+ :max-char-width 4,
+ :missing-chars ["Ä" "Ö" "Ü" "ä" "ö" "ü" "ß"],
+ :chars-array-map
+ {" "
+  {:bands ["  " "  " "  " "  "],
+   :i 0,
+   :character " ",
+   :width 2,
+   :height 4},
+  "!"
+  {:bands ["▌" "▌" "▖" " "], :i 1, :character "!", :width 1, :height 4},
+  "\""
+  {:bands ["▌▌" "  " "  " "  "],
+   :i 2,
+   :character "\"",
+   :width 2,
+   :height 4},
+  "#"
+  {:bands ["▗▗ " "▜▜▘" "▜▜▘" "   "],
+   :i 3,
+   :character "#",
+   :width 3,
+   :height 4},
+  "$"
+  {:bands ["▗ " "█▘" "▟▌" "▝ "],
+   :i 4,
+   :character "$",
+   :width 2,
+   :height 4},
+  "%"
+  {:bands ["▖▖" "▗▘" "▌▖" "  "],
+   :i 5,
+   :character "%",
+   :width 2,
+   :height 4},
+  "&"
+  {:bands ["▗ " "▚▘" "▚▌" "  "],
+   :i 6,
+   :character "&",
+   :width 2,
+   :height 4},
+  "'"
+  {:bands ["▌" " " " " " "], :i 7, :character "'", :width 1, :height 4},
+  "("
+  {:bands ["▗▘" "▐ " "▐ " "▝▖"],
+   :i 8,
+   :character "(",
+   :width 2,
+   :height 4},
+  ")"
+  {:bands ["▝▖" " ▌" " ▌" "▗▘"],
+   :i 9,
+   :character ")",
+   :width 2,
+   :height 4},
+  "*"
+  {:bands ["▖▖" "▟▖" "▞▖" "  "],
+   :i 10,
+   :character "*",
+   :width 2,
+   :height 4},
+  "+"
+  {:bands ["  " "▟▖" "▝ " "  "],
+   :i 11,
+   :character "+",
+   :width 2,
+   :height 4},
+  ","
+  {:bands ["  " "  " "▗ " "▘ "],
+   :i 12,
+   :character ",",
+   :width 2,
+   :height 4},
+  "-"
+  {:bands ["  " "▄▖" "  " "  "],
+   :i 13,
+   :character "-",
+   :width 2,
+   :height 4},
+  "."
+  {:bands ["  " "  " "▗ " "  "],
+   :i 14,
+   :character ".",
+   :width 2,
+   :height 4},
+  "/"
+  {:bands [" ▌" "▐ " "▞ " "▘ "],
+   :i 15,
+   :character "/",
+   :width 2,
+   :height 4},
+  "0"
+  {:bands ["▄▖" "▛▌" "█▌" "  "],
+   :i 16,
+   :character "0",
+   :width 2,
+   :height 4},
+  "1"
+  {:bands ["▗ " "▜ " "▟▖" "  "],
+   :i 17,
+   :character "1",
+   :width 2,
+   :height 4},
+  "2"
+  {:bands ["▄▖" "▄▌" "▙▖" "  "],
+   :i 18,
+   :character "2",
+   :width 2,
+   :height 4},
+  "3"
+  {:bands ["▄▖" "▄▌" "▄▌" "  "],
+   :i 19,
+   :character "3",
+   :width 2,
+   :height 4},
+  "4"
+  {:bands ["▖▖" "▙▌" " ▌" "  "],
+   :i 20,
+   :character "4",
+   :width 2,
+   :height 4},
+  "5"
+  {:bands ["▄▖" "▙▖" "▄▌" "  "],
+   :i 21,
+   :character "5",
+   :width 2,
+   :height 4},
+  "6"
+  {:bands ["▄▖" "▙▖" "▙▌" "  "],
+   :i 22,
+   :character "6",
+   :width 2,
+   :height 4},
+  "7"
+  {:bands ["▄▖" " ▌" " ▌" "  "],
+   :i 23,
+   :character "7",
+   :width 2,
+   :height 4},
+  "8"
+  {:bands ["▄▖" "▙▌" "▙▌" "  "],
+   :i 24,
+   :character "8",
+   :width 2,
+   :height 4},
+  "9"
+  {:bands ["▄▖" "▙▌" "▄▌" "  "],
+   :i 25,
+   :character "9",
+   :width 2,
+   :height 4},
+  ":"
+  {:bands [" " "▖" "▖" " "],
+   :i 26,
+   :character ":",
+   :width 1,
+   :height 4},
+  ";"
+  {:bands [" " "▖" "▖" "▘"],
+   :i 27,
+   :character ";",
+   :width 1,
+   :height 4},
+  "<"
+  {:bands [" ▖" "▞ " "▝▖" "  "],
+   :i 28,
+   :character "<",
+   :width 2,
+   :height 4},
+  "="
+  {:bands ["  " "▀▘" "▀▘" "  "],
+   :i 29,
+   :character "=",
+   :width 2,
+   :height 4},
+  ">"
+  {:bands ["▖ " "▝▖" "▞ " "  "],
+   :i 30,
+   :character ">",
+   :width 2,
+   :height 4},
+  "?"
+  {:bands ["▄▖" "▗▘" "▗ " "  "],
+   :i 31,
+   :character "?",
+   :width 2,
+   :height 4},
+  "@"
+  {:bands ["▗▄▖" "▌▄▐" "▌▀▀" " ▀ "],
+   :i 32,
+   :character "@",
+   :width 3,
+   :height 4},
+  "A"
+  {:bands ["▄▖" "▌▌" "▛▌" "  "],
+   :i 33,
+   :character "A",
+   :width 2,
+   :height 4},
+  "B"
+  {:bands ["▄ " "▙▘" "▙▘" "  "],
+   :i 34,
+   :character "B",
+   :width 2,
+   :height 4},
+  "C"
+  {:bands ["▄▖" "▌ " "▙▖" "  "],
+   :i 35,
+   :character "C",
+   :width 2,
+   :height 4},
+  "D"
+  {:bands ["▄ " "▌▌" "▙▘" "  "],
+   :i 36,
+   :character "D",
+   :width 2,
+   :height 4},
+  "E"
+  {:bands ["▄▖" "▙▖" "▙▖" "  "],
+   :i 37,
+   :character "E",
+   :width 2,
+   :height 4},
+  "F"
+  {:bands ["▄▖" "▙▖" "▌ " "  "],
+   :i 38,
+   :character "F",
+   :width 2,
+   :height 4},
+  "G"
+  {:bands ["▄▖" "▌ " "▙▌" "  "],
+   :i 39,
+   :character "G",
+   :width 2,
+   :height 4},
+  "H"
+  {:bands ["▖▖" "▙▌" "▌▌" "  "],
+   :i 40,
+   :character "H",
+   :width 2,
+   :height 4},
+  "I"
+  {:bands ["▄▖" "▐ " "▟▖" "  "],
+   :i 41,
+   :character "I",
+   :width 2,
+   :height 4},
+  "J"
+  {:bands [" ▖" " ▌" "▙▌" "  "],
+   :i 42,
+   :character "J",
+   :width 2,
+   :height 4},
+  "K"
+  {:bands ["▖▖" "▙▘" "▌▌" "  "],
+   :i 43,
+   :character "K",
+   :width 2,
+   :height 4},
+  "L"
+  {:bands ["▖ " "▌ " "▙▖" "  "],
+   :i 44,
+   :character "L",
+   :width 2,
+   :height 4},
+  "M"
+  {:bands ["▖  ▖" "▛▖▞▌" "▌▝ ▌" "    "],
+   :i 45,
+   :character "M",
+   :width 4,
+   :height 4},
+  "N"
+  {:bands ["▖ ▖" "▛▖▌" "▌▝▌" "   "],
+   :i 46,
+   :character "N",
+   :width 3,
+   :height 4},
+  "O"
+  {:bands ["▄▖" "▌▌" "▙▌" "  "],
+   :i 47,
+   :character "O",
+   :width 2,
+   :height 4},
+  "P"
+  {:bands ["▄▖" "▙▌" "▌ " "  "],
+   :i 48,
+   :character "P",
+   :width 2,
+   :height 4},
+  "Q"
+  {:bands ["▄▖" "▌▌" "█▌" " ▘"],
+   :i 49,
+   :character "Q",
+   :width 2,
+   :height 4},
+  "R"
+  {:bands ["▄▖" "▙▘" "▌▌" "  "],
+   :i 50,
+   :character "R",
+   :width 2,
+   :height 4},
+  "S"
+  {:bands ["▄▖" "▚ " "▄▌" "  "],
+   :i 51,
+   :character "S",
+   :width 2,
+   :height 4},
+  "T"
+  {:bands ["▄▖" "▐ " "▐ " "  "],
+   :i 52,
+   :character "T",
+   :width 2,
+   :height 4},
+  "U"
+  {:bands ["▖▖" "▌▌" "▙▌" "  "],
+   :i 53,
+   :character "U",
+   :width 2,
+   :height 4},
+  "V"
+  {:bands ["▖▖" "▌▌" "▚▘" "  "],
+   :i 54,
+   :character "V",
+   :width 2,
+   :height 4},
+  "W"
+  {:bands ["▖  ▖" "▌▞▖▌" "▛ ▝▌" "    "],
+   :i 55,
+   :character "W",
+   :width 4,
+   :height 4},
+  "X"
+  {:bands ["▖▖" "▚▘" "▌▌" "  "],
+   :i 56,
+   :character "X",
+   :width 2,
+   :height 4},
+  "Y"
+  {:bands ["▖▖" "▌▌" "▐ " "  "],
+   :i 57,
+   :character "Y",
+   :width 2,
+   :height 4},
+  "Z"
+  {:bands ["▄▖" "▗▘" "▙▖" "  "],
+   :i 58,
+   :character "Z",
+   :width 2,
+   :height 4},
+  "["
+  {:bands ["▐▘" "▐ " "▐ " "▝▘"],
+   :i 59,
+   :character "[",
+   :width 2,
+   :height 4},
+  "\\"
+  {:bands ["▌ " "▐ " "▝▖" " ▘"],
+   :i 60,
+   :character "\\",
+   :width 2,
+   :height 4},
+  "]"
+  {:bands ["▜ " "▐ " "▐ " "▀ "],
+   :i 61,
+   :character "]",
+   :width 2,
+   :height 4},
+  "^"
+  {:bands ["▗ " "▘▘" "  " "  "],
+   :i 62,
+   :character "^",
+   :width 2,
+   :height 4},
+  "_"
+  {:bands ["  " "  " "▄▖" "  "],
+   :i 63,
+   :character "_",
+   :width 2,
+   :height 4},
+  "`"
+  {:bands ["▚ " " ▘" "  " "  "],
+   :i 64,
+   :character "`",
+   :width 2,
+   :height 4},
+  "a"
+  {:bands ["  " "▀▌" "█▌" "  "],
+   :i 65,
+   :character "a",
+   :width 2,
+   :height 4},
+  "b"
+  {:bands ["▌ " "▛▌" "▙▌" "  "],
+   :i 66,
+   :character "b",
+   :width 2,
+   :height 4},
+  "c"
+  {:bands ["  " "▛▘" "▙▖" "  "],
+   :i 67,
+   :character "c",
+   :width 2,
+   :height 4},
+  "d"
+  {:bands [" ▌" "▛▌" "▙▌" "  "],
+   :i 68,
+   :character "d",
+   :width 2,
+   :height 4},
+  "e"
+  {:bands ["  " "█▌" "▙▖" "  "],
+   :i 69,
+   :character "e",
+   :width 2,
+   :height 4},
+  "f"
+  {:bands ["▐▘" "▜▘" "▐ " "  "],
+   :i 70,
+   :character "f",
+   :width 2,
+   :height 4},
+  "g"
+  {:bands ["  " "▛▌" "▙▌" "▄▌"],
+   :i 71,
+   :character "g",
+   :width 2,
+   :height 4},
+  "h"
+  {:bands ["▌ " "▛▌" "▌▌" "  "],
+   :i 72,
+   :character "h",
+   :width 2,
+   :height 4},
+  "i"
+  {:bands ["▘" "▌" "▌" " "],
+   :i 73,
+   :character "i",
+   :width 1,
+   :height 4},
+  "j"
+  {:bands [" ▘" " ▌" " ▌" "▙▌"],
+   :i 74,
+   :character "j",
+   :width 2,
+   :height 4},
+  "k"
+  {:bands ["▌ " "▙▘" "▛▖" "  "],
+   :i 75,
+   :character "k",
+   :width 2,
+   :height 4},
+  "l"
+  {:bands ["▜ " "▐ " "▐▖" "  "],
+   :i 76,
+   :character "l",
+   :width 2,
+   :height 4},
+  "m"
+  {:bands ["   " "▛▛▌" "▌▌▌" "   "],
+   :i 77,
+   :character "m",
+   :width 3,
+   :height 4},
+  "n"
+  {:bands ["  " "▛▌" "▌▌" "  "],
+   :i 78,
+   :character "n",
+   :width 2,
+   :height 4},
+  "o"
+  {:bands ["  " "▛▌" "▙▌" "  "],
+   :i 79,
+   :character "o",
+   :width 2,
+   :height 4},
+  "p"
+  {:bands ["  " "▛▌" "▙▌" "▌ "],
+   :i 80,
+   :character "p",
+   :width 2,
+   :height 4},
+  "q"
+  {:bands ["  " "▛▌" "▙▌" " ▌"],
+   :i 81,
+   :character "q",
+   :width 2,
+   :height 4},
+  "r"
+  {:bands ["  " "▛▘" "▌ " "  "],
+   :i 82,
+   :character "r",
+   :width 2,
+   :height 4},
+  "s"
+  {:bands ["  " "▛▘" "▄▌" "  "],
+   :i 83,
+   :character "s",
+   :width 2,
+   :height 4},
+  "t"
+  {:bands ["▗ " "▜▘" "▐▖" "  "],
+   :i 84,
+   :character "t",
+   :width 2,
+   :height 4},
+  "u"
+  {:bands ["  " "▌▌" "▙▌" "  "],
+   :i 85,
+   :character "u",
+   :width 2,
+   :height 4},
+  "v"
+  {:bands ["  " "▌▌" "▚▘" "  "],
+   :i 86,
+   :character "v",
+   :width 2,
+   :height 4},
+  "w"
+  {:bands ["   " "▌▌▌" "▚▚▘" "   "],
+   :i 87,
+   :character "w",
+   :width 3,
+   :height 4},
+  "x"
+  {:bands ["  " "▚▘" "▞▖" "  "],
+   :i 88,
+   :character "x",
+   :width 2,
+   :height 4},
+  "y"
+  {:bands ["  " "▌▌" "▙▌" "▄▌"],
+   :i 89,
+   :character "y",
+   :width 2,
+   :height 4},
+  "z"
+  {:bands ["  " "▀▌" "▙▖" "  "],
+   :i 90,
+   :character "z",
+   :width 2,
+   :height 4},
+  "{"
+  {:bands ["▐▘" "▐ " "▐ " "▐▖"],
+   :i 91,
+   :character "{",
+   :width 2,
+   :height 4},
+  "|"
+  {:bands ["▌" "▌" "▌" "▘"],
+   :i 92,
+   :character "|",
+   :width 1,
+   :height 4},
+  "}"
+  {:bands ["▜ " "▐▖" "▐ " "▀ "],
+   :i 93,
+   :character "}",
+   :width 2,
+   :height 4},
+  "~"
+  {:bands ["   " "▖▄ " "▝▘▘" "   "],
+   :i 94,
+   :character "~",
+   :width 3,
+   :height 4}}})
