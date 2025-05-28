@@ -386,7 +386,7 @@
 
 #_(sample/print-bling-banner-font-collection)
 
-#_(sample/print-bling-banner-font-samples)
+(sample/print-bling-banner-font-samples)
 
 #_(sample/print-bling-banner-gradients 
  {:select-fonts [:isometric-1
@@ -397,7 +397,7 @@
 
 #_(sample/print-bling-banner-bold-font)
 
-(sample/print-bling-banner-gradient-contrast-options)
+#_(sample/print-bling-banner-gradient-contrast-options)
 
 #_(sample/print-bling-banners-with-bad-option-values)
 
