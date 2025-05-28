@@ -413,7 +413,7 @@
           ]]
    (do
      (println (str "\n\n"
-                   (if fonts-by-name? font (str "bling.fonts/" (:font-sym font)))
+                   (if fonts-by-name? font (:font-sym font))
                    "\n"))
      (println (bling.banner/banner
                (assoc m
@@ -465,6 +465,14 @@
 ;; TODO use the actual font
 ;; - put :example text in the font
 ;; 
+(defn- printable-opts-with-font-name [opts font-kw font]
+  (assoc opts :font (if fonts-by-name?
+                      font-kw
+                      (symbol (str "bling.fonts."
+                                   (:font-sym font)
+                                   "/"
+                                   (:font-sym font))))))
+
 (defn print-bling-banner-gradients 
   [{:keys [select-fonts display-labels?]}]
   (doseq [[font-kw font]
@@ -480,7 +488,8 @@
                                             "Example")}]
           (when display-labels?
             (println)
-            (pprint (assoc opts :font font-kw) {:max-width 33})
+            (pprint (printable-opts-with-font-name opts font-kw font)
+                    {:max-width 33})
             (println))
           (print-bling 
            (bling.banner/banner opts)))))))
@@ -511,12 +520,14 @@
 (defn print-bling-banner-bold-font []
   (println "\n\n")
   (doseq [k [:bold :normal]]
-    (let [opts {:font               (resolve-font :big-money)
-                :font-weight        k
-                :gradient-colors    [:cool :warm]
-                :gradient-direction :to-right
-                :text               "ABCDEFG"}]
-      (pprint (dissoc opts :font))
+    (let [font-kw :big-money
+          font    (resolve-font font-kw)
+          opts    {:font               font
+                   :font-weight        k
+                   :gradient-colors    [:cool :warm]
+                   :gradient-direction :to-right
+                   :text               "ABCDEFG"}]
+      (pprint (printable-opts-with-font-name opts font-kw font))
       (println)
       (print-bling (bling.banner/banner opts)))))
 
@@ -572,6 +583,12 @@
       (println (bling [{:contrast         contrast 
                         :color            color}
                        (str "Contrast " contrast)])))))  
+
+
+
+;; -----------------------------------------------------------------------------
+;; bling.explain/explain-malli samples
+;; -----------------------------------------------------------------------------
 
 
 (def Address

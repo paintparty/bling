@@ -389,17 +389,15 @@
 #_(sample/print-bling-banner-font-samples)
 
 #_(sample/print-bling-banner-gradients 
- {:select-fonts [
-                 ;; :isometric-1
-                 :ansi-shadow
-                 ]
+ {:select-fonts [:isometric-1
+                 :ansi-shadow]
   :display-labels? true})
 
 #_(sample/print-bling-banner-gradient-warm-cool)
 
 #_(sample/print-bling-banner-bold-font)
 
-#_(sample/print-bling-banner-gradient-contrast-options)
+(sample/print-bling-banner-gradient-contrast-options)
 
 #_(sample/print-bling-banners-with-bad-option-values)
 
