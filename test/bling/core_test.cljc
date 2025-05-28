@@ -386,7 +386,7 @@
 
 #_(sample/print-bling-banner-font-collection)
 
-(sample/print-bling-banner-font-samples)
+#_(sample/print-bling-banner-font-samples)
 
 #_(sample/print-bling-banner-gradients 
  {:select-fonts [:isometric-1

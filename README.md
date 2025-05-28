@@ -670,68 +670,70 @@ clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.7.0-SNAPSHOT"}}}
 
 Require:
 ```Clojure
-(require '[bling.banner :refer [banner]] 'bling.fonts)
+(require '[bling.banner :refer [banner]]
+         '[bling.fonts.ansi-shadow :refer [ansi-shadow]])
 ```
 
 Or add to your namespace `:requires`:
 ```Clojure
 (ns myns.core
  (:require [bling.banner :refer [banner]]
-           bling.fonts])
+           [bling.fonts.ansi-shadow :refer [ansi-shadow]]])
 ```
 
-Available fonts:
+The above `require` show usage of the `ansi-shadow` font. For performance reasons,
+each font is in its own namespace and must be explicitly required. All of the available fonts:
 ```Clojure
-bling.fonts/miniwi
-bling.fonts/ansi-shadow
-bling.fonts/drippy
-bling.fonts/big
-bling.fonts/big-money
-bling.fonts/rounded
-bling.fonts/isometric-1
+bling.fonts.miniwi/miniwi
+bling.fonts.ansi-shadow/ansi-shadow
+bling.fonts.drippy/drippy
+bling.fonts.big/big
+bling.fonts.big-money/big-money
+bling.fonts.rounded/rounded
+bling.fonts.isometric-1/isometric-1
 ```
 
 Below are the example calls that render the screenshot at the the top of this section.
 ```Clojure
 (banner 
- {:font               bling.fonts/miniwi
+ {:font               bling.fonts.miniwi/miniwi
   :text               "Miniwi"
   :gradient-direction :to-right})
   :gradient-colors    [:purple :orange]
 
 (banner
- {:font               bling.fonts/ansi-shadow
+ {:font               bling.fonts.ansi-shadow/ansi-shadow
   :text               "Ansi"
   :gradient-direction :to-top}
   :gradient-colors    [:warm :cool]
 
 (banner
- {:font               bling.fonts/drippy
+ {:font               bling.fonts.drippy/drippy
   :text               "Drippy"
   :gradient-direction :to-bottom
   :gradient-colors    [:red :magenta]}
 
 (banner
- {:font               bling.fonts/big
+ {:font               bling.fonts.big/big
   :text               "Big"
   :gradient-direction :to-top}
   :gradient-colors    [:yellow :purple]}
 
 (banner
- {:font               bling.fonts/big-money
+ {:font               bling.fonts.big-money/big-money
   :text               "Money"
   :gradient-direction :to-top
   :gradient-colors    [:green :blue]}
 
 (banner
- {:font               bling.fonts/rounded
+ {:font               bling.fonts.rounded/rounded
   :font-weight        :bold
   :text               "Rounded" 
   :gradient-direction :to-left
   :gradient-colors    [:cool :warm]}
 
 (banner
- {:font               bling.fonts/isometric-1
+ {:font               bling.fonts.isometric-1/isometric-1
   :font-weight        :bold
   :text               "ABCDE"
   :gradient-direction :to-right
@@ -744,7 +746,7 @@ Below are the example calls that render the screenshot at the the top of this se
 
 | Key                   | Pred       | Description   |
 | :---------------      | -----------| ------------- |
-| `:font`               | `map?`     | Must be one of the fonts that ships with Bling: `bling.fonts/ansi-shadow`,  `bling.fonts/big-money` , `bling.fonts/big`, `bling.fonts/miniwi`, `bling.fonts/drippy,` or `bling.fonts/isometric-1`. Defaults to `bling.fonts/ansi-shadow`. |
+| `:font`               | `map?`     | Must be one of the fonts that ships with Bling: `bling.fonts.ansi-shadow/ansi-shadow`,  `bling.fonts.big-money.big-money/big-money` , `bling.fonts.big/big`, `bling.fonts.miniwi/miniwi`, `bling.fonts.drippy/drippy,` or `bling.fonts.isometric-1/isometric-1`. Defaults to `bling.fonts.ansi-shadow/ansi-shadow`. |
 | `:text`               | `string?`  | The text to set in the banner.
 | `:font-weight`        | `keyword?` | If set to `:bold`, each subchar in figlet characters will be bolded. Only applies when a gradient is set.
 | `:gradient-colors`    | `vector?`  | Expects a vector of 2 keywords. Only the following color pairs are valid: `[:green :blue]`, `[:red :magenta]`, `[:yellow :purple]`, `[:orange :purple]`, `[:cool :warm]`.  Only applies to terminal emulator printing|
