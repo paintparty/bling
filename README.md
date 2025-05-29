@@ -636,7 +636,7 @@ By default, the theme of this output will be `Universal Neutral`.
 
 If you [set a valid `BLING_MOOD` env var](#enhanced-contrast), the theme of the `hifi` output will be `Alabaster Light` or `Alabaster Dark`. 
 
-You can choose <a href="https://github.com/paintparty/fireworks?tab=readme-ov-file#theming" target="_blank">one of the other available themes ↗</a> by following the instructions in the Fireworks readme and <a href="https://github.com/paintparty/fireworks?tab=readme-ov-file#step-3" target="_blank">setting up a `config.edn` on your system ↗</a>. This config will also let you control many other aspects of the formatting with the `hifi` output.
+You can choose <a href="https://github.com/paintparty/fireworks?tab=readme-ov-file#theming" target="_blank">one of the other available themes ↗</a> by following the instructions in the Fireworks readme and <a href="https://github.com/paintparty/fireworks?tab=readme-ov-file#step-3" target="_blank">setting up a `config.edn` on your system ↗, with a corresponding `BLING_CONFIG` env var</a>. This config will also let you control many other aspects of the formatting with the `hifi` output.
 
 <br>
 
@@ -714,6 +714,18 @@ The trailing options map for `explain-malli` accepts the following:
 | `:display-explain-data?` | `boolean?`              | Displays the output of `malli.core/explain` within the callout block. Defaults to `false`.
 | `:callout-opts`          | `map?`                  | A map of options for the underlying call to `bling.core/callout`. See the docstring for bling.core/callout. |"
 
+<br>
+
+> [!NOTE]
+To optimize syntax coloring and highlighting, so that your output resembles the above examples, you can set the `BLING_MOOD` env var:
+```
+# For light terminal themes
+# export BLING_MOOD="light"
+
+# For dark terminal themes
+# export BLING_MOOD="dark"
+```
+Check out the [hifi printing](#high-fidelity-printing) section for more info on setting a custom theme and other config options.
 
 <br>
 <br>
