@@ -27,7 +27,9 @@
 &nbsp;•&nbsp; 
 **[Hifi]**
 &nbsp;•&nbsp; 
-**[Figlet Banners]**
+**[Malli]**
+&nbsp;•&nbsp; 
+**[Banners]**
 </div>
 
 [Features]: #features
@@ -38,7 +40,8 @@
 
 [Error Templates]: #templates-for-errors-and-warnings
 [Hifi]: #high-fidelity-printing
-[Figlet Banners]: #figlet-banners
+[Malli]: #usage-with-malli
+[Banners]: #figlet-banners
 [Interop]: #printing-conventions
 [Contributing]: #contributing
 
@@ -646,7 +649,74 @@ You can choose <a href="https://github.com/paintparty/fireworks?tab=readme-ov-fi
 Check out <a href="https://github.com/paintparty/fireworks?tab=readme-ov-file#theming" target="_blank">the other available themes here ↗</a>
 
 <br>
+<br>
 
+
+## Usage with Malli
+
+Bling offers `bling.explain/explain-malli` to present [Malli](https://github.com/metosin/malli) validation errors:
+
+```Clojure
+(require '[bling.explain :refer [explain-malli]])
+
+(def Address
+  [:map
+   [:id string?]
+   [:tags [:set keyword?]]
+   [:address
+    [:map
+     [:street string?]
+     [:city string?]
+     [:zip int?]
+     [:lonlat [:tuple double? double?]]]]])
+
+(explain-malli
+ Address
+ {:id "Lillan",
+  :tags #{:coffee :artesan :garden},
+  :address
+  {:street "Ahlmanintie 29", :zip 33100, :lonlat [61.4858322 87.34]}})
+```
+
+<br>
+
+The above code would print the following:
+
+<div align="center"><img src="resources/docs/chromed/malli-explain-missing-key_dark-0.7.0.png" width="700px"/></div>
+
+
+You can also pass an option trailing options map to customize the appearance of the printed output. In this example we are leaving out the display of the schema within the callout block:
+
+```Clojure
+(explain-malli
+ Address
+ {:id "Lillan",
+  :tags #{"coffee" :artesan :garden},
+  :address
+  {:street "Ahlmanintie 29", :zip 33100, :lonlat [61.4858322 87.34]}}
+ {:display-schema? false})
+```
+<br>
+
+The above code would print the following:
+
+<div align="center"><img src="resources/docs/chromed/malli-explain-bad-set-value-with-no-schema_dark-0.7.0.png" width="700px"/></div>
+
+The trailing options map for `explain-malli` accepts the following:
+| Key                      | Pred                    | Description                                                  |
+| :---------------         | ----------------------- | ------------------------------------------------------------ |
+| `:function-name`         | `string?`               | The name of the function that can be used to construct the source location info.
+| `:file`                  | `pos-int?` or `string?` | The file name that can be used to construct the source location.
+| `:line`                  | `pos-int?` or `string?` | The line number that can be used to construct the source location.
+| `:column`                | `pos-int?` or `string?` | The column number that can be used to construct the source location.
+| `:spacing`               | `#{:compact}`           | If the value of `:spacing` is set to `:compact`, the callout is compacted vertically.
+| `:display-schema?`       | `boolean?`              | Displays the schema passed to the underlying call to `malli.core/explain`. Defaults to `true`.
+| `:display-explain-data?` | `boolean?`              | Displays the output of `malli.core/explain` within the callout block. Defaults to `false`.
+| `:callout-opts`          | `map?`                  | A map of options for the underlying call to `bling.core/callout`. See the docstring for bling.core/callout. |"
+
+
+<br>
+<br>
 
 ## Figlet banners
 

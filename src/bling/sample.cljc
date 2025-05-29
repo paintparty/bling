@@ -619,7 +619,7 @@
    (print-explain-malli-example-header s v nil))
   ([s v opts]
    (println 
-    (str "\n"
+    (str "\n\n\n"
          s
          "\n\n"
          (with-out-str
@@ -700,7 +700,7 @@
               }]
 
     (print-explain-malli-example-header
-     "The result of bling.core/explain-malli, with :display-schema? set to false:"
+     "The result of bling.core/explain-malli, with source file location info provided:"
      v
      opts)
     (explain-malli Address v opts)))
@@ -721,7 +721,7 @@
               ;; :spacing         :compact
               }]
     (print-explain-malli-example-header
-     "The result of bling.core/explain-malli, with :display-schema? set to false:"
+     "The result of bling.core/explain-malli, with source file location and `malli/explain` data:"
      v
      opts)
     (explain-malli Address v opts)))
@@ -731,13 +731,13 @@
   (explain-malli [:map-of :keyword :int] {"foo" 2}))
 
 (defn explain-malli-examples []
+  (explain-malli-with-explain-data)
+  ;; (explain-malli-bad-map-value)
+  (explain-malli-with-source-info)
   (explain-malli-default)
   (explain-malli-missing-map-key)
-  (explain-malli-bad-map-value)
   (explain-malli-bad-key-in-map)
   (explain-malli-no-schema)
-  (explain-malli-with-source-info)
-  (explain-malli-with-explain-data)
   )
 
 

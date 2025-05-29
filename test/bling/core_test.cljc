@@ -16,6 +16,7 @@
    [bling.fonts.isometric-1 :refer [isometric-1]]
    [bling.fontlib]
    [bling.banner]
+   [bling.hifi :refer [print-hifi hifi]]
    [clojure.pprint :refer [pprint]]
    [clojure.string :as string]))
 
@@ -408,3 +409,8 @@
 #_(sample/print-bling-color-contrast)
 
 #_(sample/explain-malli-examples)
+
+#_(print-hifi [:blue.bold "Hello" {:a 1 :b 'twoo}]
+            {:find [{:path [2]}
+                    {:path [1]
+                     :class :highlight-underlined}]})

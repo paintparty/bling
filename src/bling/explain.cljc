@@ -67,14 +67,16 @@
    | `:callout-opts`          | `map?`                  | A map of options for the underlying call to bling.core/callout. |"
   ([schema v]
    (explain-malli schema v nil))
-  ([schema v {:keys [:file
-                     :line
-                     :column
-                     :function-name
-                     :spacing
-                     :display-schema?
-                     :display-explain-data?
-                     :callout-opts]}] 
+  ([schema 
+    v
+    {:keys [:file
+            :line
+            :column
+            :function-name
+            :spacing
+            :display-schema?
+            :display-explain-data?
+            :callout-opts]}] 
    (let [{problems     :errors
           malli-schema :schema
           :as          ex-data}
