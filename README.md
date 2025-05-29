@@ -693,7 +693,7 @@ You can also pass an option trailing options map to customize the appearance of 
  {:id "Lillan",
   :tags #{"coffee" :artesan :garden},
   :address
-  {:street "Ahlmanintie 29", :zip 33100, :lonlat [61.4858322 87.34]}}
+  {:city "Tempare" :street "Ahlmanintie 29", :zip 33100, :lonlat [61.4858322 87.34]}}
  {:display-schema? false})
 ```
 <br>
