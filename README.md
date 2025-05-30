@@ -685,7 +685,7 @@ The above code would print the following:
 <div align="center"><img src="resources/docs/chromed/malli-explain-missing-key_dark-0.7.0.png" width="700px"/></div>
 
 
-You can also pass an option trailing options map to customize the appearance of the printed output. In this example we are leaving out the display of the schema within the callout block:
+You can also pass an option trailing options map to customize the appearance of the printed output. In the example below, we are leaving out the display of the schema within the callout block:
 
 ```Clojure
 (explain-malli
