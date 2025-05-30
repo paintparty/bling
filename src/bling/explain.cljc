@@ -1,5 +1,6 @@
 (ns bling.explain
   (:require [clojure.edn :as edn]
+            [fireworks.core :refer [? !? ?> !?>]]
             [clojure.string :as string]
             [clojure.walk :as walk]
             [bling.core :as bling]
@@ -12,13 +13,67 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Malli explain 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+(def core-preds-by-keyword 
+  {:vector  {:fn  vector?
+             :sym 'vector?
+             :tag "vector"}
+   :list    {:fn  list?
+             :sym 'list?
+             :tag "list"}
+   :seq     {:fn  seq?
+             :sym 'seq?
+             :tag "seq"}
+   :string  {:fn  string?
+             :sym 'string?
+             :tag "string"}
+   :map     {:fn  map?
+             :sym 'map?
+             :tag "map"}
+   :set     {:fn  set?
+             :sym 'set?
+             :tag "set"}
+   :keyword {:fn  keyword?
+             :sym 'keyword?
+             :tag "keyword"}
+   :number  {:fn  number?
+             :sym 'number?
+             :tag "number"}
+   :boolean {:fn  boolean?
+             :sym 'boolean?
+             :tag "boolean"}
+   :true    {:fn  true?
+             :sym 'true?
+             :tag "true"}
+   :false   {:fn  false?
+             :sym 'false?
+             :tag "false"}
+   :nil     {:fn  nil?
+             :sym 'nil?
+             :tag "nil"}
+   :pos-int {:fn  pos-int?
+             :sym 'pos-int?
+             :tag "positive integer"}
+   :pos     {:fn  pos?
+             :sym 'pos?
+             :tag "positive number"}
+   :float   {:fn  float?
+             :sym 'float?
+             :tag "floating point number"}
+   :double  {:fn  double?
+             :sym 'double?
+             :tag "double"}
+   :int     {:fn  int?
+             :sym 'int?
+             :tag "integer"}
+   :neg-int {:fn  neg-int?
+             :sym 'neg-int?
+             :tag "negative integer"}})
 
 (defn clean-schema [schema]
   (walk/postwalk
    (fn [x]
      (if (map? x) (dissoc x :error/message) x))
-   (edn/read-string (with-out-str (prn schema)))))
+   (m/form schema)))
 
 
 (defn indented-string [s]
@@ -81,7 +136,13 @@
           malli-schema :schema
           :as          ex-data}
          (m/explain schema v)
-         compact? (= :compact spacing)]
+
+         malli-schema-cleaned
+         (clean-schema malli-schema)
+
+         compact?
+         (= :compact spacing)]
+
      (if (seq problems)
        (doseq [problem problems]
          (let [explain-data
@@ -89,7 +150,7 @@
                  (edn/read-string (with-out-str (prn ex-data))))
 
                schema
-               (edn/read-string (with-out-str (prn (:schema problem))))
+               (m/form (:schema problem))
 
                error-message 
                (some-> schema
@@ -101,9 +162,6 @@
                schema-cleaned
                (clean-schema (:schema problem))
 
-               malli-schema-cleaned
-               (clean-schema malli-schema)
-
                section-break
                (if compact? "\n\n" "\n\n\n")
                
@@ -113,10 +171,10 @@
                missing-key
                (if (= :malli.core/missing-key (:type problem))
                  (-> problem :path last)
-                 :specoli.core/no-missing-key)
+                 :bling.explain/no-missing-key)
                
                missing-key?
-               (not= missing-key :specoli.core/no-missing-key)
+               (not= missing-key :bling.explain/no-missing-key)
 
                error-message?
                (boolean (and error-message (not missing-key?)))
@@ -142,7 +200,6 @@
 
            (bling.core/callout
             (merge {:type           :error
-                    :colorway       :blue
                     :label-theme    :marquee
                     :label          "Malli validation error"
                     :padding-top    (if compact? 1 2)
@@ -172,7 +229,10 @@
 
              (when must-satisfy? [label-style "Must satisfy: "])
              (when must-satisfy? section-header-break)
-             (when must-satisfy? [:bold (fv schema-cleaned)])
+             (when must-satisfy? [:bold (fv (or (some-> (get core-preds-by-keyword 
+                                                             schema-cleaned)
+                                                        :sym)
+                                                schema-cleaned))])
              (when must-satisfy? section-break)
 
 
@@ -199,7 +259,8 @@
              ;; The source of the call to the malli-explain
              ;; This can be provided by the user.
              (when file-info [label-style "Source: "])
-             (some->> #_(symbol "app.core/my-function:21:33") file-info
+             (some->> #_(symbol "app.core/my-function:21:33") 
+                      file-info
                       fv
                       (str section-header-break))))))
 

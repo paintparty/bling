@@ -18,6 +18,7 @@
                          stop-dbg!
                          nth-not-found]]
    [bling.explain :refer [explain-malli]]
+   [malli.core :as m]
    [bling.core :refer [?sgr
                        bling
                        bling-data
@@ -741,7 +742,16 @@
   )
 
 
+#_(explain-malli [:or :keyword :string]
+               5
+               {:display-explain-data? true})
 
+
+#_(explain-malli [:vector [:or 
+                         [:map [:city :string]]
+                         vector?]]
+               [[33] 5]
+               {:display-explain-data? true})
 
 ;; Make example figlets for banner images
 ;; Make exhaustive banner example image

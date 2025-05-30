@@ -17,6 +17,7 @@
    [bling.fontlib]
    [bling.banner]
    [bling.hifi :refer [print-hifi hifi]]
+   [malli.core :as m]
    [clojure.pprint :refer [pprint]]
    [clojure.string :as string]))
 
