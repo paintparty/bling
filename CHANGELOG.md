@@ -20,8 +20,6 @@ For a list of breaking changes, check [here](#breaking-changes)
 ## 0.7.0
 2025-05-30
 
-Added support for underline styles and also hyperlinks.
-
 #### Added 
 - [Support for color figlet banner art](https://github.com/paintparty/bling?tab=readme-ov-file#figlet-banners)
 - [Introduced `BLING_MOOD` env var](https://github.com/paintparty/bling/issues/30)
