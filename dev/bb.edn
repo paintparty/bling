@@ -1,0 +1,6 @@
+{:paths []
+ :deps  {io.github.paintparty/bling {:local/root "../../bling"}}}
+
+;; ./bb -Sdeps '{:paths ["src" "test"] :deps {io.github.paintparty/bling {:local/root "../../cljc/bling/"}}}' -e "(require '[bling.core-test]) (bling.core-test/bling-basics)"
+;; ./bb -Sdeps '{:paths ["src" "test"] :deps {io.github.paintparty/bling {:local/root "./"}}}' -e "(require '[bling.core-test]) (bling.core-test/bling-basics)"
+

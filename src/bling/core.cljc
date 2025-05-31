@@ -1,25 +1,10 @@
-;; TODO
-
-;; callout
-
-;; - Should we do callout-data as separate function, 
-;;   or document the :data? option?
-
-;; point of interest 
-
-;; - Should take vector as the :line entry
-;;     If a vector is supplied, draw a range of numbered lines if you can read
-;;     ns at those lines.
-
-;; - Should additional file-info (string), which would override the gen option
-;; 
-
 ;; Adds about 12kb to a cljs bundle
 
 (ns bling.core
   (:require [clojure.string :as string]
-            ;; [bling.macros :refer [let-map keyed ?]] ;;<-- just for debugging
             [bling.macros :refer [let-map keyed]]
+            [bling.defs :as defs]
+            [bling.util :as util]
             #?(:cljs [goog.object])
             #?(:cljs [bling.js-env :refer [node?]])))
 
@@ -102,18 +87,87 @@
    "system-aqua"    {:sgr 14}
    "system-white"   {:sgr 15}})
 
+;; figure out light-gray and dark-gray
+;; support "medium-orange to force medium"
+;; support "dark-orange to force dark"
+;; support "light-orange to force light"
+
+(def ^:private bling-colors-dark
+  (apply 
+   array-map 
+   ["red"     {:sgr 124}
+    "orange"  {:sgr 172}
+    "yellow"  {:sgr 136}
+    "olive"   {:sgr 100}
+    "green"   {:sgr 28}
+    "blue"    {:sgr 26}
+    "purple"  {:sgr 129}
+    "magenta" {:sgr 163}
+    "gray"    {:sgr 244}
+    "black"   {:sgr 16}
+    "white"   {:sgr 231}]))
+
+(def ^:private bling-colors-light 
+  (apply 
+   array-map 
+   ["red"     {:sgr 203}
+    "orange"  {:sgr 214}
+    "yellow"  {:sgr 220}
+    "olive"   {:sgr 143}
+    "green"   {:sgr 82}
+    "blue"    {:sgr 81}
+    "purple"  {:sgr 147}
+    "magenta" {:sgr 213}
+    "gray"    {:sgr 249}
+    "black"   {:sgr 16}
+    "white"   {:sgr 231}]))
+
+;; TODO Add the light and dark variants to x-term-colors-by-id
+(def ^:public bling-colors*
+  (apply
+   array-map
+   ["red"        {:sgr      196
+                  :semantic "negative"}
+    "orange"     {:sgr      208
+                  :semantic "warning"}
+    "yellow"     {:sgr 178}
+    "olive"      {:sgr 106}
+    "green"      {:sgr      40
+                  :semantic "positive"}
+    "blue"       {:sgr      39
+                  :semantic "accent"}
+    "purple"     {:sgr 141}
+    "magenta"    {:sgr 201}
+    "gray"       {:sgr      245
+                  :semantic "subtle"}
+    "black"      {:sgr 16}
+    "white"      {:sgr 231}]))
+
+
+(def ^:private bling-colors
+  (apply
+   array-map
+   (reduce-kv (fn [acc k v]
+                (let [dark   (get-in bling-colors-dark [k :sgr])
+                      light  (get-in bling-colors-light [k :sgr])
+                      medium (:sgr v)]
+                  (util/concatv (conj acc
+                                      k
+                                      (assoc v
+                                             :sgr-dark
+                                             dark
+                                             :sgr-light
+                                             light))
+                                (when-not (contains? #{"black" "white"} k) 
+                                  [(str "medium-" k) {:sgr medium}
+                                   (str "dark-" k)   {:sgr dark}
+                                   (str "light-" k)  {:sgr light}]))))
+              [] 
+              bling-colors*)))
+
+
 (def ^:private colors-source
-  (merge {"red"     {:sgr 196 :semantic "negative"}
-          "orange"  {:sgr 208 :semantic "warning"}
-          "yellow"  {:sgr 178}
-          "olive"   {:sgr 106}
-          "green"   {:sgr 40 :semantic "positive"}
-          "blue"    {:sgr 39 :semantic "accent"}
-          "purple"  {:sgr 141}
-          "magenta" {:sgr 201}
-          "gray"    {:sgr 247 :semantic "subtle"}
-          "black"   {:sgr 16}
-          "white"   {:sgr 231}}
+  (merge bling-colors
          system-colors-source))
 
 
@@ -126,18 +180,14 @@
    "subtle"   "subtle"
    "neutral"  "neutral"})
 
-(defn concatv
-  "Concatenate `xs` and return the result as a vector."
-  [& xs]
-  (into [] cat xs))
 
 
 (def ^:private all-color-names
   ;; TODO - perf use reduce here?
   (into #{}
-        (concatv (keys semantics-by-semantic-type)
-                (vals semantics-by-semantic-type)
-                (keys colors-source))))
+        (util/concatv (keys semantics-by-semantic-type)
+                      (vals semantics-by-semantic-type)
+                      (keys colors-source))))
 
 (def ^:private color-names-by-semantic*
   (reduce-kv (fn [m color {:keys [semantic]}]
@@ -210,39 +260,6 @@
     file-line-column
     (str (some-> file (str ":")) line ":" column)))
 
-(defn- regex? [v]
-  #?(:clj  (-> v type str (= "class java.util.regex.Pattern"))
-     :cljs (-> v type str (= "#object[RegExp]"))))
-
-(defn- surround-with-quotes [x]
-  (str "\"" x "\""))
-
-(defn- shortened
-  "Stringifies a collection and truncates the result with ellipsis 
-   so that it fits on one line."
-  [v limit]
-  (let [as-str                        (str v)
-        regex?                        (regex? v)
-        double-quotes?                (or (string? v) regex?)
-        regex-pound #?(:cljs nil :clj (when regex? "#"))]
-    (if (> limit (count as-str))
-      (if double-quotes?
-        (str regex-pound (surround-with-quotes as-str))
-        as-str)
-      (let [ret* (-> as-str
-                     (string/split #"\n")
-                     first)
-            ret  (if (< limit (count ret*))
-                   (let [ret (->> ret*
-                                  (take limit)
-                                  string/join)]
-                     (str (if double-quotes?
-                            (str regex-pound (surround-with-quotes ret))
-                            ret)
-                          (when-not double-quotes? " ")
-                          "..."))
-                   ret*)]
-        ret))))
 
                                                                   
 (defn- poi-text-underline-str [n str-index text-decoration-style]
@@ -395,10 +412,14 @@
    })
 
 (defn- assoc-hex-colors [m]
-  (reduce-kv (fn [m color {:keys [sgr]}]
+  (reduce-kv (fn [m color {:keys [sgr sgr-light sgr-dark]}]
                (let [hex (get xterm-colors-by-id sgr nil)]
-                 (assoc m color {:sgr sgr
-                                 :css hex})))
+                 (merge (assoc m
+                               color 
+                               (merge {:sgr sgr
+                                       :css hex}
+                                      (when sgr-light {:sgr-light sgr-light})
+                                      (when sgr-dark {:sgr-dark sgr-dark}))))))
              {}
              m))
 
@@ -418,11 +439,64 @@
      :callouts         callouts
      :colors+semantics (merge colors semantics)}))
 
-(defn- reduce-colors-to-sgr-or-css [ctx m]
-  (reduce-kv (fn [m k v]
-               (assoc m k (if (map? v) (ctx v) v)))
-             {}
-             m))
+(declare callout)
+(declare bling)
+(declare bling!)
+(declare print-bling)
+
+(defn- reduce-colors-to-sgr-or-css
+  "This is where the actual color value gets pulled out of the color map that is
+   associated with each color (in bling.core/all-color-names). The sgr-or-css-kw
+   will be :sgr or :css, depending on whether execution context is a terminal
+   emulator or browser dev console.
+
+   For terminal environments, a light or dark theme can be optionally specified
+   via an environmental variable:
+   
+   `BLING_MOOD=light`
+   `BLING_MOOD=dark`
+   `BLING_MOOD=universal`.
+
+   `UNIVERSAL` would be equivalent to the default (not setting it at all).
+   
+   `LIGHT` theme will use a darker version of the color, which would improve the
+   contrast for users that develop with a light-themed terminal.
+
+   `DARK` theme will use a lighter version of the color, which would improve the
+   contrast for users that develop with a dark-themed terminal.
+   
+   If `LIGHT` OR `DARK` values are detected for the `BLING_MOOD` env var, the
+   value of the `:sgr-or-css-kw` will be changed inside this function, from
+   `:sgr` to `:sgr-light` or `:sgr-dark`"
+  [sgr-or-css-kw {:keys [contrast] :as m}]
+  (let [sgr?
+        (= sgr-or-css-kw :sgr)]
+    (reduce-kv (fn [m k v]
+                 (assoc m k
+                        (if (map? v)
+                          (if (and sgr? (= :color k))
+                            (or (let [kw
+                                      (case contrast
+                                        :low
+                                        (case defs/bling-mood
+                                          "light" :sgr-light
+                                          "dark" :sgr-dark
+                                          :sgr)
+
+                                        :medium
+                                        :sgr
+
+                                        ;; covers :high
+                                        (case defs/bling-mood
+                                          "light" :sgr-dark
+                                          "dark" :sgr-light
+                                          :sgr))]
+                                  (kw v))
+                                (:sgr v))
+                            (sgr-or-css-kw v))
+                          v)))
+               {}
+               m)))
 
 (defn- convert-color [m k v]
   (assoc m
@@ -446,7 +520,7 @@
                                 (map? %)))))))
 
 
-;; Formatting helper fns  -----------------------------------------------------
+;; Formatting helper fns  ------------------------------------------------------
 
 (defn- semantic-type [opts]
   (let [x (:colorway opts)]
@@ -460,12 +534,9 @@
               (maybe nameable?)
               name))))
 
-(declare callout)
-(declare bling)
-(declare print-bling)
 
 
-;; Formatting exceptions ----------------------------------------------------------
+;; Formatting exceptions -------------------------------------------------------
 
 ;; Stack trace preview intended for JVM clojure (no clojurescript)
 ;; TODO - put this through the paces and decided whether or not to expose in the
@@ -532,7 +603,7 @@
                   [:bold 'java.lang.Exception.]
                   "\n\n"
                   "Value received:\n"
-                  [:bold (shortened error 33)]
+                  [:bold (util/shortened error 33)]
                   "\n\n"
                   "Type of value received:\n"
                   [:bold (str (type error))]
@@ -548,17 +619,6 @@
 ;; Shared cljs fns -------------------------------------------------------------
 #?(:cljs
    (do
-     (defn ^:public print-bling
-           "For browser usage, sugar for the the following:
-            `(.apply js/console.log js/console (goog.object/get o \"consoleArray\"))`
-
-            Example:
-            `(print-bling (bling [:bold.blue \"my blue text\"]))"
-           ([o]
-            (print-bling o js/console.log))
-           ([o f]
-            (.apply f js/console (goog.object/get o "consoleArray"))))
-
      (deftype
        ^{:doc
          "A js object with the the following fields:
@@ -657,14 +717,16 @@
                                      as-str
                                      (maybe all-color-names))
                              "neutral")
-        form-as-str      (shortened form 33)
+        form-as-str      (util/shortened form 33)
         underline-str    (-> opts
                              (assoc :form-as-str form-as-str)
                              poi-text-underline
                              :text-underline-str)
         bolded-form      [{:font-weight :bold} form-as-str]
         underline-styled [{:font-weight :bold
-                           :color       underline-color} underline-str]
+                           :color       underline-color
+                           :contrast    :medium}
+                          underline-str]
         header           (enriched-args header)
         body             (enriched-args body)
         mb*              (or (some-> margin-block (maybe pos-int?))
@@ -688,11 +750,11 @@
                             underline-styled
                             mb]) 
         ret              (apply bling
-                                (concatv header
-                                         (when header ["\n"])
-                                         diagram
-                                         (when body ["\n"])
-                                         body))]
+                                (util/concatv header
+                                              (when header ["\n"])
+                                              diagram
+                                              (when body ["\n"])
+                                              body))]
     ret))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -701,9 +763,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Enriched text public fns and helpers  --------------------------------------
-
-(def gutter-char "█")
-(def gutter-char-lower-seven-eighths "▆")
 
 (declare ln)
 (declare lns)
@@ -716,7 +775,7 @@
            label-string 
            border-style]
     :as m}]
-  (let [margin-left-str     (char-repeat margin-left gutter-char)
+  (let [margin-left-str     (char-repeat margin-left defs/gutter-char)
         hrz                 #(char-repeat padding-left %)
         label-lns           (-> label as-str string/split-lines)
         label-length        (some->> label-lns (mapv count) (apply max))
@@ -727,7 +786,7 @@
     (string/join
      (interpose
       "\n"
-      (concatv
+      (util/concatv
        [(bling [bs
                 (str
                  (char-repeat (inc margin-left) "▄")
@@ -737,7 +796,7 @@
                  "━━┓")])
         (str (bling [bs
                      (str margin-left-str
-                          gutter-char
+                          defs/gutter-char
                           (hrz " ")
                           "┃  ")])
              (bling [{:font-color :neutral}
@@ -753,7 +812,7 @@
                              "  ┃")])))
        [(bling [bs
                 (str margin-left-str
-                     gutter-char
+                     defs/gutter-char
                      (hrz " ")
                      "┗━━"
                      (char-repeat label-length "━")
@@ -761,7 +820,7 @@
        (mapv (fn [_]
                (bling [bs
                         (str margin-left-str
-                             gutter-char
+                             defs/gutter-char
                              (hrz " "))]))
          (range padding-top)))))))
 
@@ -786,7 +845,7 @@
     (string/join
      (interpose
       "\n"
-      (concatv
+      (util/concatv
        [(bling [bs
                 (str margin-left-str
                      padding-left-str
@@ -896,10 +955,10 @@
   (let [body-lns (string/split-lines (:value m))]
     (string/join
       "\n"
-      (concatv
-        (repeat (:padding-top m) (ln m ""))
-        (mapv (partial ln m) body-lns)
-        (repeat (:padding-bottom m) (ln m ""))))))
+      (util/concatv
+       (repeat (:padding-top m) (ln m ""))
+       (mapv (partial ln m) body-lns)
+       (repeat (:padding-bottom m) (ln m ""))))))
 
 (defn- sideline-callout
   [m]
@@ -934,7 +993,9 @@
   (let [sideline-variant? (contains? #{"sideline" "sideline-bold"} theme)
         sideline-variant-with-body? (boolean (and value sideline-variant?))
         sideline-variant-just-label? (and (nil? value) sideline-variant?)
-        gutter-theme? (contains? #{"rainbow-gutter" "gutter"} theme)]
+        gutter-theme? (contains? #{"rainbow-gutter" "gutter"} theme)
+        m (assoc-in m [:border-style :contrast] :medium)
+        ]
     ;; (? (keyed [sideline-variant?
     ;;            sideline-variant-with-body?
     ;;            sideline-variant-just-label?
@@ -972,13 +1033,14 @@
 
 (defn callout*
   [{:keys [theme] :as m}]
-  (let [char                 gutter-char
-        style                {:color (:color m)}
+  (let [char                 defs/gutter-char
+        border-style         {:color (:color m)
+                              :contrast :medium}
         gutter?              (= "gutter" theme)
         rainbow?             (= "rainbow-gutter" theme)
         gutter-str           (if rainbow? 
                                (bling [{:color (last rainbow-colors)} char])
-                               (bling [style char]))
+                               (bling [border-style char]))
         rainbow-gutter-str   (apply bling
                                   (for [s (drop-last rainbow-colors)]
                                     [{:color s} char]))
@@ -987,16 +1049,16 @@
                                     [{:color s} char]))
 
         cr                   (fn [k ch] (char-repeat (or (k m) 0) ch))
-        gutter-str-zero      (bling [style
+        gutter-str-zero      (bling [border-style
                                      (string/join 
                                       (cr :margin-left
-                                          gutter-char-lower-seven-eighths))])
+                                          defs/gutter-char-lower-seven-eighths))])
         margin-left-str-zero gutter-str-zero
-        border-left-str-zero gutter-char-lower-seven-eighths
+        border-left-str-zero defs/gutter-char-lower-seven-eighths
         s                    (ansi-callout-str
                               (merge
                                m
-                               {:border-style      style
+                               {:border-style      border-style
                                 :border-left-str   (case theme
                                                      "sideline"
                                                      "│"
@@ -1097,7 +1159,7 @@
                                     :else
                                     #js[(str (if (coll? label)
                                                (some-> label
-                                                       (shortened 50)
+                                                       (util/shortened 50)
                                                        (str "\n"))
                                                (some-> label 
                                                        (str "\n")))
@@ -1126,7 +1188,7 @@
         supplied-coll-label-shortened       (some-> m
                                                     :label
                                                     (maybe coll?)
-                                                    (shortened 33))
+                                                    (util/shortened 33))
         default-label-based-on-callout-type (some-> type-as-str
                                                     string/upper-case)]
     ;; (? (keyed [blank-string-supplied? 
@@ -1229,6 +1291,8 @@
 ;;         CCCCCCCCCCCCC     OOOOOOOOO     
                                       
 
+;; TODO - Shoul we create callout-data as sugar for (callout {... data? true ...} ...)
+
 (defn ^:public callout
   "Prints a message to the console with a block-based coloring motif controlled
    by the `:type` option. Returns nil.
@@ -1299,17 +1363,19 @@
      ;; Internal warning from bling about bad args
      :else
      (callout
-       {:type :warning}
+      {:type        :warning
+       :theme       :sideline-bold
+       :label-theme :marquee}
        ;; TODO - this is messy formatiing for data-structures, fix
-       (point-of-interest
-         {:type   :warning
-          :header "bling.core/callout"
-          :form   (cons 'callout (list x))
-          :body   (str "bling-core/callout, if called with a single argument,\n"
-                       "expects either:\n"
-                       "- a map of options\n"
-                       "- a string\n\n"
-                       "Nothing will be printed.")}))))
+      (point-of-interest
+       {:type   :warning
+        :header "bling.core/callout"
+        :form   (cons 'callout (list x))
+        :body   (str "bling-core/callout, if called with a single argument,\n"
+                     "expects either:\n"
+                     "- a map of options\n"
+                     "- a string\n\n"
+                     "Nothing will be printed.")}))))
   ([opts value]
    (if-not (map? opts)
      ;; Internal warning from bling about bad args
@@ -1496,7 +1562,7 @@
      (updated-css css x)]))
 
 
-(defn- bling-data* [args]
+(defn bling-data* [args]
   (let [[coll css] (reduce enriched-data-inner
                            [[] []]
                            args)
@@ -1507,7 +1573,7 @@
     ;;    :clj
     ;;    ())
     
-    {:console-array (into-array (concatv [tagged] css))
+    {:console-array (into-array (util/concatv [tagged] css))
      :tagged        tagged
      :css           css
      :args          args}))
@@ -1569,4 +1635,23 @@
                          args)))
        :clj (f))))
 
-                     
+#?(:cljs
+   (defn ^:public print-bling
+     "For browser usage, sugar for the the following:
+      `(.apply js/console.log js/console (goog.object/get o \"consoleArray\"))`
+
+      Example:
+      `(print-bling (bling [:bold.blue \"my blue text\"]))"
+     [& args]
+     (if node?
+       (println (apply bling args))
+       (let [o (apply bling args)]
+         (.apply js/console.log
+                 js/console 
+                 (goog.object/get o "consoleArray")))))
+
+   :clj
+   (defn ^:public print-bling
+     "Equivalent to (println (apply bling args))"
+     [& args]
+     (println (apply bling args))))

@@ -1,6 +1,6 @@
 
 <!-- TODO - Update images with new colors -->
-# bling
+# Bling
 
 **Rich text in the console.**  
 
@@ -13,28 +13,49 @@
 
 <div align="left">
 
-**[Features]**  &nbsp;•&nbsp; **[Setup]**  &nbsp;•&nbsp;  **[Basic Usage]** &nbsp;•&nbsp; **[Callout Blocks]** &nbsp;•&nbsp; **[Error Templates]**
+**[Features]**
+&nbsp;•&nbsp;
+**[Setup]**
+&nbsp;•&nbsp;
+**[Basic Usage]**
+&nbsp;•&nbsp;
+**[Colors]**
+&nbsp;•&nbsp;
+**[Callout Blocks]**
+&nbsp;•&nbsp; 
+**[Error Templates]**
+&nbsp;•&nbsp; 
+**[Hifi]**
+&nbsp;•&nbsp; 
+**[Malli]**
+&nbsp;•&nbsp; 
+**[Banners]**
 </div>
 
 [Features]: #features
 [Setup]: #setup
 [Basic Usage]: #basic-usage
+[Colors]: #the-bling-pallette
 [Callout Blocks]: #callout-blocks
 
 [Error Templates]: #templates-for-errors-and-warnings
+[Hifi]: #high-fidelity-printing
+[Malli]: #usage-with-malli
+[Banners]: #figlet-banners
 [Interop]: #printing-conventions
 [Contributing]: #contributing
 
 <br>
 <br>
 
-<p align="left">
-  <img src="resources/docs/chromed/bling-banner-light-0.6.0.png" width="700px" />
-</p>
 
-The same example as above, in a terminal emulator with a dark background.
 <p align="left">
   <img src="resources/docs/chromed/bling-banner-dark-0.6.0.png" width="700px" />
+</p>
+
+The same example as above, in a terminal emulator with a light background.
+<p align="left">
+  <img src="resources/docs/chromed/bling-banner-light-0.6.0.png" width="700px" />
 </p>
 
 ## Features
@@ -60,21 +81,21 @@ The same example as above, in a terminal emulator with a dark background.
 Add as a dependency to your project:
 
 
+lein:
 ```Clojure
-;; lein
-[io.github.paintparty/bling "0.6.0"]
+[io.github.paintparty/bling "0.7.0"]
+```
 
-;; deps
-io.github.paintparty/bling {:mvn/version "0.6.0"}
+deps:
+```Clojure
+io.github.paintparty/bling {:mvn/version "0.7.0"}
 ```
 <br>
 
 Require:
 
 ```Clojure
-(require '[bling.core :refer [bling callout point-of-interest]])
-
-;; In ClojureScript, you may also want :refer bling.core/print-bling.
+(require '[bling.core :refer [bling print-bling callout point-of-interest]])
 ```
 
 <br>
@@ -84,9 +105,7 @@ Or, import into your namespace:
 ```Clojure
 (ns myns.core
   (:require
-    [bling.core :refer [bling callout point-of-interest]]))
-
-;; In ClojureScript, you may also want :refer bling.core/print-bling.
+    [bling.core :refer [bling print-bling callout point-of-interest]]))
 ```
 
 <br>
@@ -94,15 +113,28 @@ Or, import into your namespace:
 You can view an exhaustive sampling of Bling output by pasting this snippet into your terminal:
 
 ```clojure
-clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.6.0"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
+clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.7.0"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
 ```
-<br>
 <br>
 
 To view the above sample with Babashka, paste this snippet into your terminal:
 
 ```clojure
-bb -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.6.0"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
+bb -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.7.0"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
+```
+<br>
+
+### Enhanced contrast
+You can optionally set a `BLING_MOOD` environmental variable on your system, which will enhance the contrast of bling output on your computer.
+
+If you use a dark terminal theme:
+```
+export BLING_MOOD="dark"
+```
+
+If you use a light terminal theme:
+```
+export BLING_MOOD="light"
 ```
 
 <br>
@@ -116,16 +148,18 @@ bb -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.6.0"}}}' -e "(req
 
 <br>
 
-**`bling.core/bling`** takes any number of arguments and returns a string
-of text decorated with tags for colorization, italics, boldness, and text-decoration:
+**`bling.core/print-bling`** takes any number of arguments and prints to the
+console with colorization, italics, boldness, and text-decoration:
 
 ```Clojure
-(println (bling [:bold "bold"]
-                ", "
-                [:italic "italic"]
-                ", or "
-                [:blue "colored"]))
+(print-bling [:bold "bold"]
+             ", "
+             [:italic "italic"]
+             ", or "
+             [:blue "colored"])
 ```
+
+
 <p align="center">
   <img src="./resources/docs/chromed/basics-light.png" width="700px" align="center"/>
 </p>
@@ -134,52 +168,40 @@ of text decorated with tags for colorization, italics, boldness, and text-decora
 
 <p align="center"><img src="resources/docs/chromed/basics-dark.png" width="700px"/></p>
 
-
+**`bling.core/print-bling`** returns `nil`.
 
 <br>
 
-In ClojureScript (browser context), **`bling`** returns a js object that needs to be printed like this: <br>
-`(.apply js/console.log js/console (goog.object/get o "consoleArray"))`.<br>
-
-To avoid typing all this out, you can use **`bling.core/print-bling`** to print the array returned from **`bling`**:
-
+If you just want a string (no printing), **`bling.core/bling`** works exactly
+like **`bling.core/print-bling`** but does not print. Instead it returns a
+string of text decorated with the appropriate ANSI SGR tags:
 ```Clojure
-(print-bling (bling [:bold "bold"]
-                    ", "
-                    [:italic "italic"]
-                    ", or "
-                    [:blue "colored"]))
+(bling [:bold.red "hello"]) ;; => "\033[38;5;203;1mhello\033[0;m"
 ```
 
-By default **`bling.core/print-bling`** prints with `js/console.log`.
-If you would like to print with either `js.console/warn`, or `js/console.error`, you can pass either as a second argument.
+In ClojureScript (browser context), **`bling`** returns a js object that
+`print-bling` uses to construct a call to `js/console.log` which results in the
+text decorated as expected in a browser dev console.<br>
 
-```Clojure
-(print-bling (bling [:bold "bold"]
-                    ", "
-                    [:italic "italic"]
-                    ", or "
-                    [:blue "colored"])
-             js/console.warn)
-```
+
 <br>
 
 ### Combo styles
 
 You can add multiple decorations with hiccup-style tags (a keyword with dot separators). The order of the things separated by dots doesn't matter.
 ```Clojure
-(println (bling [:bold.italic "bold & italic"]
-                ", "
-                [:italic.blue "italic & colored"]
-                ", "
-                [:bold.italic.white.blue-bg
-                 "bold & italic & colored & colored-bg"]
-                ", "
-                [:bold.italic.blue.underline
-                 "bold & italic & colored & underline"]
-                ", "
-                [:bold.italic.blue.strikethrough
-                 "bold & italic & colored & strikethrough"]))
+(print-bling [:bold.italic "bold & italic"]
+             ", "
+             [:italic.blue "italic & colored"]
+             ", "
+             [:bold.italic.white.blue-bg
+             "bold & italic & colored & colored-bg"]
+             ", "
+             [:bold.italic.blue.underline
+             "bold & italic & colored & underline"]
+             ", "
+             [:bold.italic.blue.strikethrough
+             "bold & italic & colored & strikethrough"])
 ```
 <p align="center"><img src="resources/docs/chromed/combos-light.png" width="700px" /></p>
 <p align="center"><img src="resources/docs/chromed/combos-dark.png" width="700px" /></p>
@@ -190,11 +212,11 @@ You can add multiple decorations with hiccup-style tags (a keyword with dot sepa
 You can also pass a map (instead of a hiccup-style keyword tag) to style the text:
 
 ```Clojure
-(bling [{:color            :green
-         :background-color :black
-         :font-style       :italic
-         :font-weight      :bold}
-        "bold italic green text on black background"])
+(print-bling [{:color            :green
+               :background-color :black
+               :font-style       :italic
+               :font-weight      :bold}
+               "bold italic green text on black background"])
 ```
 Using a map is preferrable if you are doing something like this:
 ```Clojure
@@ -218,17 +240,17 @@ Using a map is preferrable if you are doing something like this:
 ### Underline styles
 
 ```Clojure
-(println (bling [:underline "underline"]
-                "\n"
-                [:solid-underline "solid-underline"]
-                "\n"
-                [:double-underline "double-underline"]
-                "\n"
-                [:wavy-underline "wavy-underline"]
-                "\n"
-                [:dotted-underline "dotted-underline"]
-                "\n"
-                [:dashed-underline "dashed-underline"]))
+(print-bling [:underline "underline"]
+              "\n"
+              [:solid-underline "solid-underline"]
+              "\n"
+              [:double-underline "double-underline"]
+              "\n"
+              [:wavy-underline "wavy-underline"]
+              "\n"
+              [:dotted-underline "dotted-underline"]
+              "\n"
+              [:dashed-underline "dashed-underline"])
 ```
 <p align="center"><img src="resources/docs/chromed/underline-styles_light.png" width="700px" /></p>
 <p align="center"><img src="resources/docs/chromed/underline-styles_dark.png" width="700px" /></p>
@@ -241,8 +263,8 @@ Using a map is preferrable if you are doing something like this:
 Bling supports clickable hyperlinks in terminal environments. You must use `cmd` + click to navigate to the link.
 
 ```Clojure
-(bling [{:href "http://example.com"}
-        "cmd + click to follow this hyperlink"])
+(print-bling [{:href "http://example.com"}
+              "cmd + click to follow this hyperlink"])
 ```
 <p align="center"><img src="resources/docs/chromed/hyperlink_light.png" width="700px" /></p>
 <p align="center"><img src="resources/docs/chromed/hyperlink_dark.png" width="700px" /></p>
@@ -253,8 +275,8 @@ Hyperlink support in browser dev consoles is actually more limited.
 This is not a limitation of Bling but rather the browser.
 
 ```Clojure
-(bling [{:href "http://example.com"}
-        "My site"])
+(print-bling [{:href "http://example.com"}
+              "My site"])
 ```
 In a browser dev console, Bling would format the above example above like this:<br>
 <code>My site <ins>http://example.com</ins></code>
@@ -268,7 +290,8 @@ clickable and styled by the browser dev console.
 
 
 #### Valid arguments to bling
-Note that all the arguments to **`bling.core/bling`** must satisfy this predicate:
+Note that all the arguments to **`bling.core/print-bling`** and
+**`bling.core/bling`** must satisfy this predicate:
 
 ```Clojure
 (every? (fn [x]
@@ -282,7 +305,8 @@ Note that all the arguments to **`bling.core/bling`** must satisfy this predicat
         args)
 ```
 
-In other words, every one of the arguments to **`bling.core/bling`** must be either:<br>
+In other words, every one of the arguments to **`bling.core/print-bling`**
+and **`bling.core/bling`** must be either:<br>
 
 - A two-element vector, with the first element being a keyword or map.<br>
 - A value which is not a collection.
@@ -290,39 +314,39 @@ In other words, every one of the arguments to **`bling.core/bling`** must be eit
 If, for example, you wanted to print `[1 2 3]` in red, you will need to stringify the vector:
 
 ```Clojure
-(bling [:red (str [1 2 3])])
+(print-bling [:red (str [1 2 3])])
 ```
 
 
 <br>
 <br>
 
-### The Bling pallette 
+## The Bling pallette 
 
-Eleven carefully selected colors, from the [xterm range 16-255](https://en.m.wikipedia.org/wiki/Xterm#/media/File%3AXterm_256color_chart.svg), are available for use. All of these colors should display consistantly across most consoles on the end-user side. Don't expect all of the colors to pass the [strictest APCA contrast criterion](https://www.myndex.com/APCA/), but you can be sure of reasonable visibility on both light and dark backgrounds:
+Eleven carefully selected colors, from the [8-bit(256 colors)](https://en.m.wikipedia.org/wiki/Xterm#/media/File%3AXterm_256color_chart.svg), range(16-255) are available for use. All of these colors should display consistantly across most consoles on the end-user side. Don't expect all of the colors to pass the [strictest APCA contrast criterion](https://www.myndex.com/APCA/), but you can be sure of reasonable visibility on both light and dark backgrounds:
 
 ```Clojure
-(println (bling [:bold.red "Red"]
-                ", "
-                [:bold.orange "Orange"]
-                ", "
-                [:bold.yellow "Yellow"]
-                ", "
-                [:bold.green "Olive"]
-                ", "
-                [:bold.green "Green"]
-                ", "
-                [:bold.blue "Blue"]
-                ", "
-                [:bold.blue "Purple"]
-                ", "
-                [:bold.magenta "Magenta"]
-                ", "
-                [:bold.gray "Gray"]
-                ", "
-                [:bold.black "Black"]
-                ", "
-                [:bold.white "White"] ))
+(print-bling [:bold.red "Red"]
+             ", "
+             [:bold.orange "Orange"]
+             ", "
+             [:bold.yellow "Yellow"]
+             ", "
+             [:bold.green "Olive"]
+             ", "
+             [:bold.green "Green"]
+             ", "
+             [:bold.blue "Blue"]
+             ", "
+             [:bold.blue "Purple"]
+             ", "
+             [:bold.magenta "Magenta"]
+             ", "
+             [:bold.gray "Gray"]
+             ", "
+             [:bold.black "Black"]
+             ", "
+             [:bold.white "White"])
 ```
 <p align="center"><img src="resources/docs/chromed/colors-light.png" width="700px" /></p>
 <p align="center"><img src="resources/docs/chromed/colors-dark.png" width="700px" /></p>
@@ -333,19 +357,19 @@ Eleven carefully selected colors, from the [xterm range 16-255](https://en.m.wik
 
 You can use the following semantic aliases for some colors:
 ```Clojure
-(println (bling [:bold.negative "Negative"]
-                ", "
-                [:bold.error "Error"]
-                ", "
-                [:bold.warning "Warning"]
-                ", "
-                [:bold.positive "Positive"]
-                ", "
-                [:bold.info "Info"]
-                ", "
-                [:bold.subtle "Subtle"]
-                ", "
-                [:bold.neutral "Neutral"]))
+(print-bling [:bold.negative "Negative"]
+             ", "
+             [:bold.error "Error"]
+             ", "
+             [:bold.warning "Warning"]
+             ", "
+             [:bold.positive "Positive"]
+             ", "
+             [:bold.info "Info"]
+             ", "
+             [:bold.subtle "Subtle"]
+             ", "
+             [:bold.neutral "Neutral"])
 ```
 <br>
 
@@ -356,7 +380,7 @@ You can use the following semantic aliases for some colors:
 
 ### Using system colors
 
-Bling also supports named color aliases for system colors (Xterm colors 0-16).
+Bling also supports named color aliases for system colors (16 colors).
 
 Most likely, you do **not** want to use these. They will not display consistently across user spaces, as the actual color is dictated by the theme the user has selected in their particular terminal emulator.
 
@@ -364,35 +388,35 @@ If, however, you are using Bling to provide errors, warnings, and messages for t
 
 
 ```Clojure
-(println (bling [:system-black "black (SYSTEM)"]))
-(println (bling [:system-maroon "maroon (SYSTEM)"]))
-(println (bling [:system-green "green (SYSTEM)"]))
-(println (bling [:system-olive "olive (SYSTEM)"]))
-(println (bling [:system-navy "navy (SYSTEM)"]))
-(println (bling [:system-purple "purple (SYSTEM)"]))
-(println (bling [:system-teal "teal (SYSTEM)"]))
-(println (bling [:system-silver "silver (SYSTEM)"]))
-(println (bling [:system-grey "grey (SYSTEM)"]))
-(println (bling [:system-red "red (SYSTEM)"]))
-(println (bling [:system-lime "lime (SYSTEM)"]))
-(println (bling [:system-yellow "yellow (SYSTEM)"]))
-(println (bling [:system-blue "blue (SYSTEM)"]))
-(println (bling [:system-fuchsia "fuchsia (SYSTEM)"]))
-(println (bling [:system-aqua "aqua (SYSTEM)"]))
-(println (bling [:system-white "white (SYSTEM)"]))
+(print-bling [:system-black "black (SYSTEM)"])
+(print-bling [:system-maroon "maroon (SYSTEM)"])
+(print-bling [:system-green "green (SYSTEM)"])
+(print-bling [:system-olive "olive (SYSTEM)"])
+(print-bling [:system-navy "navy (SYSTEM)"])
+(print-bling [:system-purple "purple (SYSTEM)"])
+(print-bling [:system-teal "teal (SYSTEM)"])
+(print-bling [:system-silver "silver (SYSTEM)"])
+(print-bling [:system-grey "grey (SYSTEM)"])
+(print-bling [:system-red "red (SYSTEM)"])
+(print-bling [:system-lime "lime (SYSTEM)"])
+(print-bling [:system-yellow "yellow (SYSTEM)"])
+(print-bling [:system-blue "blue (SYSTEM)"])
+(print-bling [:system-fuchsia "fuchsia (SYSTEM)"])
+(print-bling [:system-aqua "aqua (SYSTEM)"])
+(print-bling [:system-white "white (SYSTEM)"])
 ```
 <br>
 
 ### Using arbitrary colors
 
-Bling also supports arbitrary colors in the xTerm 0-256 range. If you are using
+Bling also supports arbitrary colors in the 8-bit(256 colors range). If you are using
 arbitrary colors to construct messages to stdout that other people might have to
 read, you may want to test the appearance with both light and dark terminal
 themes. They must be provided as integers, so you will need to use an options
 map instead of a hiccup-style keyword:
 
 ```Clojure
-(println (bling [{:color 180} "xTerm color 180, aka Tan"]))
+(print-bling [{:color 180} "8-bit color 180, aka Tan"])
 ```
 
 <br>
@@ -601,10 +625,235 @@ More example values of `2` for `:margin-left`, to increase the weight:
 
 <br>
 
-## Testing
-There is a set of visual test suites in `bling.core-test`.
+## High Fidelity Printing
 
-For visual testing of output in node / deno context first do:
+Bling offers `bling.hifi` for colorized pretty-printing of Clojure, Java, and JavaScript data structures.
+`bling.hifi/hifi` will return an ansi-sgr decorated string, while `bling.hifi/print-hifi` will print such a string.
+
+Under the hood, the formatting/colorizing is achieved with <a href="https://github.com/paintparty/fireworks" target="_blank">Fireworks ↗</a>.
+
+By default, the theme of this output will be `Universal Neutral`.
+
+If you [set a valid `BLING_MOOD` env var](#enhanced-contrast), the theme of the `hifi` output will be `Alabaster Light` or `Alabaster Dark`. 
+
+You can choose <a href="https://github.com/paintparty/fireworks?tab=readme-ov-file#theming" target="_blank">one of the other available themes ↗</a> by following the instructions in the Fireworks readme and <a href="https://github.com/paintparty/fireworks?tab=readme-ov-file#step-3" target="_blank">setting up a `config.edn` on your system ↗, with a corresponding `BLING_CONFIG` env var</a>. This config will also let you control many other aspects of the formatting with the `hifi` output.
+
+<br>
+
+<div align="center"><sub><b><i>Alabaster Dark&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</i></b></sub></div>
+<div align="center"><img src="resources/docs/chromed/themes/dark/Alabaster-Dark.png" width="534px"/></div>
+
+<div align="center"><sub><b><i>Alabaster Light&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</i></b></sub></div>
+<div align="center"><img src="resources/docs/chromed/themes/light/Alabaster-Light.png" width="534px"/></div>
+
+Check out <a href="https://github.com/paintparty/fireworks?tab=readme-ov-file#theming" target="_blank">the other available themes here ↗</a>
+
+<br>
+<br>
+
+
+## Usage with Malli
+
+Bling offers `bling.explain/explain-malli` to present [Malli](https://github.com/metosin/malli) validation errors:
+
+```Clojure
+(require '[bling.explain :refer [explain-malli]])
+
+(def Address
+  [:map
+   [:id string?]
+   [:tags [:set keyword?]]
+   [:address
+    [:map
+     [:street string?]
+     [:city string?]
+     [:zip int?]
+     [:lonlat [:tuple double? double?]]]]])
+
+(explain-malli
+ Address
+ {:id "Lillan",
+  :tags #{:coffee :artesan :garden},
+  :address
+  {:street "Ahlmanintie 29", :zip 33100, :lonlat [61.4858322 87.34]}})
+```
+
+<br>
+
+The above code would print the following:
+
+<div align="center"><img src="resources/docs/chromed/malli-explain-missing-key_dark-0.7.0.png" width="700px"/></div>
+
+
+You can also pass an option trailing options map to customize the appearance of the printed output. In the example below, we are leaving out the display of the schema within the callout block:
+
+```Clojure
+(explain-malli
+ Address
+ {:id "Lillan",
+  :tags #{"coffee" :artesan :garden},
+  :address
+  {:city "Tempare" :street "Ahlmanintie 29", :zip 33100, :lonlat [61.4858322 87.34]}}
+ {:display-schema? false})
+```
+<br>
+
+The above code would print the following:
+
+<div align="center"><img src="resources/docs/chromed/malli-explain-bad-set-value-with-no-schema_dark-0.7.0.png" width="700px"/></div>
+
+The trailing options map for `explain-malli` accepts the following:
+| Key                      | Pred                    | Description                                                  |
+| :---------------         | ----------------------- | ------------------------------------------------------------ |
+| `:function-name`         | `string?`               | The name of the function that can be used to construct the source location info.
+| `:file`                  | `pos-int?` or `string?` | The file name that can be used to construct the source location.
+| `:line`                  | `pos-int?` or `string?` | The line number that can be used to construct the source location.
+| `:column`                | `pos-int?` or `string?` | The column number that can be used to construct the source location.
+| `:spacing`               | `#{:compact}`           | If the value of `:spacing` is set to `:compact`, the callout is compacted vertically.
+| `:display-schema?`       | `boolean?`              | Displays the schema passed to the underlying call to `malli.core/explain`. Defaults to `true`.
+| `:display-explain-data?` | `boolean?`              | Displays the output of `malli.core/explain` within the callout block. Defaults to `false`.
+| `:callout-opts`          | `map?`                  | A map of options for the underlying call to `bling.core/callout`. See the docstring for bling.core/callout. |"
+
+<br>
+
+> [!NOTE]
+To optimize syntax coloring and highlighting, so that your output resembles the above examples, you can set the `BLING_MOOD` env var:
+```
+# For light terminal themes
+# export BLING_MOOD="light"
+
+# For dark terminal themes
+# export BLING_MOOD="dark"
+```
+Check out the [hifi printing](#high-fidelity-printing) section for more info on setting a custom theme and other config options.
+
+<br>
+<br>
+
+## Figlet banners
+
+<p align="center">
+  <img src="resources/docs/chromed/bling-banner-fonts_dark-0.7.0.png"
+       width="700px" />
+</p>
+
+<br>
+
+Bling features basic support for composing <a href="https://en.wikipedia.org/wiki/FIGlet" target="_blank">Figlet</a> ascii-art
+banners with <a href="https://github.com/busyloop/lolcat" target="_blank">lolcat-like gradient overlays</a>. Bling ships with a
+small handful of ported Figlet fonts. The glyph layout implementation is bare-bones and there is currently no support for standard figlet
+smushing. Figlet banners only work in terminal context (JVM Clojure or Node.js ClojureScript).
+
+For a quick sample in your terminal:
+```clojure
+clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.7.0"}}}' -e "(require '[bling.sample]) (println (bling.sample/print-bling-banner-font-samples))"
+```
+### Banner usage
+
+Require:
+```Clojure
+(require '[bling.banner :refer [banner]]
+         '[bling.fonts.ansi-shadow :refer [ansi-shadow]])
+```
+
+Or add to your namespace `:requires`:
+```Clojure
+(ns myns.core
+ (:require [bling.banner :refer [banner]]
+           [bling.fonts.ansi-shadow :refer [ansi-shadow]]])
+```
+
+The above `require` examples show usage of the `ansi-shadow` font. For performance reasons,
+each font is in its own namespace and must be explicitly required. All of the available fonts:
+```Clojure
+bling.fonts.miniwi/miniwi
+bling.fonts.ansi-shadow/ansi-shadow
+bling.fonts.drippy/drippy
+bling.fonts.big/big
+bling.fonts.big-money/big-money
+bling.fonts.rounded/rounded
+bling.fonts.isometric-1/isometric-1
+```
+
+Below are the example calls that render the screenshot at the the top of this section.
+```Clojure
+(banner 
+ {:font               bling.fonts.miniwi/miniwi
+  :text               "Miniwi"
+  :gradient-direction :to-right})
+  :gradient-colors    [:purple :orange]
+
+(banner
+ {:font               bling.fonts.ansi-shadow/ansi-shadow
+  :text               "Ansi"
+  :gradient-direction :to-top}
+  :gradient-colors    [:warm :cool]
+
+(banner
+ {:font               bling.fonts.drippy/drippy
+  :text               "Drippy"
+  :gradient-direction :to-bottom
+  :gradient-colors    [:red :magenta]}
+
+(banner
+ {:font               bling.fonts.big/big
+  :text               "Big"
+  :gradient-direction :to-top}
+  :gradient-colors    [:yellow :purple]}
+
+(banner
+ {:font               bling.fonts.big-money/big-money
+  :text               "Money"
+  :gradient-direction :to-top
+  :gradient-colors    [:green :blue]}
+
+(banner
+ {:font               bling.fonts.rounded/rounded
+  :font-weight        :bold
+  :text               "Rounded" 
+  :gradient-direction :to-left
+  :gradient-colors    [:cool :warm]}
+
+(banner
+ {:font               bling.fonts.isometric-1/isometric-1
+  :font-weight        :bold
+  :text               "ABCDE"
+  :gradient-direction :to-right
+  :gradient-colors    [:red :magenta]}
+```
+
+<br>
+
+### All the options for `banner` 
+
+| Key                   | Pred       | Description   |
+| :---------------      | -----------| ------------- |
+| `:font`               | `map?`     | Must be one of the fonts that ships with Bling: `bling.fonts.ansi-shadow/ansi-shadow`,  `bling.fonts.big-money.big-money/big-money` , `bling.fonts.big/big`, `bling.fonts.miniwi/miniwi`, `bling.fonts.drippy/drippy,` or `bling.fonts.isometric-1/isometric-1`. Defaults to `bling.fonts.ansi-shadow/ansi-shadow`. |
+| `:text`               | `string?`  | The text to set in the banner.
+| `:font-weight`        | `keyword?` | If set to `:bold`, each subchar in figlet characters will be bolded. Only applies when a gradient is set.
+| `:gradient-colors`    | `vector?`  | Expects a vector of 2 keywords. Only the following color pairs are valid: `[:green :blue]`, `[:red :magenta]`, `[:yellow :purple]`, `[:orange :purple]`, `[:cool :warm]`.  Only applies to terminal emulator printing|
+| `:gradient-direction` | `keyword?` | Expects a keyword. Must be one of: `:to-top`, `:to-bottom`, `:to-right`, and `:to-left`.  Only applies to terminal emulator printing|
+| `:gradient-shift`     | `int?`     | If gradient is `[:warm :cool]` pair, this will shift the hue. `0-5`. Defaults to `0`.|
+| `:contrast`           | `keyword?` | If gradient is set, this will force an overall lighter or darker tone. Defaults to `:medium`. If the user has a `BLING_MOOD` env var set, it will default to `:high` in order to optimize contrast for the users terminal theme (light or dark) |
+| `:margin-top`         | `int?`     | Amount of margin (in newlines) at top, outside banner. <br>Defaults to `1`. Only applies to terminal emulator printing. |
+| `:margin-bottom`      | `int?`     | Amount of margin (in newlines) at bottom, outside banner. <br>Defaults to `0`. Only applies to terminal emulator printing. |
+| `:margin-left`        | `int?`     | Amount of margin (in blank character spaces) at left, outside banner. <br>Defaults to `0`. Only applies to terminal emulator printing. |
+| `:margin-right`       | `int?`     | Amount of margin (in blank character spaces) at right, outside banner. <br>Defaults to `0`. Only applies to terminal emulator printing. |"
+
+<br>
+
+> [!NOTE]
+Figlet banners only work in terminal context (JVM Clojure or Node.js ClojureScript).
+If you want a simple banner in a browser dev console, you can do the following:
+```Clojure
+(banner {:text "Hello" :browser-style "font-color:red;font-size:24px"})
+```
+<br>
+
+## Testing
+There is a visual test suite that can be run by calling `bling.core-test/visual-test-suite`.
+
+For visual testing of output in node / deno context first do (from the root of this repo):
 
 `shadow-cljs compile node-script`
 
