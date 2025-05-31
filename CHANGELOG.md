@@ -17,6 +17,23 @@ For a list of breaking changes, check [here](#breaking-changes)
 <br>
 <br>
 
+## 0.7.0
+2025-05-30
+
+Added support for underline styles and also hyperlinks.
+
+#### Added 
+- [Support for color figlet banner art](https://github.com/paintparty/bling?tab=readme-ov-file#figlet-banners)
+- [Introduced `BLING_MOOD` env var](https://github.com/paintparty/bling/issues/30)
+- [Add Hi-Fidelity printing of edn data via](https://github.com/paintparty/bling/issues/29)
+- [Light and dark versions of each pallette color for optimal contrast via `BLING_MOOD` env var](https://github.com/paintparty/bling/issues/26)
+- [Create custom explain printer for Malli](https://github.com/paintparty/bling/issues/28)
+
+
+<br>
+<br>
+
+
 ## 0.6.0
 2025-04-25
 
