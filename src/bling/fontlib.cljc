@@ -7785,15 +7785,7 @@ $$@@
 
 
      (defn- write-fonts-ns!
-       "This updates/generates a bling.fonts namespace.
-      
-        Used ocasionally during dev, when fonts are modified or added.
-  
-        This is intended to be called from repl or babashka script in
-        dev/bb-script.cljc.
-        
-        To call from bb (from the bling project root dir):
-        bb bb-script.cljc"
+       "Creates the contents of a bling.fonts namespace."
        [coll]
        (let [reqs*           (map (fn [{:keys [font-sym font-ns]}]
                                     [(symbol font-ns) :refer [font-sym]])
