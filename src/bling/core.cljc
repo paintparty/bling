@@ -399,14 +399,39 @@
    14  "#00ffff"                                            ;; system-aqua
    15  "#ffffff"                                            ;; system-white
    16  "#000000"                                            ;; black
+
    39  "#00afff"                                            ;; blue
+   81  "#5fd7ff"                                            ;; light-blue
+   26  "#005fd7"                                            ;; dark-blue
+
    40  "#00d700"                                            ;; green
+   82  "#5fff00"                                            ;; light-green
+   28  "#008700"                                            ;; dark-green
+
    106 "#87af00"                                            ;; olive
+   143 "#afaf5f"                                            ;; light-olive
+   100 "#878700"                                            ;; dark-olive
+
    141 "#af87ff"                                            ;; purple
+   147 "#afafff"                                            ;; light-purple
+   129 "#af00ff"                                            ;; dark-purple
+
    178 "#d7af00"                                            ;; yellow
+   220 "#ffd700"                                            ;; light-yellow
+   136 "#af8700"                                            ;; dark-yellow
+
    196 "#ff0000"                                            ;; red
+   203 "#ff5f5f"                                            ;; light-red
+   124 "#af0000"                                            ;; dark-red
+
    201 "#ff00ff"                                            ;; magenta
+   213 "#ff87ff"                                            ;; light-magenta
+   163 "#d700af"                                            ;; dark-magenta
+
    208 "#ff8700"                                            ;; orange
+   214 "#ffaf00"                                            ;; light-orange
+   172 "#d78700"                                            ;; dark-orange
+
    231 "#ffffff"                                            ;; white
    247 "#9e9e9e"                                            ;; gray
    })
