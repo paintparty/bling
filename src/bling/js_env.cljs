@@ -33,4 +33,3 @@
           :deno))
     (contains? #{:deno :node}))))
 
-(when node? (defonce BLING_MOOD (some-> js/process .-env .-BLING_MOOD)))

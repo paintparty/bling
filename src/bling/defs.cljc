@@ -1,8 +1,8 @@
 (ns bling.defs
   (:require
-    [bling.macros :refer [keyed start-dbg! stop-dbg! nth-not-found]]
-    [clojure.string :as string]
-    #?(:cljs [bling.js-env :refer [node?]])))
+    [fireworks.core :refer [? !? ?> !?>]]
+    [bling.macros :as macros :refer [keyed start-dbg! stop-dbg! nth-not-found]]
+    [clojure.string :as string]))
 
 (def banner-fonts-vec
   '[miniwi
@@ -95,13 +95,18 @@
           sgr-tag-close))))
 
 (def ^:public BLING_MOOD
-  #?(:clj  (System/getenv "BLING_MOOD")
-     :cljs bling.js-env/BLING_MOOD))
+  (macros/bling-mood-env-var))
+
+(def ^:public NO_COLOR
+  (macros/no-color-env-var))
+
+(def ^:public FORCE_COLOR
+  (macros/force-color-env-var))
 
 (def ^:public bling-mood 
- (if (contains? bling-mood-names-set BLING_MOOD)
+ (? (if (contains? bling-mood-names-set (? BLING_MOOD))
    BLING_MOOD
    (do
      (when (string? BLING_MOOD)
        (invalid-bling-mood-warning! BLING_MOOD))
-     "medium")))
+     "medium"))))
