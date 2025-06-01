@@ -1,6 +1,7 @@
 (ns bling.banner
   (:require
    [bling.macros :refer [keyed start-dbg! stop-dbg! nth-not-found ?]]
+   [fireworks.pp]
    [bling.util :as util :refer [sjr maybe]]
    [bling.defs :as defs]
    [clojure.string :as string]
@@ -28,7 +29,7 @@
                  (str "\n"
                       defs/orange-tag-open
                       border-char-top
-                      defs/sgr-tag-close
+                      defs/orange-tag-close
                       "  "
                       defs/bold-tag-open
                       "EXCEPTION (Caught) "
@@ -39,7 +40,7 @@
                            defs/internal-warning-border-style)
             (str defs/orange-tag-open
                  border-char-bottom
-                 defs/sgr-tag-close))))))
+                 defs/orange-tag-close))))))
 
 
 (defn- print-warning! [lns]
@@ -53,14 +54,14 @@
                  (str "\n"
                       defs/orange-tag-open
                       border-char-top
-                      defs/sgr-tag-close
+                      defs/orange-tag-close
                       "  "
                       defs/bold-tag-open "WARNING" defs/sgr-tag-close
                       "\n")
                  (mapv 
                   #(str defs/orange-tag-open
                         border-char
-                        defs/sgr-tag-close
+                        defs/orange-tag-close
                         "  "
                         % 
                         "\n")
@@ -70,7 +71,7 @@
                            defs/internal-warning-border-style)
             (str defs/orange-tag-open
                  border-char-bottom
-                 defs/sgr-tag-close))))))
+                 defs/orange-tag-close))))))
 
 (defn- maybe-wrap-in-double-quotes [x option-value-is-string?]
   (cond (and option-value-is-string?
@@ -114,7 +115,7 @@
        (str #_(sjr (+ 1 (count option-key)) " ")
             defs/orange-tag-open
             (sjr (count option-value-wrapped) "^")
-            defs/sgr-tag-close)]
+            defs/orange-tag-close)]
 
       (when valid-desc
         [""
@@ -781,7 +782,6 @@
 
 (declare caught-exception!)
 
-
 (defn- resolved-gradient-shift [valid? x]
   (if valid?
     x
@@ -831,7 +831,8 @@
           font                      (if valid-font? user-font default-font)
           ;; -------------------------------------------------------------------
 
-          no-gradient?              (nil? gradient-colors)
+          no-gradient?              (or (nil? gradient-colors)
+                                        defs/no-color?)
           gradient-colors*          gradient-colors
           gradient-shift*           gradient-shift
           gradient-direction*       gradient-direction

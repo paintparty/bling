@@ -6,6 +6,7 @@
    [fireworks.core :refer [? !? ?> !?>]] ;; <-just for debugging
    [bling.core :refer [?sgr bling print-bling callout point-of-interest bling-colors*]]
    [bling.sample :as sample]
+   [bling.defs]
    [bling.fonts]
    [bling.fonts.miniwi :refer [miniwi]]
    [bling.fonts.ansi-shadow :refer [ansi-shadow]]
@@ -368,11 +369,24 @@
 
 
 ;; Single colors
-;; (print-bling [:bold.light-blue "Hello"])
-;; (print-bling [:bold.blue "Hello"])
-;; (print-bling [:bold.dark-blue "Hello"])
-;; (print-bling [:bold.blue "Hello"])
-;; (?sgr (bling [:bold.red "hello"]))
+#_(do (? bling.defs/bling-mood)
+
+    (println '(print-bling [:bold.light-blue "Hello"]))
+    (print-bling [:bold.light-red "Hello, I'm light red"])
+
+    (println '(print-bling [:bold.medium-blue "Hello"]))
+    (print-bling [:bold.medium-blue "Hello"])
+
+    (println '(print-bling [:bold.dark-blue "Hello"]))
+    (print-bling [:bold.dark-blue "Hello"])
+
+    (println '(print-bling [:bold.blue "Hello"]))
+    (print-bling [:bold.blue "Hello"])
+
+    (println '(print-bling [:blue "Hello"]))
+    (print-bling [:blue "Hello"])
+
+    (?sgr (bling [:bold.red "hello"])))
 
 
 (defn visual-test-suite []

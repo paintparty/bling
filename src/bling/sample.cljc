@@ -25,7 +25,9 @@
                        bling-data*
                        callout
                        print-bling
-                       point-of-interest]]))
+                       point-of-interest]]
+   #?(:cljs [bling.js-env :refer [node?]])
+   ))
 
 (def ^:private colors-ordered
   ["system-black"   
@@ -552,13 +554,13 @@
 (defn print-bling-banners-with-bad-option-values []
   (doseq [m
           [
-          ;;  {:letter-spacing "example-bad-option-value"}
+           {:letter-spacing "example-bad-option-value"}
           ;;  {:gradient-shift "example-bad-option-value"}
           ;;  {:text 'example-bad-option-value}
           ;;  {:font 'example-bad-option-value}
           ;;  {:font-weight :bbold}
           ;;  {:gradient "to lleft, green, blue"}
-           {:gradient-colors    [:cool :warms]
+           #_{:gradient-colors    [:cool :warms]
             :gradient-direction :to-right
             :gradient-shift     "s"}
            ]]
@@ -579,11 +581,13 @@
            "blue"   
            "purple" 
            "magenta"
-           "gray"]]
+           "gray"
+           ]]
     (doseq [contrast [:low :medium :high ]]
-      (println (bling [{:contrast         contrast 
-                        :color            color}
-                       (str "Contrast " contrast)])))))  
+      (print-bling [{:contrast    contrast 
+                     :color       color
+                     :font-weight :bold}
+                    (str color ", contrast " contrast)]))))  
 
 
 

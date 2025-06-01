@@ -44,6 +44,7 @@
    :font-weight
    :font-style
    :color
+   :contrast
    :background-color
    :border-radius
    :padding
@@ -92,33 +93,53 @@
 ;; support "dark-orange to force dark"
 ;; support "light-orange to force light"
 
+
 (def ^:private bling-colors-dark
   (apply 
    array-map 
-   ["red"     {:sgr 124}
-    "orange"  {:sgr 172}
-    "yellow"  {:sgr 136}
-    "olive"   {:sgr 100}
-    "green"   {:sgr 28}
-    "blue"    {:sgr 26}
-    "purple"  {:sgr 129}
-    "magenta" {:sgr 163}
-    "gray"    {:sgr 244}
+   [
+    
+    "red"     {:sgr 124 :css "#af0000"}
+
+    "orange"  {:sgr 172 :css "#d78700"}
+
+    "yellow"  {:sgr 136 :css "#af8700"}
+
+    "olive"   {:sgr 100 :css "#878700"}
+
+    "green"   {:sgr 28 :css "#008700"}
+
+    "blue"    {:sgr 26 :css "#005fd7"}
+
+    "purple"  {:sgr 129 :css "#af00ff"}
+
+    "magenta" {:sgr 163 :css "#d700af"}
+
+    "gray"    {:sgr 244 :css "#808080"}
+
     "black"   {:sgr 16}
     "white"   {:sgr 231}]))
 
 (def ^:private bling-colors-light 
   (apply 
    array-map 
-   ["red"     {:sgr 203}
-    "orange"  {:sgr 214}
-    "yellow"  {:sgr 220}
-    "olive"   {:sgr 143}
-    "green"   {:sgr 82}
-    "blue"    {:sgr 81}
-    "purple"  {:sgr 147}
-    "magenta" {:sgr 213}
-    "gray"    {:sgr 249}
+   [
+    "red"     {:sgr 203 :css "#ff5f5f"}
+
+    "orange"  {:sgr 214 :css "#ffaf00"}
+
+    "yellow"  {:sgr 220 :css "#ffd700"}
+
+    "olive"   {:sgr 143 :css "#afaf5f"}
+
+    "green"   {:sgr 82 :css "#5fff00"}
+
+    "blue"    {:sgr 81 :css "#5fd7ff"}
+
+    "purple"  {:sgr 147 :css "#afafff"}
+
+    "magenta" {:sgr 213 :css "#ff87ff"}
+    "gray"    {:sgr 249 :css "#b2b2b2"}
     "black"   {:sgr 16}
     "white"   {:sgr 231}]))
 
@@ -127,41 +148,56 @@
   (apply
    array-map
    ["red"        {:sgr      196
+                  :css      "#ff0000"
                   :semantic "negative"}
     "orange"     {:sgr      208
+                  :css      "#ff8700"
                   :semantic "warning"}
-    "yellow"     {:sgr 178}
-    "olive"      {:sgr 106}
+    "yellow"     {:sgr 178 :css "#d7af00"}
+    "olive"      {:sgr 106 :css "#87af00"}
     "green"      {:sgr      40
+                  :css      "#00d700"
                   :semantic "positive"}
     "blue"       {:sgr      39
+                  :css      "#00afff"
                   :semantic "accent"}
-    "purple"     {:sgr 141}
-    "magenta"    {:sgr 201}
-    "gray"       {:sgr      245
+    "purple"     {:sgr 141 :css "#af87ff"}
+    "magenta"    {:sgr 201 :css "#ff00ff"}
+    "gray"       {:sgr      247
+                  :css      "#9e9e9e"
                   :semantic "subtle"}
-    "black"      {:sgr 16}
-    "white"      {:sgr 231}]))
+    "black"      {:sgr 16 :css "#000000"}
+    "white"      {:sgr 231 :css "#ffffff"}]))
 
 
 (def ^:private bling-colors
   (apply
    array-map
    (reduce-kv (fn [acc k v]
-                (let [dark   (get-in bling-colors-dark [k :sgr])
-                      light  (get-in bling-colors-light [k :sgr])
-                      medium (:sgr v)]
+                (let [sgr-dark   (get-in bling-colors-dark [k :sgr])
+                      sgr-light  (get-in bling-colors-light [k :sgr])
+                      sgr-medium (:sgr v)
+                      css-dark   (get-in bling-colors-dark [k :css])
+                      css-light  (get-in bling-colors-light [k :css])
+                      css-medium (:css v)]
                   (util/concatv (conj acc
                                       k
                                       (assoc v
                                              :sgr-dark
-                                             dark
+                                             sgr-dark
                                              :sgr-light
-                                             light))
+                                             sgr-light
+                                             :css-dark
+                                             css-dark
+                                             :css-light
+                                             css-light))
                                 (when-not (contains? #{"black" "white"} k) 
-                                  [(str "medium-" k) {:sgr medium}
-                                   (str "dark-" k)   {:sgr dark}
-                                   (str "light-" k)  {:sgr light}]))))
+                                  [(str "medium-" k) {:sgr sgr-medium
+                                                      :css css-medium}
+                                   (str "dark-" k)   {:sgr sgr-dark
+                                                      :css css-dark}
+                                   (str "light-" k)  {:sgr sgr-light
+                                                      :css css-light}]))))
               [] 
               bling-colors*)))
 
@@ -437,14 +473,17 @@
    })
 
 (defn- assoc-hex-colors [m]
-  (reduce-kv (fn [m color {:keys [sgr sgr-light sgr-dark]}]
+  (reduce-kv (fn [m color {:keys [sgr sgr-light sgr-dark css-light css-dark css]}]
                (let [hex (get xterm-colors-by-id sgr nil)]
                  (merge (assoc m
                                color 
                                (merge {:sgr sgr
                                        :css hex}
                                       (when sgr-light {:sgr-light sgr-light})
-                                      (when sgr-dark {:sgr-dark sgr-dark}))))))
+                                      (when sgr-dark {:sgr-dark sgr-dark})
+                                      (when css-light {:css-light css-light})
+                                      (when css-dark {:css-dark css-dark})
+                                      )))))
              {}
              m))
 
@@ -518,7 +557,24 @@
                                           :sgr))]
                                   (kw v))
                                 (:sgr v))
-                            (sgr-or-css-kw v))
+                            (if (= :color k)
+                              (let [kw
+                                    (case contrast
+                                      :low
+                                      (case defs/bling-mood
+                                        "light" :css-light
+                                        "dark" :css-dark
+                                        :css)
+
+                                      :medium
+                                      :css
+
+                                      (case defs/bling-mood
+                                        "light" :css-dark
+                                        "dark" :css-light
+                                        :css))]
+                                (kw v))
+                              (sgr-or-css-kw v)))
                           v)))
                {}
                m)))
@@ -1526,18 +1582,21 @@
                      (href-console style v))]
     (->EnrichedText
      (str v)
-     (cond
-       (map? style)
-       (reduce-kv convert-color {} style)
+     (let [m (cond
+               (map? style)
+               (reduce-kv convert-color {} style)
 
-       (or (keyword? style)
-           (string? style))
-       (-> style
-           name
-           (string/split (if (keyword? style)
-                           #"\."
-                           #" "))
-           (->> (reduce tag->map {})))))))
+               (or (keyword? style)
+                   (string? style))
+               (-> style
+                   name
+                   (string/split (if (keyword? style)
+                                   #"\."
+                                   #" "))
+                   (->> (reduce tag->map {}))))]
+       (if (and defs/no-color? (map? m))
+         (dissoc m :color :background-color)
+         m)))))
 
 
 (defn- reorder-text-decoration-shorthand [style]
@@ -1593,10 +1652,10 @@
                            args)
         tagged (string/join coll)]
 
-    ;; #?(:cljs
-    ;;    (js/console.log css)
-    ;;    :clj
-    ;;    ())
+    #_#?(:cljs
+       (js/console.log css)
+       :clj
+       (println css))
     
     {:console-array (into-array (util/concatv [tagged] css))
      :tagged        tagged
