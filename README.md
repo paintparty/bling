@@ -84,12 +84,12 @@ Add as a dependency to your project:
 
 lein:
 ```Clojure
-[io.github.paintparty/bling "0.7.0"]
+[io.github.paintparty/bling "0.8.0"]
 ```
 
 deps:
 ```Clojure
-io.github.paintparty/bling {:mvn/version "0.7.0"}
+io.github.paintparty/bling {:mvn/version "0.8.0"}
 ```
 <br>
 
@@ -114,14 +114,14 @@ Or, import into your namespace:
 You can view an exhaustive sampling of Bling output by pasting this snippet into your terminal:
 
 ```clojure
-clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.7.0"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
+clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.8.0"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
 ```
 <br>
 
 To view the above sample with Babashka, paste this snippet into your terminal:
 
 ```clojure
-bb -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.7.0"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
+bb -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.8.0"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
 ```
 <br>
 
@@ -747,7 +747,7 @@ smushing. Figlet banners only work in terminal context (JVM Clojure or Node.js C
 
 For a quick sample in your terminal:
 ```clojure
-clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.7.0"}}}' -e "(require '[bling.sample]) (println (bling.sample/print-bling-banner-font-samples))"
+clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.8.0"}}}' -e "(require '[bling.sample]) (println (bling.sample/print-bling-banner-font-samples))"
 ```
 ### Banner usage
 

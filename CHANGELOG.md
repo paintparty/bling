@@ -17,6 +17,20 @@ For a list of breaking changes, check [here](#breaking-changes)
 <br>
 <br>
 
+## 0.8.0
+2025-06-01
+
+#### Fixed
+- [Fix hifi printing for cljs browser context](https://github.com/paintparty/bling/issues/32)
+- [Light and dark versions of each pallette color for optimal contrast via `BLING_MOOD` env var, cljs browser context](https://github.com/paintparty/bling/issues/33)
+
+#### Added 
+- [Support for NO_COLOR env var](https://github.com/paintparty/bling/issues/27)
+
+<br>
+<br>
+
+
 ## 0.7.0
 2025-05-30
 
