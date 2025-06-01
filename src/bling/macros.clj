@@ -1,7 +1,6 @@
 (ns bling.macros
   (:require  
    [clojure.string :as string]
-   [clojure.pprint :refer [pprint]]
    [clojure.edn :as edn]))
 
 (defn- regex? [v]
@@ -154,7 +153,7 @@
               "\n"
               (shortened (quote ~x) 25)
               "\n"
-              (with-out-str (pprint ~x))))
+              (with-out-str (fireworks.pp/pprint ~x))))
         ~x)))
   ([label x]
    (let [label  (or (:label label) label)
@@ -163,13 +162,13 @@
      `(do
         (println
          (if (= :- ~label)
-           (with-out-str (pprint ~x))
-           #_(string/replace (with-out-str (pprint ~x)) #"\n$" "")
+           (with-out-str (fireworks.pp/pprint ~x))
+           #_(string/replace (with-out-str (fireworks.pp/pprint ~x)) #"\n$" "")
            (str ~ns-str
                 "\n"
                 ~label
                 "\n"
-                (with-out-str (pprint ~x)))))
+                (with-out-str (fireworks.pp/pprint ~x)))))
         ~x))))
 
 
