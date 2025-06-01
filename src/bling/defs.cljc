@@ -1,6 +1,5 @@
 (ns bling.defs
   (:require
-    [fireworks.core :refer [? !? ?> !?>]]
     [bling.macros :as macros :refer [keyed start-dbg! stop-dbg! nth-not-found]]
     [clojure.string :as string]))
 
@@ -120,7 +119,7 @@
 
 
 (def ^:public bling-mood 
- (if (contains? bling-mood-names-set (? BLING_MOOD))
+ (if (contains? bling-mood-names-set BLING_MOOD)
    BLING_MOOD
    (do
      (when (string? BLING_MOOD)
