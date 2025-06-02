@@ -18,11 +18,13 @@ For a list of breaking changes, check [here](#breaking-changes)
 <br>
 
 ## 0.8.0
+
+<p><sub>Many thanks to <a href="https://www.clojuriststogether.org/">Clojurists Together</a> for generously supporting this release!</sub></p>
+
 2025-06-01
 
 #### Fixed
 - [Fix hifi printing for cljs browser context](https://github.com/paintparty/bling/issues/32)
-- [Light and dark versions of each pallette color for optimal contrast via `BLING_MOOD` env var, cljs browser context](https://github.com/paintparty/bling/issues/33)
 
 #### Added 
 - [Support for NO_COLOR env var](https://github.com/paintparty/bling/issues/27)
@@ -32,21 +34,31 @@ For a list of breaking changes, check [here](#breaking-changes)
 
 
 ## 0.7.0
+
+<p><sub>Many thanks to <a href="https://www.clojuriststogether.org/">Clojurists Together</a> for generously supporting this release!</sub></p>
+
 2025-05-30
 
 #### Added 
 - [Support for color figlet banner art](https://github.com/paintparty/bling?tab=readme-ov-file#figlet-banners)
-- [Introduced `BLING_MOOD` env var](https://github.com/paintparty/bling/issues/30)
+  - Docs for `bling.banner` [here](https://github.com/paintparty/bling/tree/main?tab=readme-ov-file#figlet-banners)
 - [Add Hi-Fidelity printing of edn data via](https://github.com/paintparty/bling/issues/29)
-- [Light and dark versions of each pallette color for optimal contrast via `BLING_MOOD` env var](https://github.com/paintparty/bling/issues/26)
+  - Docs for `bling.hifi` [here](https://github.com/paintparty/bling/tree/main?tab=readme-ov-file#high-fidelity-printing)
 - [Create custom explain printer for Malli](https://github.com/paintparty/bling/issues/28)
-
+  - Docs for `bling.explain` [here](https://github.com/paintparty/bling/tree/main?tab=readme-ov-file#usage-with-malli)
+- [Introduced `BLING_MOOD` env var](https://github.com/paintparty/bling/issues/30)
+  - Docs [here](https://github.com/paintparty/bling/tree/main?tab=readme-ov-file#enhanced-contrast)
+- [Light and dark versions of each pallette color for optimal contrast via `BLING_MOOD` env var](https://github.com/paintparty/bling/issues/26)
+  - Docs [here](https://github.com/paintparty/bling/tree/main?tab=readme-ov-file#enhanced-contrast)
 
 <br>
 <br>
 
 
 ## 0.6.0
+
+<p><sub>Many thanks to <a href="https://www.clojuriststogether.org/">Clojurists Together</a> for generously supporting this release!</sub></p>
+
 2025-04-25
 
 Added support for underline styles and also hyperlinks.
