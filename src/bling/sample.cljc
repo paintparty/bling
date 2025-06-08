@@ -117,19 +117,17 @@
 
 (defn example-custom-callout
   [{:keys [point-of-interest-opts callout-opts]}]
-  (let [poi-opts     (merge {:header (str "This is not a real error or warning"
-                                          "\n"
-                                          "Your header message goes here.")
-                             :body   (str "The body of your template goes here."
-                                          "\n"
-                                          "Second line of copy."
-                                          "\n"
-                                          "Another line.")}
-                            point-of-interest-opts)
-        message      (point-of-interest poi-opts)
-        callout-opts (merge callout-opts
-                            {:padding-top 1})]
-    (callout callout-opts message)))
+  (let [callout-opts (merge callout-opts {:padding-top 1})]
+    (callout callout-opts
+             "This is not a real error or warning" "\n"
+             "Your header message goes here."
+             "\n\n"
+             (point-of-interest point-of-interest-opts)
+             "\n\n"
+             "The body of your template goes here." "\n"
+             "Second line of copy." "\n"
+             "Another line."
+             )))
 
 #?(:clj
    (defn print-commented-example-call [m k body]
@@ -736,13 +734,15 @@
   (explain-malli [:map-of :keyword :int] {"foo" 2}))
 
 (defn explain-malli-examples []
-  (explain-malli-with-explain-data)
+  ;; (explain-malli-with-explain-data)
+
   ;; (explain-malli-bad-map-value)
+
   (explain-malli-with-source-info)
-  (explain-malli-default)
-  (explain-malli-missing-map-key)
-  (explain-malli-bad-key-in-map)
-  (explain-malli-no-schema)
+  ;; (explain-malli-default)
+  ;; (explain-malli-missing-map-key)
+  ;; (explain-malli-bad-key-in-map)
+  ;; (explain-malli-no-schema)
   )
 
 

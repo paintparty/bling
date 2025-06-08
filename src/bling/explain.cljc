@@ -193,73 +193,110 @@
                label-style :italic
                
                fv
-               #(indented-string (hifi %))]
+               #(indented-string (hifi %))
+               
+               display-schema?
+               (and (not (true? display-explain-data?))
+                    (not (false? display-schema?)))]
            
 
            (bling.core/callout
-            (merge {:type           :error
+            (merge {:colorway       :error
                     :label-theme    :marquee
-                    :label          "Malli validation error"
+                    :label          #?(:cljs
+                                       (bling/bling
+                                        [:magenta "\n══ "]
+                                        [:bold "Malli Validation Error"]
+                                        [:magenta " ════"]
+                                        (when file-info " ")
+                                        (when file-info [:italic file-info])
+                                        "\n")
+                                       :clj
+                                       "Malli validation error")
+                    :side-label     (when file-info
+                                      (bling/bling [:italic file-info]))
                     :padding-top    (if compact? 1 2)
                     :padding-bottom (if compact? 0 1)}
                    callout-opts)
 
-            (bling.core/bling 
-             (hifi v
-                   (let [pth (problem-path missing-key? problem v)]
-                     {:find (merge {:path  pth
-                                    :class (if (coll? (get-in v pth))
-                                             :highlight-error
-                                             :highlight-error-underlined)})}))
-             section-break
+            
+            (hifi v
+                  (let [pth (problem-path missing-key? problem v)]
+                    {:find (merge {:path  pth
+                                   :class (if (coll? (get-in v pth))
+                                            :highlight-error
+                                            :highlight-error-underlined)})}))
+            
 
-             [label-style (if missing-key? "Missing key:" "Problem value: ")]
-             section-header-break
-             [:bold  (fv (if missing-key? missing-key (:value problem))) ]
-             section-break
-             
+            section-break
+            (bling/bling [label-style 
+                          (if missing-key? "Missing key:"
+                              "Problem value: ")])
+            section-header-break
 
-             (when error-message? [label-style "Message: "])
-             (when error-message?
-               (str section-header-break
-                    (indented-string error-message)
-                    section-break))
+            #?(:cljs
+               (bling/bling "  " 
+                            [:bold (if missing-key?
+                                     missing-key
+                                     (:value problem))])
+               :clj
+               (bling/bling 
+                [:bold 
+                 (fv (if missing-key? missing-key (:value problem)))]))
+            
+            section-break
+            
 
-             (when must-satisfy? [label-style "Must satisfy: "])
-             (when must-satisfy? section-header-break)
-             (when must-satisfy? [:bold (fv (or (some-> (get core-preds-by-keyword 
-                                                             schema-cleaned)
-                                                        :sym)
-                                                schema-cleaned))])
-             (when must-satisfy? section-break)
+            (when error-message? 
+              (bling/bling [label-style "Message: "]))
+            (when error-message?
+              (str section-header-break
+                   (indented-string error-message)
+                   section-break))
+
+            (when must-satisfy?
+              (bling/bling [label-style "Must satisfy: "]))
+            (when must-satisfy? section-header-break)
+            (when must-satisfy? 
+              #?(:cljs
+                 (hifi (or (some-> (get core-preds-by-keyword 
+                                        schema-cleaned)
+                                   :sym)
+                           schema-cleaned)
+                       {:margin-inline-start 2})
+                 :clj
+                 (bling/bling 
+                  [:bold 
+                   (fv (or (some-> (get core-preds-by-keyword 
+                                        schema-cleaned)
+                                   :sym)
+                           schema-cleaned))])))
+            (when must-satisfy? section-break)
 
 
-             ;; The schema related to the problem value.
-             ;; Defaults to true, displaying schema
-             (when-not (false? display-schema?)
-               [label-style "Schema: "])
-             (when-not (false? display-schema?) 
-               (str section-header-break
-                    (fv malli-schema-cleaned)
-                    section-break))
+            ;; The schema related to the problem value.
+            ;; Defaults to true, displaying schema
+            (when-not (false? display-schema?)
+              (bling/bling [label-style "Schema: "]))
+            (when-not (false? display-schema?) section-header-break)
+            (when-not (false? display-schema?) 
+              #?(:cljs
+                 (hifi malli-schema-cleaned {:margin-inline-start 2})
+                 :clj
+                 (fv malli-schema-cleaned)))
+            (when-not (false? display-schema?) section-break)
 
 
-             ;; The result of calling malli.core/explain on the value.
-             ;; Defaults to false, not displaying schema
-             (when (true? display-explain-data?)
-               [label-style "malli.core/explain: "])
-             (when (true? display-explain-data?) 
-               (str section-header-break
-                    (fv explain-data)
-                    section-break))
-
-
-             ;; The source of the call to the malli-explain
-             ;; This can be provided by the user.
-             (when file-info [label-style "Source: "])
-             (some->> #_(symbol "app.core/my-function:21:33") 
-                      file-info
-                      fv
-                      (str section-header-break))))))
+            ;; The result of calling malli.core/explain on the value.
+            ;; Defaults to false, not displaying schema
+            (when (true? display-explain-data?)
+              (bling/bling [label-style "Result of malli.core/explain:"]))
+            (when (true? display-explain-data?) section-header-break)
+            (when (true? display-explain-data?) 
+              #?(:cljs
+                 (hifi explain-data {:margin-inline-start 2})
+                 :clj
+                 (fv explain-data)))
+            (when (true? display-explain-data?) section-break))))
 
        (println "Success!")))))

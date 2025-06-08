@@ -18,7 +18,7 @@
   (str "\"" x "\""))
 
 (defn shortened
-  "Stringifies a collection and truncates the result with ellipsis 
+  "Stringifies a value and truncates the result with ellipsis 
    so that it fits on one line."
   [v limit]
   (let [as-str                        (str v)

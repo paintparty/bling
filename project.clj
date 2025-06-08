@@ -5,7 +5,7 @@
   :source-paths ["src"
                  ;; for local dev of fireworks and lasertag deps
                  ;; "../lasertag/src"
-                ;;  "../fireworks/src"
+                 "../fireworks/src"
                  ]
   :dependencies [[org.clojure/clojure "1.10.3"]
                  [io.github.paintparty/fireworks "0.12.0"]

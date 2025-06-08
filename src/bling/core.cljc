@@ -913,7 +913,8 @@
            label 
            label-string 
            theme
-           border-style]}]
+           border-style
+           side-label]}]
   (let [margin-left-str     (char-repeat margin-left " ")
         b?                  (= theme "sideline-bold")
         hrz                 #(char-repeat padding-left %)
@@ -940,7 +941,8 @@
                             (str "┌" (hrz "─") "┤  ")))])
              (bling [{:font-color :neutral}
                      (first label-lns)])
-             (bling [bs (if b? "  ┃" "  │")]))]
+             (bling [bs (if b? "  ┃" "  │")])
+             (when side-label (bling "  " [:italic side-label])))]
        (for [ln (rest label-lns)]
          (bling margin-left-str
                 [bs (if b? (str "┃" (hrz " ") "┃  ")
@@ -1114,62 +1116,60 @@
 
 (defn callout*
   [{:keys [theme] :as m}]
-  (let [char                 defs/gutter-char
-        border-style         {:color (:color m)
-                              :contrast :medium}
-        gutter?              (= "gutter" theme)
-        rainbow?             (= "rainbow-gutter" theme)
-        gutter-str           (if rainbow? 
-                               (bling [{:color (last rainbow-colors)} char])
-                               (bling [border-style char]))
-        rainbow-gutter-str   (apply bling
-                                  (for [s (drop-last rainbow-colors)]
-                                    [{:color s} char]))
+  (let [char                   defs/gutter-char
+        border-style           {:color    (:color m)
+                                :contrast :medium}
+        gutter?                (= "gutter" theme)
+        rainbow?               (= "rainbow-gutter" theme)
+        gutter-str             (if rainbow? 
+                                 (bling [{:color (last rainbow-colors)} char])
+                                 (bling [border-style char]))
+        rainbow-gutter-str     (apply bling
+                                      (for [s (drop-last rainbow-colors)]
+                                        [{:color s} char]))
         rainbow-gutter-str-odd (apply bling
-                                  (for [s (drop-last rainbow-colors-system)]
-                                    [{:color s} char]))
-
-        cr                   (fn [k ch] (char-repeat (or (k m) 0) ch))
-        gutter-str-zero      (bling [border-style
-                                     (string/join 
-                                      (cr :margin-left
-                                          defs/gutter-char-lower-seven-eighths))])
-        margin-left-str-zero gutter-str-zero
-        border-left-str-zero defs/gutter-char-lower-seven-eighths
-        s                    (ansi-callout-str
-                              (merge
-                               m
-                               {:border-style      border-style
-                                :border-left-str   (case theme
-                                                     "sideline"
-                                                     "│"
-                                                     "sideline-bold"
-                                                     "┃"
-                                                     "gutter"
-                                                     gutter-str
-                                                     "rainbow-gutter"
-                                                     gutter-str
-                                                     " ")
-                                :padding-left-str  (cr :padding-left " ")
-                                :margin-left-str   (if rainbow?
-                                                     rainbow-gutter-str
-                                                     (cr
-                                                      :margin-left
-                                                      (case theme
-                                                        "gutter"
-                                                        gutter-str
-                                                        "rainbow-gutter"
-                                                        rainbow-gutter-str
-                                                        " ")))
-
-                                :margin-top-str    (cr :margin-top "\n")
-                                :margin-bottom-str (cr :margin-bottom "\n")}
-                               
-                               (when rainbow?
-                                 {:margin-left-str-odd rainbow-gutter-str-odd})
-                               (when gutter?
-                                 (keyed [margin-left-str-zero
-                                         border-left-str-zero]))))]
+                                      (for [s (drop-last rainbow-colors-system)]
+                                        [{:color s} char]))
+        cr                     (fn [k ch] (char-repeat (or (k m) 0) ch))
+        gutter-str-zero        (bling [border-style
+                                       (string/join 
+                                        (cr :margin-left
+                                            defs/gutter-char-lower-seven-eighths))])
+        margin-left-str-zero   gutter-str-zero
+        border-left-str-zero   defs/gutter-char-lower-seven-eighths
+        s                      (ansi-callout-str
+                                (merge
+                                 m
+                                 {:border-style      border-style
+                                  :border-left-str   (case theme
+                                                       "sideline"
+                                                       "│"
+                                                       "sideline-bold"
+                                                       "┃"
+                                                       "gutter"
+                                                       gutter-str
+                                                       "rainbow-gutter"
+                                                       gutter-str
+                                                       " ")
+                                  :padding-left-str  (cr :padding-left " ")
+                                  :margin-left-str   (if rainbow?
+                                                       rainbow-gutter-str
+                                                       (cr
+                                                        :margin-left
+                                                        (case theme
+                                                          "gutter"
+                                                          gutter-str
+                                                          "rainbow-gutter"
+                                                          rainbow-gutter-str
+                                                          " ")))
+                                  :margin-top-str    (cr :margin-top "\n")
+                                  :margin-bottom-str (cr :margin-bottom "\n")}
+                                 
+                                 (when rainbow?
+                                   {:margin-left-str-odd rainbow-gutter-str-odd})
+                                 (when gutter?
+                                   (keyed [margin-left-str-zero
+                                           border-left-str-zero]))))]
     (if (true? (:data? m))
       s
       (some-> s println))))
@@ -1224,33 +1224,81 @@
                                                  warning-or-error?)
                padding-top-str    (padding-block padding-top 
                                                  semantic-type?)
-               arr                (cond
-                                    (or (instance? Enriched value) 
-                                        (instance? Enriched label))
+               #_#_arr                (cond
+                                        (or (instance? Enriched value) 
+                                            (instance? Enriched label))
                                     ;; Either the label or body is enriched
-                                    (enriched->js-arr value
-                                                      label
-                                                      padding-top-str
-                                                      padding-bottom-str)
-                                    
+                                        (enriched->js-arr value
+                                                          label
+                                                          padding-top-str
+                                                          padding-bottom-str)
+                                        
                                     ;; Nothing is enriched
                                     ;; The empty string in the css slot needs to
                                     ;; be there in order to properly add a
                                     ;; single newline.
-                                    :else
-                                    #js[(str (if (coll? label)
-                                               (some-> label
-                                                       (util/shortened 50)
-                                                       (str "\n"))
-                                               (some-> label 
-                                                       (str "\n")))
-                                             padding-top-str
-                                             (str value)
-                                             padding-bottom-str)
-                                        ""])]
-           (if (true? data?)
-             arr
-             (.apply f js/console arr)))))
+                                        :else
+                                        #js[(str (if (coll? label)
+                                                   (some-> label
+                                                           (util/shortened 50)
+                                                           (str "\n"))
+                                                   (some-> label 
+                                                           (str "\n")))
+                                                 padding-top-str
+                                                 (str value)
+                                                 padding-bottom-str)
+                                            ""])
+               args
+               (concat [label padding-top-str] value [padding-bottom-str])
+
+               {:keys [tagged css]}
+               (reduce (fn [acc arg]
+                         #_(js/console.log arg)
+                         (cond 
+                           (instance? Enriched arg)
+                           (assoc acc
+                                  :tagged
+                                  (conj (:tagged acc) (.-tagged arg))
+                                  :css
+                                  (.concat (:css acc) (.-css arg)))
+
+                           (and (map? arg)
+                                (every? #(contains? arg %)
+                                        [:ns-str
+                                         :quoted-form
+                                         :file-info-str
+                                         :formatted+
+                                         :formatted]))
+                           (assoc acc
+                                  :tagged
+                                  (conj (:tagged acc)
+                                        (-> arg
+                                            :formatted 
+                                            :string))
+                                  :css
+                                  (.concat (:css acc) 
+                                           (-> arg
+                                               :formatted
+                                               :css-styles 
+                                               into-array)))
+                           
+                           :else
+                           {:tagged (conj (:tagged acc) (str arg))
+                            :css    (.concat (:css acc) #js[])}
+                           ))
+                       {:tagged []
+                        :css    #js[]}
+                       args)]
+
+           (.apply f js/console (.concat #js[(string/join tagged)]
+                                         css))
+
+           #_(if (true? data?)
+               "hi"
+               arr
+               (.apply f js/console arr)
+
+               ))))
 
 (defn- default-opt [m k strs default]
   (or (some-> (k m)
@@ -1302,12 +1350,14 @@
                     default)]
     pl))
 
+
 (defn- resolve-padding-top 
   [theme f]
   #?(:cljs (f :padding-top 0)
      :clj  (if (contains? #{"gutter" "rainbow-gutter"} theme)
              (f :padding-top 0)
              (f :padding-top 0))))
+
 
 (defn- callout-opts* [m]
   (let-map
@@ -1348,6 +1398,9 @@
                          (string/replace #"\n+( +)$" #(second %))
                          (string/replace #"^( +)\n+" #(second %)))
                      label*)
+    side-label      (some-> m
+                            :side-label
+                            (maybe string?)) 
      ;; TODO maybe see if label is blinged and if not, bold it.
      ;label         (if label-is-blinged? label (bling [:bold label]))
     ]))
@@ -1417,6 +1470,7 @@
 | `:colorway`       | `keyword?` or `string?` | The color of the sideline border, or gutter, depending on the value of `:theme`.<br />Should be one of: `:error`,  `:warning` , `:info` , `:positive`, or `:subtle`. <br>Can also be any one of the pallete colors such as  `:magenta`, `:green`,  `:negative`, `:neutral`, etc. |
 | `:theme`          | `keyword?` or `string?` | Theme of callout. Can be one of `:sideline`, `:sideline-bold`, or `:gutter`. Defaults to `:sideline`. |
 | `:label`          | `any?`                  | Labels the callout. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string). <br>In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively. |
+| `:side-label`     | `any?`                  | Side label to the the callout label. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string). <br>In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively. |
 | `:label-theme`    | `keyword?` or `string?` | Theme of label. Can be one of `:marquee` or `:minimal`. Defaults to `:minimal`. |
 | `:padding-top`    | `int?`                  | Amount of padding (in newlines) at top, inside callout.<br/>Defaults to `0`. |
 | `:padding-bottom` | `int?`                  | Amount of padding (in newlines) at bottom, inside callout.<br>Defaults to `0`. In browser console, defaults to `1` in the case of callouts of type `:warning` or `:error`.|
@@ -1427,37 +1481,73 @@
 | `:data?`          | `boolean?`              | Returns a data representation of result instead of printing it. |
 "
 
+
+
+  ;; TODO finish making this multi-arity
+  ;; test in clj and cljs
+  ;; make it work with bling.explain/explain-malli
+  
+
   ;; TODO colorway can take arbitrary hex?
-  ([x]
-   (cond
+  ([x & args]
+   (if (empty? args)
+     (cond
      ;; The case when user just passes a :label value, so just border and text
-     (map? x)
-     (callout x nil)
+       (map? x)
+       (callout x nil)
 
      ;; The case when user just passes a string, or an instance of an Enriched (bling) object (cljs)
-     #?(:cljs
-        (or (string? x) (instance? Enriched x))
-        :clj
-        (string? x))
-     (callout {} x)
+       #?(:cljs
+          (or (string? x) (instance? Enriched x))
+          :clj
+          (string? x))
+       (callout {} x)
 
      ;; Internal warning from bling about bad args
-     :else
-     (callout
-      {:type        :warning
-       :theme       :sideline-bold
-       :label-theme :marquee}
+       :else
+       (callout
+        {:type        :warning
+         :theme       :sideline-bold
+         :label-theme :marquee}
        ;; TODO - this is messy formatiing for data-structures, fix
-      (point-of-interest
-       {:type   :warning
-        :header "bling.core/callout"
-        :form   (cons 'callout (list x))
-        :body   (str "bling-core/callout, if called with a single argument,\n"
-                     "expects either:\n"
-                     "- a map of options\n"
-                     "- a string\n\n"
-                     "Nothing will be printed.")}))))
-  ([opts value]
+        (point-of-interest
+         {:type   :warning
+          :header "bling.core/callout"
+          :form   (cons 'callout (list x))
+          :body   (str "bling-core/callout, if called with a single argument,\n"
+                       "expects either:\n"
+                       "- a map of options\n"
+                       "- a string\n\n"
+                       "Nothing will be printed.")})))
+
+     (if-not (map? x)
+     ;; Internal warning from bling about bad args
+       (callout
+        {:type :warning}
+        (point-of-interest
+         {:type   :warning
+          :header "bling.core/callout"
+          :form   (cons 'callout (cons x args))
+          :body   (str "bling-core/callout expects a map of options,\n"
+                       "followed by any number of values (usually strings).\n\n"
+                       "Nothing will be printed.")}))
+       (let [opts          x
+            ;;  value         (some-> args (maybe #(not (string/blank? %))))
+             callout-opts  (callout-opts* opts)
+             callout-opts+ (merge {:value #?(:cljs args
+                                             :clj (string/join "" args))}
+                                  opts
+                                  callout-opts)]
+         #?(:cljs
+            (if node?                                                           ;; TODO <- move to enriched or data
+              (callout* callout-opts+)
+              (browser-callout callout-opts+))
+
+            :clj
+            (callout* callout-opts+)))) 
+     
+     ))
+  #_([opts value]
    (if-not (map? opts)
      ;; Internal warning from bling about bad args
      (callout

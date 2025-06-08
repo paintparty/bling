@@ -1,5 +1,7 @@
 (ns bling.hifi
   (:require [fireworks.core]
+            #?(:cljs [bling.core :refer [Enriched]])
+            #?(:cljs [bling.util :as util])
             #?(:cljs [bling.js-env :refer [node?]])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -14,12 +16,18 @@
                        {:user-opts user-opts
                         :mode      :data
                         :p-data?   true
-                        :template  [:result]}))
-               :formatted)]
+                        :template  [:result]})))]
     #?(:cljs
-       (if node? (:string m) m)
+       (if node?
+         (-> m :formatted :string)
+         (let [tagged (-> m :formatted :string)
+               css    (-> m :formatted :css-styles)]
+           (Enriched. tagged                                   ;; tagged
+                      (into-array css)                         ;; css
+                      (into-array (util/concatv [tagged] css)) ;; consoleArray
+                      nil)))
        :clj
-       (:string m))))
+       (-> m :formatted :string))))
 
 (defn ^:public hifi
   "Hi-fidelity, pretty-printed string with syntax-coloring. Dispatches to

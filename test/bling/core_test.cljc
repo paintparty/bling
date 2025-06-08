@@ -4,8 +4,9 @@
   (:require
    #?(:cljs [bling.js-env :refer [node?]])
    [fireworks.core :refer [? !? ?> !?>]] ;; <-just for debugging
-   [bling.core :refer [?sgr bling print-bling callout point-of-interest bling-colors*]]
+   [bling.core :as bling :refer [?sgr bling print-bling callout point-of-interest bling-colors*]]
    [bling.sample :as sample]
+   [bling.util :as util]
    [bling.defs]
    [bling.fonts]
    [bling.fonts.miniwi :refer [miniwi]]
@@ -388,11 +389,11 @@
 
     (?sgr (bling [:bold.red "hello"])))
 
-
 (defn visual-test-suite []
   (random-callouts)
   (bling-basics)
-  (examples-warnings-for-bad-arg-to-callout))
+  (examples-warnings-for-bad-arg-to-callout)
+  )
 
 #_(visual-test-suite)
 
@@ -423,9 +424,43 @@
 
 #_(sample/print-bling-color-contrast)
 
-#_(sample/explain-malli-examples)
+(sample/explain-malli-examples)
 
-#_(print-hifi [:blue.bold "Hello" {:a 1 :b 'twoo}]
-            {:find [{:path [2]}
-                    {:path [1]
-                     :class :highlight-underlined}]})
+
+
+;; Experimental code for remove cljs brnch-related code
+;; (defn tagged->enriched [s]
+;;    (let [css 
+;;          (mapv #(second %)
+;;                (re-seq
+;;                 #"✂〠✂([^〠✂]+)〠✂〠"
+;;                 (str "✂〠✂background-color: rgb(255 238 0 / 1);font-weight: bold;text-decoration-line: underline;text-decoration-style: wavy〠✂〠"
+;;                      "Hello"
+;;                      "✂〠✂color: initial; line-height: 1.4〠✂〠")))
+;;          tagged
+;;          (string/replace s #"✂〠✂([^〠✂]+)〠✂〠" "%c")]
+;;      {:tagged       tagged
+;;       :css          (into-array css)
+;;       :consoleArray (into-array (util/concatv [tagged] css))
+;;       :args         []}))
+
+              
+;; (tagged->enriched 
+;;  (str "✂〠✂background-color: rgb(255 238 0 / 1);font-weight: bold;text-decoration-line: underline;text-decoration-style: wavy〠✂〠"
+;;       "Hello"
+;;       "✂〠✂color: initial; line-height: 1.4〠✂〠"))
+
+;; (print-hifi "Hello")
+
+
+;; (print-hifi "Hello" 
+;;             {:find [{:path  []
+;;                      :class :highlight-info}]})
+
+;; (print-hifi "Hello" 
+;;             {:find [{:path  []
+;;                      :class :highlight}]})
+
+;; (print-hifi "Hello" 
+;;             {:find [{:path  []
+;;                      :class :highlight-underlined}]})
