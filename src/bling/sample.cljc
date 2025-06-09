@@ -1,7 +1,7 @@
 (ns bling.sample
   (:require 
    ;; [bling.macros :refer [let-map keyed ?]] ;; <-- just for debugging
-   [fireworks.core :refer [? !? ?> !?> pprint]]
+   [fireworks.core :refer [pprint]]
    [clojure.string :as string]
    [bling.banner :refer [banner]]
    [bling.fontlib]

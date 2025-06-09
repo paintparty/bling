@@ -3,7 +3,7 @@
 (ns bling.core-test
   (:require
    #?(:cljs [bling.js-env :refer [node?]])
-   [fireworks.core :refer [? !? ?> !?>]] ;; <-just for debugging
+  ;;  [fireworks.core :refer [? !? ?> !?>]] ;; <-just for debugging
    [bling.core :as bling :refer [?sgr bling print-bling callout point-of-interest bling-colors*]]
    [bling.sample :as sample]
    [bling.util :as util]
