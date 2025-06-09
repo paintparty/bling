@@ -1033,7 +1033,7 @@
                                       lns-coll))]
     ret))
 
-(defn body-lines-with-border
+(defn- body-lines-with-border
   [m]
   (let [body-lns (string/split-lines (:value m))]
     (string/join
@@ -1043,43 +1043,108 @@
        (mapv (partial ln m) body-lns)
        (repeat (:padding-bottom m) (ln m ""))))))
 
-(defn- sideline-callout
-  [m]
-  (let [bold?       (= (:theme m) "sideline-bold")
-        label-line  (cond
-                      ; label-theme is marquee
-                      (and (:label m)
-                           (-> m :label as-str string/blank? not)
-                           (contains? #{"marquee"} (:label-theme m)))
-                      (sideline-marquee-label m)
+(defn- body-lines-no-border
+  [{:keys [margin-left-str padding-left-str] :as m}]
+  (let [body-lns (string/split-lines (:value m))]
+    (string/join
+      "\n"
+      (util/concatv
+       (repeat (:padding-top m) (str margin-left-str padding-left-str))
+       (mapv #(str margin-left-str padding-left-str %) body-lns)
+       (repeat (:padding-bottom m) (str margin-left-str padding-left-str))))))
 
-                      ; label-theme is just minimal
-                      :else
-                      (bling (:margin-left-str m)
-                           [(:border-style m) (if bold? "┏" "┌")]
-                           (when (:label m)
-                             (char-repeat 0 
-                                          (if bold? "━" "─")))
-                           (bling [:bold (some->> (:label m) (str " "))])))
-        bottom-line (bling [(:border-style m)
-                            (str (:margin-left-str m)
-                                 (if bold? "┗" "└"))])]
+(defn- minimal-callout
+  [{:keys [label side-label border-style block-border-length value]
+    :as   m}]
+  (let [no-label?
+        (or (nil? label) (string/blank? label))
+        
+        label-line
+        (if no-label?
+          (bling [border-style (string/join (repeat block-border-length "═"))])
+          (bling [border-style "══"]
+                 [:bold (some->> label (str " "))]
+                 (when label " ")
+                 [border-style "════"]
+                 (some->> side-label (str " "))))
+
+        label-line-length
+        (count label-line)
+        
+        matches
+        (re-seq #"\u001b\[([0-9;]*)[mK]" label-line)
+
+        n
+        (reduce (fn [n [_ s]] (+ n (count s))) 0 matches)
+
+        n
+        (- label-line-length n (* 3 (count matches)))
+        
+        body-lines
+        (body-lines-no-border m)
+        ]
+    (str label-line
+         "\n"
+         body-lines
+         (when-not (string/blank? body-lines) "\n")
+         (when-not (string/blank? body-lines)
+                   (bling [border-style (string/join (repeat n "─"))])))))
+
+(defn- sideline-callout
+  [{:keys [theme label side-label label-theme border-style padding-left margin-left-str]
+    :as m}]
+  (let [bold?       
+        (= theme "sideline-bold")
+
+        marquee-label?
+        (and label
+             (-> m :label as-str string/blank? not)
+             (contains? #{"marquee"} label-theme))
+
+        horizontal-extension
+        (when (and (not marquee-label?) label)
+          [border-style (char-repeat (max (dec padding-left) 0)
+                                     (if bold? "━" "─"))])
+
+        label-line  
+        (cond
+          ; label-theme is :marquee
+          marquee-label?
+          (sideline-marquee-label m)
+
+
+          
+          ; label-theme is :minimal
+          :else
+          (bling margin-left-str
+                 [border-style (if bold? "┏" "┌")]
+                 horizontal-extension
+                 (bling [:bold (some->> label (str " "))]
+                        (when side-label " ")
+                        (when side-label [border-style (if bold? "━━━" "───")])
+                        (some->> side-label (str " ")))))
+
+        bottom-line 
+        (bling [border-style
+                (str margin-left-str
+                     (if bold? "┗" "└"))])]
     (str
       label-line
       "\n"
       (body-lines-with-border m)
       "\n"
       bottom-line)))
-
+  
 (defn ansi-callout-str
   [{:keys [label-theme theme value] :as m}]
-  (let [sideline-variant? (contains? #{"sideline" "sideline-bold"} theme)
-        sideline-variant-with-body? (boolean (and value sideline-variant?))
+  (let [sideline-variant?            (contains? #{"sideline" "sideline-bold"} theme)
+        minimal-variant?             (= "minimal" theme)
+        sideline-variant-with-body?  (boolean (and value sideline-variant?))
         sideline-variant-just-label? (and (nil? value) sideline-variant?)
-        gutter-theme? (contains? #{"rainbow-gutter" "gutter"} theme)
-        m (assoc-in m [:border-style :contrast] :medium)
-        ]
+        gutter-theme?                (contains? #{"rainbow-gutter" "gutter"} theme)
+        m                            (assoc-in m [:border-style :contrast] :medium)]
     ;; (? (keyed [sideline-variant?
+    ;;            minimal-variant?
     ;;            sideline-variant-with-body?
     ;;            sideline-variant-just-label?
     ;;            gutter-theme?]))
@@ -1087,6 +1152,9 @@
          (if sideline-variant-with-body?
            (sideline-callout m)
            (cond
+             minimal-variant?
+             (minimal-callout m)
+
              sideline-variant-just-label?
              (lns m :label)
 
@@ -1205,11 +1273,14 @@
 #?(:cljs
    (defn browser-callout
          [{:keys [value
+                  side-label
                   label
+                  label-theme
                   warning?
                   error?
                   padding-bottom
                   padding-top
+                  margin-top
                   data?]
            :as   m}]
          (let [f                  (cond warning? 
@@ -1248,6 +1319,24 @@
                                                  (str value)
                                                  padding-bottom-str)
                                             ""])
+               
+               border-style           
+               {:color    (:color m)
+                :contrast :medium}
+
+               ;; TODO - Add a :pipe label theme, which will opt-in to the pipe style below
+               pipe?
+               (= label-theme "pipe")
+
+               label
+               (bling (when (pos? margin-top) 
+                        (string/join (repeat margin-top "\n")) )
+                      (when pipe? [border-style "══"])
+                      [:bold (some->> label (str (when pipe? " ")))]
+                      (when pipe? " ")
+                      (when pipe? [border-style "════"])
+                      (some->> side-label (str " ")))
+
                args
                (concat [label padding-top-str] value [padding-bottom-str])
 
@@ -1341,13 +1430,9 @@
   (if (and (int? n) (<= 0 n)) n default))
 
 
-(defn- resolve-padding-left [m sideline-theme? label-theme f]
-  (let [default (if (and sideline-theme?
-                         (= label-theme "minimal"))
-                  1
-                  2)
-        pl      (or (maybe (:padding-left m) pos-int?)
-                    default)]
+(defn- resolve-padding-left [m theme]
+  (let [default (if (= theme "minimal") 0 2)
+        pl      (or (maybe (:padding-left m) pos-int?) default)]
     pl))
 
 
@@ -1366,12 +1451,13 @@
                                 #{"sideline"
                                   "sideline-bold"
                                   "gutter"
-                                  "rainbow-gutter"}
+                                  "rainbow-gutter"
+                                  "minimal"}
                                 "sideline")
     sideline-theme? (contains? #{"sideline" "sideline-bold"} theme)
     label-theme    (or (default-opt m
                                     :label-theme
-                                    #{"marquee" "minimal"}
+                                    #{"marquee" "minimal" "pipe"}
                                     nil)
                        "minimal")
     sp             (fn [k n] (spacing (get m k) n))
@@ -1380,7 +1466,7 @@
     margin-top     (sp :margin-top 1)
     margin-bottom  (sp :margin-bottom 0)
     margin-left    (sp :margin-left 0)
-    padding-left   (resolve-padding-left m sideline-theme? label-theme sp)
+    padding-left   (resolve-padding-left m theme)
     type           (some-> (:type m) as-str (maybe #{"warning" "error" "info"}))
     colorway       (or (get semantics-by-semantic-type type)
                        (some-> (:colorway m) as-str))
@@ -1401,6 +1487,8 @@
     side-label      (some-> m
                             :side-label
                             (maybe string?)) 
+    block-border-length (let [bbl (:block-border-length m)]
+                          (or (when (pos-int? bbl) bbl) 50))
      ;; TODO maybe see if label is blinged and if not, bold it.
      ;label         (if label-is-blinged? label (bling [:bold label]))
     ]))
@@ -1426,6 +1514,8 @@
                                       
 
 ;; TODO - Shoul we create callout-data as sugar for (callout {... data? true ...} ...)
+;; TODO - visual tests
+
 
 (defn ^:public callout
   "Prints a message to the console with a block-based coloring motif controlled
@@ -1468,7 +1558,7 @@
 | :---------------  | ----------------------- | ------------------------------------------------------------ |
 | `:type`           | `keyword?` or `string?` | Should be one of: `:error`,  `:warning` , or `:info`. <br>Will set the label text (unless provided via `:label`). Will also set the `:colorway`, and override any provided `:colorway` value. |
 | `:colorway`       | `keyword?` or `string?` | The color of the sideline border, or gutter, depending on the value of `:theme`.<br />Should be one of: `:error`,  `:warning` , `:info` , `:positive`, or `:subtle`. <br>Can also be any one of the pallete colors such as  `:magenta`, `:green`,  `:negative`, `:neutral`, etc. |
-| `:theme`          | `keyword?` or `string?` | Theme of callout. Can be one of `:sideline`, `:sideline-bold`, or `:gutter`. Defaults to `:sideline`. |
+| `:theme`          | `keyword?` or `string?` | Theme of callout. Can be one of `:sideline`, `:sideline-bold`, `:minimal`, or `:gutter`. Defaults to `:sideline`. |
 | `:label`          | `any?`                  | Labels the callout. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string). <br>In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively. |
 | `:side-label`     | `any?`                  | Side label to the the callout label. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string). <br>In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively. |
 | `:label-theme`    | `keyword?` or `string?` | Theme of label. Can be one of `:marquee` or `:minimal`. Defaults to `:minimal`. |

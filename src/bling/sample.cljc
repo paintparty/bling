@@ -738,11 +738,11 @@
 
   ;; (explain-malli-bad-map-value)
 
-  (explain-malli-with-source-info)
+  ;; (explain-malli-with-source-info)
   ;; (explain-malli-default)
   ;; (explain-malli-missing-map-key)
   ;; (explain-malli-bad-key-in-map)
-  ;; (explain-malli-no-schema)
+  (explain-malli-no-schema)
   )
 
 
