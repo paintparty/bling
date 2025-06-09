@@ -17,7 +17,7 @@ For a list of breaking changes, check [here](#breaking-changes)
 <br>
 <br>
 
-## 0.8.1
+## 0.8.2
 
 <p><sub>Many thanks to <a href="https://www.clojuriststogether.org/">Clojurists Together</a> for generously supporting this release!</sub></p>
 
