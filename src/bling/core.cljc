@@ -1054,14 +1054,14 @@
        (repeat (:padding-bottom m) (str margin-left-str padding-left-str))))))
 
 (defn- minimal-callout
-  [{:keys [label side-label border-style block-border-length value]
+  [{:keys [label side-label border-style border-block-length value]
     :as   m}]
   (let [no-label?
         (or (nil? label) (string/blank? label))
         
         label-line
         (if no-label?
-          (bling [border-style (string/join (repeat block-border-length "═"))])
+          (bling [border-style (string/join (repeat border-block-length "═"))])
           (bling [border-style "══"]
                  [:bold (some->> label (str " "))]
                  (when label " ")
@@ -1487,7 +1487,7 @@
     side-label      (some-> m
                             :side-label
                             (maybe string?)) 
-    block-border-length (let [bbl (:block-border-length m)]
+    border-block-length (let [bbl (:border-block-length m)]
                           (or (when (pos-int? bbl) bbl) 50))
      ;; TODO maybe see if label is blinged and if not, bold it.
      ;label         (if label-is-blinged? label (bling [:bold label]))
@@ -1554,21 +1554,22 @@
    If two arguments are provided, the first should be a map with the follwoing
    optional keys:
 
-| Key               | Pred                    | Description                                                  |
-| :---------------  | ----------------------- | ------------------------------------------------------------ |
-| `:type`           | `keyword?` or `string?` | Should be one of: `:error`,  `:warning` , or `:info`. <br>Will set the label text (unless provided via `:label`). Will also set the `:colorway`, and override any provided `:colorway` value. |
-| `:colorway`       | `keyword?` or `string?` | The color of the sideline border, or gutter, depending on the value of `:theme`.<br />Should be one of: `:error`,  `:warning` , `:info` , `:positive`, or `:subtle`. <br>Can also be any one of the pallete colors such as  `:magenta`, `:green`,  `:negative`, `:neutral`, etc. |
-| `:theme`          | `keyword?` or `string?` | Theme of callout. Can be one of `:sideline`, `:sideline-bold`, `:minimal`, or `:gutter`. Defaults to `:sideline`. |
-| `:label`          | `any?`                  | Labels the callout. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string). <br>In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively. |
-| `:side-label`     | `any?`                  | Side label to the the callout label. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string). <br>In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively. |
-| `:label-theme`    | `keyword?` or `string?` | Theme of label. Can be one of `:marquee` or `:minimal`. Defaults to `:minimal`. |
-| `:padding-top`    | `int?`                  | Amount of padding (in newlines) at top, inside callout.<br/>Defaults to `0`. |
-| `:padding-bottom` | `int?`                  | Amount of padding (in newlines) at bottom, inside callout.<br>Defaults to `0`. In browser console, defaults to `1` in the case of callouts of type `:warning` or `:error`.|
-| `:padding-left`   | `int?`                  | Amount of padding (in blank character spaces) at left, inside callout.<br>In console emulator, defaults to `2`. In browser console, defaults to `0`.|
-| `:margin-top`     | `int?`                  | Amount of margin (in newlines) at top, outside callout.<br>Defaults to `1`. Only applies to terminal emulator printing. |
-| `:margin-bottom`  | `int?`                  | Amount of margin (in newlines) at bottom, outside callout.<br>Defaults to `0`. Only applies to terminal emulator printing. |
-| `:margin-left`    | `int?`                  | Amount of margin (in blank character spaces) at left, outside callout.<br>Defaults to `0`. Only applies to terminal emulator printing. |
-| `:data?`          | `boolean?`              | Returns a data representation of result instead of printing it. |
+| Key                    | Pred                    | Description                                                  |
+| :--------------------- | ----------------------- | ------------------------------------------------------------ |
+| `:type`                | `keyword?` or `string?` | Should be one of: `:error`,  `:warning` , or `:info`. <br>Will set the label text (unless provided via `:label`). Will also set the `:colorway`, and override any provided `:colorway` value. |
+| `:colorway`            | `keyword?` or `string?` | The color of the sideline border, or gutter, depending on the value of `:theme`.<br />Should be one of: `:error`,  `:warning` , `:info` , `:positive`, or `:subtle`. <br>Can also be any one of the pallete colors such as  `:magenta`, `:green`,  `:negative`, `:neutral`, etc. |
+| `:theme`               | `keyword?` or `string?` | Theme of callout. Can be one of `:sideline`, `:sideline-bold`, `:minimal`, or `:gutter`. Defaults to `:sideline`. |
+| `:label`               | `any?`                  | Labels the callout. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string). <br>In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively. |
+| `:side-label`          | `any?`                  | Side label to the the callout label. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string). <br>In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively. |
+| `:label-theme`         | `keyword?` or `string?` | Theme of label. Can be one of `:marquee` or `:minimal`. Defaults to `:minimal`. |
+| `:padding-top`         | `int?`                  | Amount of padding (in newlines) at top, inside callout.<br/>Defaults to `0`. |
+| `:padding-bottom`      | `int?`                  | Amount of padding (in newlines) at bottom, inside callout.<br>Defaults to `0`. In browser console, defaults to `1` in the case of callouts of type `:warning` or `:error`.|
+| `:padding-left`        | `int?`                  | Amount of padding (in blank character spaces) at left, inside callout.<br>In console emulator, defaults to `2`. In browser console, defaults to `0`.|
+| `:margin-top`          | `int?`                  | Amount of margin (in newlines) at top, outside callout.<br>Defaults to `1`. Only applies to terminal emulator printing. |
+| `:margin-bottom`       | `int?`                  | Amount of margin (in newlines) at bottom, outside callout.<br>Defaults to `0`. Only applies to terminal emulator printing. |
+| `:margin-left`         | `int?`                  | Amount of margin (in blank character spaces) at left, outside callout.<br>Defaults to `0`. Only applies to terminal emulator printing. |
+| `:border-block-length` | `int?`                  | The width of the top and bottom border, only applies to the `:minimal` callout theme.<br>Defaults to `50`. Only applies to terminal emulator printing. |
+| `:data?`               | `boolean?`              | Returns a data representation of result instead of printing it. |
 "
 
 
