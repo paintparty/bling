@@ -188,7 +188,7 @@
      
      (print-fake-comment  ";; callout examples, {:label-theme :minimal}")
 
-     (doseq [theme [:sideline :sideline-bold :gutter]]
+     (doseq [theme [:sideline :sideline-bold :gutter :minimal]]
        (print-callout-examples theme {}))
 
      (doseq [theme [:gutter]]
@@ -416,7 +416,7 @@
 
 (defn visual-test-suite []
   (random-callouts)
-  ;; (bling-basics)
+  (bling-basics)
   ;; (examples-warnings-for-bad-arg-to-callout)
   )
 

@@ -17,6 +17,21 @@ For a list of breaking changes, check [here](#breaking-changes)
 <br>
 <br>
 
+## 0.8.1
+
+<p><sub>Many thanks to <a href="https://www.clojuriststogether.org/">Clojurists Together</a> for generously supporting this release!</sub></p>
+
+2025-06-08
+
+#### Added 
+- [Minimal theme template](https://github.com/paintparty/bling/issues/35)
+
+#### Changed
+- `bling.core/callout` now takes any number of arguments.
+
+<br>
+<br>
+
 ## 0.8.0
 
 <p><sub>Many thanks to <a href="https://www.clojuriststogether.org/">Clojurists Together</a> for generously supporting this release!</sub></p>
