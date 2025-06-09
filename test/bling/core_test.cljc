@@ -3,7 +3,7 @@
 (ns bling.core-test
   (:require
    #?(:cljs [bling.js-env :refer [node?]])
-   [fireworks.core :refer [? !? ?> !?>]] ;; <-just for debugging
+  ;;  [fireworks.core :refer [? !? ?> !?>]] ;; <-just for debugging
    [bling.core :as bling :refer [?sgr bling print-bling callout point-of-interest bling-colors*]]
    [bling.sample :as sample]
    [bling.util :as util]
@@ -188,7 +188,7 @@
      
      (print-fake-comment  ";; callout examples, {:label-theme :minimal}")
 
-     (doseq [theme [:sideline :sideline-bold :gutter]]
+     (doseq [theme [:sideline :sideline-bold :gutter :minimal]]
        (print-callout-examples theme {}))
 
      (doseq [theme [:gutter]]
@@ -239,79 +239,104 @@
 
 
 (defn random-callouts []
-   (callout {:label "Callout, no body, body is \"\""} "")
+  (callout {:label "Callout, no body, body is \"\""} "")
 
-   (callout {:theme :gutter :label "Callout, no body, body is \"\""} "")
-   
-   (callout {:label "Callout, no body"} nil)
+  (callout {:theme :gutter
+            :label "Callout, no body, body is \"\""} "")
 
-   (callout {:theme :gutter :label "Callout, no body, body is nil"} nil)
-   
-   (callout {:label "Callout, no body, body is not supplied"})
+  (callout {:theme :minimal
+            :label "Callout, no body, body is \"\""} "")
+  
+  (callout {:label "Callout, no body"} nil)
 
-   (callout {:theme :gutter :label "Callout, no body, body is not supplied"})
-   
-   (callout "Callout, only body")
+  (callout {:theme :gutter
+            :label "Callout, no body, body is nil"} nil)
+  
+  (callout {:theme :minimal
+            :label "Callout, no body, body is nil"} nil)
 
-   (callout (bling [:magenta "Callout, only body"]))
+  (callout {:label "Callout, no body, body is not supplied"})
 
-   (callout {:theme :gutter}  "Callout, only body, body is nil")
+  (callout {:theme :gutter
+            :label "Callout, no body, body is not supplied"})
 
-   (callout {:label "Callout, no body"})
+  (callout {:theme :minimal
+            :label "Callout, no body, body is not supplied"})
+  
+  (callout "Callout, only body")
 
-   (callout {:label "Callout, blank body"} "")
+  (callout (bling [:magenta "Callout, only body"]))
 
-   (callout {:label ""})
+  (callout {:theme :gutter}  "Callout, only body")
 
-   (callout "")
+  (callout {:theme :minimal}  "Callout, only body")
 
-   (callout "just body")
-   
-   (callout "Default callout, no options")
+  (callout {:theme               :minimal
+            :block-border-length 66}
+           "Callout, only body, :block-border-length of 66")
 
-   (callout {:padding-left 2} "Default callout, no label, left padding")
+  (callout {:label "Callout, no body"})
 
-   (callout {:label "My label"} "Default callout, custom label")
+  (callout {:label "Callout, blank body"} "")
 
-   (callout {:type :warning} "Callout, type :warning, default label")
+  (callout {:label ""})
 
-   (callout {:type  :warning
-             :label "My warning"}
-            "Callout, type :warning, custom label")
+  (callout "")
 
-   (callout {:type     :warning
-             :label-string " My warning "
-             :label        (bling [:bold.yellow-bg.black " My warning "])}
-            "Callout, type :warning, custom enriched label")
+  (callout "just body")
+  
+  (callout "Default callout, no options")
 
-   (callout {:type       :warning
-             :padding-top    1
-             :padding-bottom 1
-             :padding-left   2} 
-            "Callout, type :warning, default label, custom padding")
+  (callout {:padding-left 2} "Default callout, no label, left padding")
 
-   (callout {:type     :positive
-             :label-string " YES "
-             :label        (bling [:positive-bg.white.bold " YES "])}
-            "Callout, type :positve, enriched label")
+  (callout {:label "My label"} "Default callout, custom label")
 
-   (callout {:label "YES"
-             :colorway  "positive"}
-            "Callout, type :positve, user label")
+  (callout {:type :warning} "Callout, type :warning, default label")
 
-   (callout {:colorway :magenta
-             :theme    :gutter}
-            (bling [:blue "One line."]
-                   #_"\n"
-                   #_[:red "red"]))
+  (callout {:type  :warning
+            :label "My warning"}
+           "Callout, type :warning, custom label")
 
-   (callout {:colorway :magenta
-             :theme    :gutter
+  (callout {:type         :warning
+            :label-string " My warning "
+            :label        (bling [:bold.yellow-bg.black " My warning "])}
+           "Callout, type :warning, custom enriched label")
+
+  (callout {:type           :warning
+            :padding-top    1
+            :padding-bottom 1
+            :padding-left   2} 
+           "Callout, type :warning, default label, custom padding")
+
+  (callout {:type         :positive
+            :label-string " YES "
+            :label        (bling [:positive-bg.white.bold " YES "])}
+           "Callout, type :positve, enriched label")
+
+  (callout {:label    "YES"
+            :colorway "positive"}
+           "Callout, type :positve, user label")
+
+  (callout {:colorway :magenta
+            :theme    :gutter}
+           (bling [:blue "One line."]
+                  #_"\n"
+                  #_[:red "red"]))
+
+  (callout {:colorway :magenta
+            :theme    :gutter
              ;; :label "foo"
-             }
-            (bling [:blue "1 of 2 lines."]
-                   "\n"
-                   [:red "2nd line"])))
+            }
+           (bling [:blue "1 of 2 lines."]
+                  "\n"
+                  [:red "2nd line"]))
+  
+  (callout {:colorway :magenta
+            :theme    :minimal}
+           (bling [:blue "1 of 2 lines."]
+                  "\n"
+                  [:red "2nd line"]))
+  )
 
 (defn examples-warnings-for-bad-arg-to-callout []
    (callout {:colorway :neutral
@@ -392,10 +417,10 @@
 (defn visual-test-suite []
   (random-callouts)
   (bling-basics)
-  (examples-warnings-for-bad-arg-to-callout)
+  ;; (examples-warnings-for-bad-arg-to-callout)
   )
 
-#_(visual-test-suite)
+(visual-test-suite)
 
 #_(sample/explain-malli-examples)
 
@@ -424,7 +449,7 @@
 
 #_(sample/print-bling-color-contrast)
 
-(sample/explain-malli-examples)
+#_(sample/explain-malli-examples)
 
 
 

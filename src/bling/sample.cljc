@@ -1,7 +1,7 @@
 (ns bling.sample
   (:require 
    ;; [bling.macros :refer [let-map keyed ?]] ;; <-- just for debugging
-   [fireworks.core :refer [? !? ?> !?> pprint]]
+   [fireworks.core :refer [pprint]]
    [clojure.string :as string]
    [bling.banner :refer [banner]]
    [bling.fontlib]
@@ -738,11 +738,11 @@
 
   ;; (explain-malli-bad-map-value)
 
-  (explain-malli-with-source-info)
+  ;; (explain-malli-with-source-info)
   ;; (explain-malli-default)
   ;; (explain-malli-missing-map-key)
   ;; (explain-malli-bad-key-in-map)
-  ;; (explain-malli-no-schema)
+  (explain-malli-no-schema)
   )
 
 
