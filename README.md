@@ -718,6 +718,13 @@ The trailing options map for `explain-malli` accepts the following:
 
 <br>
 
+You can preview several examples of bling.explain/explain-malli in your terminal with the following snippet:
+```
+clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.8.3"}}}' -e "(require '[bling.sample]) (bling.sample/explain-malli-examples)"
+```
+
+<br>
+
 > [!NOTE]
 To optimize syntax coloring and highlighting, so that your output resembles the above examples, you can set a `BLING_MOOD` env var:
 ```

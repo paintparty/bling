@@ -686,6 +686,21 @@
      opts)
     (explain-malli Address v opts)))
 
+(defn explain-malli-no-schema-compact []
+  (let [v {:id      "Lillan"
+           :tags    #{:artesan "coffee" :garden}
+           :address {:street "Ahlmanintie 29"
+                     :city   "Tempare"
+                     :zip    33100
+                     :lonlat [61.4858322, 87.34]}}
+        opts {:display-schema? false
+              :spacing         :compact}]
+    (print-explain-malli-example-header
+     "The result of bling.core/explain-malli, with :display-schema? set to false:"
+     v
+     opts)
+    (explain-malli Address v opts)))
+
 
 (defn explain-malli-with-source-info []
   (let [v {:id      "Lillan"
@@ -743,6 +758,7 @@
   (explain-malli-missing-map-key)
   (explain-malli-bad-key-in-map)
   (explain-malli-no-schema)
+  (explain-malli-no-schema-compact)
   )
 
 
