@@ -734,14 +734,14 @@
   (explain-malli [:map-of :keyword :int] {"foo" 2}))
 
 (defn explain-malli-examples []
-  ;; (explain-malli-with-explain-data)
+  (explain-malli-with-explain-data)
 
   ;; (explain-malli-bad-map-value)
 
-  ;; (explain-malli-with-source-info)
-  ;; (explain-malli-default)
-  ;; (explain-malli-missing-map-key)
-  ;; (explain-malli-bad-key-in-map)
+  (explain-malli-with-source-info)
+  (explain-malli-default)
+  (explain-malli-missing-map-key)
+  (explain-malli-bad-key-in-map)
   (explain-malli-no-schema)
   )
 

@@ -687,7 +687,7 @@ The above code would print the following:
 <div align="center"><img src="resources/docs/chromed/malli-explain-missing-key_dark-0.7.0.png" width="700px"/></div>
 
 
-You can also pass an option trailing options map to customize the appearance of the printed output. In the example below, we are leaving out the display of the schema within the callout block:
+You can also pass an optional trailing options map to customize the appearance of the printed output. In the example below, we are leaving out the display of the schema within the callout block:
 
 ```Clojure
 (explain-malli
@@ -719,7 +719,7 @@ The trailing options map for `explain-malli` accepts the following:
 <br>
 
 > [!NOTE]
-To optimize syntax coloring and highlighting, so that your output resembles the above examples, you can set the `BLING_MOOD` env var:
+To optimize syntax coloring and highlighting, so that your output resembles the above examples, you can set a `BLING_MOOD` env var:
 ```
 # For light terminal themes
 # export BLING_MOOD="light"
