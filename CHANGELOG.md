@@ -17,6 +17,22 @@ For a list of breaking changes, check [here](#breaking-changes)
 <br>
 <br>
 
+## 0.8.3
+
+<p><sub>Many thanks to <a href="https://www.clojuriststogether.org/">Clojurists Together</a> for generously supporting this release!</sub></p>
+
+2025-06-08
+
+#### Fixed 
+- `bling.sample/explain-malli-examples`
+
+#### Changed
+- Updated `fireworks` dep `0.12.1` 
+
+<br>
+<br>
+
+
 ## 0.8.2
 
 <p><sub>Many thanks to <a href="https://www.clojuriststogether.org/">Clojurists Together</a> for generously supporting this release!</sub></p>
