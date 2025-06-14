@@ -21,7 +21,7 @@ For a list of breaking changes, check [here](#breaking-changes)
 
 <p><sub>Many thanks to <a href="https://www.clojuriststogether.org/">Clojurists Together</a> for generously supporting this release!</sub></p>
 
-2025-06-08
+2025-06-14
 
 #### Changed
 - Updated `fireworks` dep `0.12.2` 
