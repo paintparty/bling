@@ -3,11 +3,12 @@
 (ns bling.core-test
   (:require
    #?(:cljs [bling.js-env :refer [node?]])
-  ;;  [fireworks.core :refer [? !? ?> !?>]] ;; <-just for debugging
+   [fireworks.core :refer [? !? ?> !?>]] ;; <-just for debugging
    [bling.core :as bling :refer [?sgr bling print-bling callout point-of-interest bling-colors*]]
    [bling.sample :as sample]
    [bling.util :as util]
    [bling.defs]
+   [bling.explain]
    [bling.fonts]
    [bling.fonts.miniwi :refer [miniwi]]
    [bling.fonts.ansi-shadow :refer [ansi-shadow]]
@@ -21,7 +22,35 @@
    [bling.hifi :refer [print-hifi hifi]]
    [malli.core :as m]
    [clojure.pprint :refer [pprint]]
-   [clojure.string :as string]))
+   [clojure.string :as string]
+   [lasertag.core :refer [tag-map]]
+   ))
+
+
+;; (? {:find {:path [1]}} {1 2 3 :x})
+(sample/explain-malli-default)
+
+#?(:cljs
+   ()
+   :clj
+   (do 
+     #_(pprint (tag-map (java.util.HashMap. {"a" 1
+                                           "b" 2})))
+    ;;  (pprint (tag-map 
+    ;;           (java.util.HashMap. {"a" 1
+    ;;                                "b" 2})))
+    ;;  (println "\n")
+    ;;  (pprint (tag-map 
+    ;;           (java.util.ArrayList. [1 2 3])))
+
+    ;;  (println "\n")
+    ;;  (pprint (tag-map 
+    ;;           (java.util.HashSet. #{"a" 1 "b" 2})))
+     
+
+     ))
+
+
 
 (def printer
   #?(:cljs (if node? println print-bling) :clj println))
@@ -420,7 +449,7 @@
   ;; (examples-warnings-for-bad-arg-to-callout)
   )
 
-(visual-test-suite)
+#_(visual-test-suite)
 
 #_(sample/explain-malli-examples)
 
