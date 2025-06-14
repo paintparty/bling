@@ -28,7 +28,7 @@
 
 
 ;; (? {:find {:path [1]}} {1 2 3 :x})
-(sample/explain-malli-default)
+;; (sample/explain-malli-default)
 
 #?(:cljs
    ()
@@ -446,8 +446,7 @@
 (defn visual-test-suite []
   (random-callouts)
   (bling-basics)
-  ;; (examples-warnings-for-bad-arg-to-callout)
-  )
+  (examples-warnings-for-bad-arg-to-callout))
 
 #_(visual-test-suite)
 
