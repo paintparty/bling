@@ -554,6 +554,9 @@ You can also render such warning and error callouts using a `:label-theme` value
 <p align="center"><img src="resources/docs/chromed/callout-with-poi_sideline_marquee_dark.png" width="700px" /></p>
 <p align="center"><img src="resources/docs/chromed/callout-with-poi_sideline_marquee_dark.png" width="700px" /></p>
 
+
+
+### Options for `point-of-interest`
 The diagram inside the callout that shows the namespace, line, column, and form
 with underlined is created by **`bling.core/point-of-interest`**, which takes a
 single map with the following options:
@@ -567,8 +570,6 @@ single map with the following options:
 | `:line`            | `integer?`             | Line number                                                  |
 | `:column`          | `integer?`             | Column number                                                |
 | `:form`            | `any?`                 | The form to draw attention to. Will be cast to string and truncated at 33 chars |
-| `:header`          | `any?`                 | Typically, a string. If multi-line, string should be composed with newlines as desired. In a browser context, can be an instance of `bling.core/Enriched` (produced by using `bling.core/enriched`)|
-| `:body`            | `any?`                 | Typically, a string. If multi-line, string should be composed with newlines as desired. In a browser context, can be an instance of `bling.core/Enriched` (produced by using `bling.core/enriched`)|
 | `:margin-block`    | `int?`                 | Controls the number of blank lines above and below the diagram.<br/>Defaults to `1`.|
 | `:type`            | #{`:error` `:warning`} | Automatically sets the `:text-decoration-color`. |
 | `:text-decoration-color` | #{`keyword?` `string?`} | Controls the color of the underline. Should be one of: `:error` `:warning`, or `:neutral`.<br>Can also be any one of the pallete colors such as  `:magenta`, `:green`,  `:negative`, `:neutral`, etc. Defaults to `:neutral` |
@@ -704,6 +705,7 @@ The above code would print the following:
 
 <div align="center"><img src="resources/docs/chromed/malli-explain-bad-set-value-with-no-schema_dark-0.7.0.png" width="700px"/></div>
 
+### Options for `explain-malli`
 The trailing options map for `explain-malli` accepts the following:
 | Key                      | Pred                    | Description                                                  |
 | :---------------         | ----------------------- | ------------------------------------------------------------ |
