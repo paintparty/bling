@@ -27,8 +27,40 @@
    ))
 
 
-;; (? {:find {:path [1]}} {1 2 3 :x})
-;; (sample/explain-malli-default)
+(require '[bling.explain :refer [explain-malli]])
+
+(def Address
+  [:map
+   [:id string?]
+   [:tags [:set keyword?]]
+   [:address
+    [:map
+     [:street string?]
+     [:city string?]
+     [:zip int?]
+     [:lonlat [:tuple double? double?]]]]])
+
+(def v 
+  {:id      "Lillan"
+   :tags    #{:artesan "coffee" :garden}
+   :address {:street "Ahlmanintie 29"
+             :city   "Tempare"
+             :zip    33100
+             :lonlat [61.4858322, 87.34]}})
+
+;; (explain-malli Address v {:display-schema? false :callout-opts {:label "Custom Label"}})
+
+;; (explain-malli Address v {:display-schema? false :callout-opts {:label "Custom Label" :label-theme :minimal}})
+
+;; (explain-malli Address v {:display-schema? false :callout-opts {:label "Custom Label" :theme :sideline-bold}})
+
+;; (explain-malli Address v {:display-schema? false :callout-opts {:label "Custom Label" :theme :sideline-bold :label-theme :minimal}})
+
+;; (explain-malli Address v {:display-schema? false :callout-opts {:label "Custom Label" :theme :gutter}})
+
+;; (explain-malli Address v {:display-schema? false :callout-opts {:label "Custom Label" :theme :gutter :label-theme :minimal}})
+
+;; (explain-malli Address v {:display-schema? false :callout-opts {:label "Custom Label" :theme :gutter :margin-left 3 :label-theme :minimal}})
 
 #?(:cljs
    ()

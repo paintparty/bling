@@ -671,6 +671,17 @@
      v)
     (explain-malli Address v)))
 
+(defn explain-malli-custom-label []
+  (let [v {:id      "Lillan"
+           :tags    #{:artesan "coffee" :garden}
+           :address {:street "Ahlmanintie 29"
+                     :city   "Tempare"
+                     :zip    33100
+                     :lonlat [61.4858322, 87.34]}}]
+    (print-explain-malli-example-header
+     "The result of bling.core/explain-malli, with default options:"
+     v)
+    (explain-malli Address v {:callout-opts {:label "Custom Label"}})))
 
 (defn explain-malli-no-schema []
   (let [v {:id      "Lillan"
