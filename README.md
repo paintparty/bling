@@ -716,7 +716,7 @@ The trailing options map for `explain-malli` accepts the following:
 | `:spacing`               | `#{:compact}`           | If the value of `:spacing` is set to `:compact`, the callout is compacted vertically.
 | `:display-schema?`       | `boolean?`              | Displays the schema passed to the underlying call to `malli.core/explain`. Defaults to `true`.
 | `:display-explain-data?` | `boolean?`              | Displays the output of `malli.core/explain` within the callout block. Defaults to `false`.
-| `:callout-opts`          | `map?`                  | A map of options for the underlying call to `bling.core/callout`. See the docstring for bling.core/callout. |"
+| `:callout-opts`          | `map?`                  | A map of options for the underlying call to `bling.core/callout`. With this you can change the theme of the callot template, colorway of the callout, theme of the callout label, text in the callout label, etc. See the docstring for `bling.core/callout.`  |"
 
 <br>
 
