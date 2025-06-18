@@ -1,4 +1,4 @@
-<p><sub>Many thanks to <a href="https://www.clojuriststogether.org/">Clojurists Together</a> for generously supporting this project!</sub></p>
+<p><sub>Many thank to <a href="https://www.clojuriststogether.org/">Clojurists Together</a> for generously supporting this project!</sub></p>
 
 <!-- TODO - Update images with new colors -->
 # Bling
@@ -36,7 +36,7 @@
 [Features]: #features
 [Setup]: #setup
 [Basic Usage]: #basic-usage
-[Colors]: #the-bling-pallette
+[Colors]: #the-bling-palette
 [Callout Blocks]: #callout-blocks
 
 [Error Templates]: #templates-for-errors-and-warnings
@@ -65,7 +65,7 @@ The same example as above, in a terminal emulator with a light background.
 
 - Supports both terminal emulators and browser consoles.
 
-- Simple, accessibility-focused, 11-color pallette.
+- Simple, accessibility-focused, 11-color palette.
 
 - All colors provide reasonable contrast on both light and dark backgrounds.
 
@@ -322,7 +322,7 @@ If, for example, you wanted to print `[1 2 3]` in red, you will need to stringif
 <br>
 <br>
 
-## The Bling pallette 
+## The Bling palette 
 
 Eleven carefully selected colors, from the [8-bit(256 colors)](https://en.m.wikipedia.org/wiki/Xterm#/media/File%3AXterm_256color_chart.svg), range(16-255) are available for use. All of these colors should display consistantly across most consoles on the end-user side. Don't expect all of the colors to pass the [strictest APCA contrast criterion](https://www.myndex.com/APCA/), but you can be sure of reasonable visibility on both light and dark backgrounds:
 
