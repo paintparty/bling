@@ -2,6 +2,8 @@
 
 (ns bling.core
   (:require [clojure.string :as string]
+            [fireworks.core :refer [? !? ?> !?>]]
+            [clojure.walk :as walk]
             [bling.macros :refer [let-map keyed]]
             [bling.defs :as defs]
             [bling.util :as util]
@@ -1694,34 +1696,97 @@
        (f o))))
 
 
-(defn- tag->map [acc s]
-  (let [kvs (case s
-              "bold"             [[:font-weight "bold"]]
-              "italic"           [[:font-style "italic"]]
-              "underline"        [[:text-decoration "underline"]]
-              "solid-underline"  [[:text-decoration "underline"]]
-              "double-underline" [[:text-decoration-line "underline"]
-                                  [:text-decoration-style "double"]]
-              "wavy-underline"   [[:text-decoration-line "underline"]
-                                  [:text-decoration-style "wavy"]]
-              "dotted-underline" [[:text-decoration-line "underline"]
-                                  [:text-decoration-style "dotted"]]
-              "dashed-underline" [[:text-decoration-line "underline"]
-                                  [:text-decoration-style "dashed"]]
-              "strikethrough"    [[:text-decoration "line-through"]]
-              (let [cs (:all color-codes)
-                    m  (get cs s nil)]
-                (if m
-                  [[:color m]]
-                  (when-let [nm (string/replace s #"-bg$" "")]
-                    (when-let [m (get cs nm nil)]
-                      [[:background-color m]])))))]
-    (if kvs
-      (reduce (fn [acc [k m]] (assoc acc k m)) acc kvs)
-      acc)))
+(defn- tag->map
+  ([acc s]
+   (tag->map false acc s))
+  ([use-color-string? acc s]
+   (let [kvs (case s
+               "bold"             [[:font-weight "bold"]]
+               "italic"           [[:font-style "italic"]]
+               "underline"        [[:text-decoration "underline"]]
+               "solid-underline"  [[:text-decoration "underline"]]
+               "double-underline" [[:text-decoration-line "underline"]
+                                   [:text-decoration-style "double"]]
+               "wavy-underline"   [[:text-decoration-line "underline"]
+                                   [:text-decoration-style "wavy"]]
+               "dotted-underline" [[:text-decoration-line "underline"]
+                                   [:text-decoration-style "dotted"]]
+               "dashed-underline" [[:text-decoration-line "underline"]
+                                   [:text-decoration-style "dashed"]]
+               "strikethrough"    [[:text-decoration "line-through"]]
+               (let [cs (:all color-codes)
+                     m  (get cs s nil)]
+                 (if m
+                   [[:color (if use-color-string? s m)]]
+                   (when-let [nm (string/replace s #"-bg$" "")]
+                     (when-let [m (get cs nm nil)]
+                       [[:background-color (if use-color-string? s m)]])))))]
+     (if kvs
+       (reduce (fn [acc [k m]] (assoc acc k m)) acc kvs)
+       acc))))
+
+
+
+;; 0.9.0 / hiccup w nested styles ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn- tags->maps [coll] 
+  (walk/postwalk 
+   (fn [x]
+     (if-let [k (some-> x 
+                        (util/maybe vector?) 
+                        first
+                        (util/maybe keyword?))]
+       (into [(-> k
+                  name
+                  (string/split #"\.")
+                  (->> (reduce (partial tag->map true) {})))]
+             (rest x))
+       x))
+   coll))
+
+
+
+(defn- has-style-map? [x]
+  (some-> x 
+          (util/maybe vector?) 
+          first
+          (util/maybe map?)))
+
+
+
+(defn- nest-styles [coll] 
+  (walk/prewalk 
+   (fn [x]
+     (if-let [m (some-> x (maybe has-style-map?) first)]
+       (mapv (fn [v]
+               (if-let [m2 (some-> v (maybe has-style-map?) first)] 
+                 (into [(merge m m2)] (rest v))
+                 v))
+               x)
+       x))
+   coll))
+
+
+(? (-> [[:italic 
+         [:bold "hi"]
+         [:red "hey"]]]
+       tags->maps
+       nest-styles))
+
+;; first make sure this works with current
+#_[[{:font-style "italic"}
+  [{:font-style  "italic"
+    :font-weight "bold"}
+   "hi"]
+  [{:font-style "italic" :color "red"}
+   "hey"]]]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
 
 
 (defrecord EnrichedText [value style])
+
 
 
 #?(:cljs
