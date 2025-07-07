@@ -2060,8 +2060,8 @@
 
 
 (defn- padded-paragraphs 
-  "Normalizes any :p elements, adding 2 newlines to end of vector, unless the
-   vector is the last arg.
+  "Normalizes any :p vectors, adding 2 newlines to end of vector, unless the
+   :p vector is the last arg.
    
    Example:
 
