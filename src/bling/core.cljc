@@ -1720,7 +1720,7 @@
                    [[:color (if use-color-string? s m)]]
                    (when-let [nm (string/replace s #"-bg$" "")]
                      (when-let [m (get cs nm nil)]
-                       [[:background-color (if use-color-string? s m)]])))))]
+                       [[:background-color (if use-color-string? nm m)]])))))]
      (if kvs
        (reduce (fn [acc [k m]] (assoc acc k m)) acc kvs)
        acc))))
