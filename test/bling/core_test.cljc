@@ -114,7 +114,7 @@
     :label "My custom label"
     :s     "Example callout, with :type of :info and custom :label"}
    {:type :warning
-    :s    "Example callout, with :type of :warning"}
+    :s    "Example callout, with :type of :warnings"}
    {:type :error
     :s    "Example callout, with :type of :error"}
    {:colorway :positive
@@ -237,14 +237,15 @@
 
                      callout-body
                      (str 
-                      "\n"
+                      #_"\n"
                       (if colorway
                         (str "Example callout, with :colorway of " colorway)
                         (if callout-type
                           (str "Example callout, with :type of " callout-type)
                           (str "Example callout," " default")))
-                      "\n\n"
-                      example-call)]
+                      "\n"
+                      #_"\n\n"
+                      #_example-call)]
                  (callout merged-opts callout-body)))))]
      
      (print-fake-comment  ";; callout examples, {:label-theme :minimal}")
@@ -256,7 +257,11 @@
        (print-callout-examples theme {:margin-left 2}))
 
      (doseq [theme [:sideline :sideline-bold]]
-       (print-callout-examples theme {:label-theme :marquee})))
+       (print-callout-examples theme {:label-theme :marquee}))
+     
+     (doseq [theme [:sideline]]
+       (print-callout-examples theme {:label-theme :marquee :side-label "foo.core:11:24"}))
+     )
    
 
    ;; TODO make custom error and warning examples ------------------------------
@@ -397,6 +402,11 @@
            (bling [:blue "1 of 2 lines."]
                   "\n"
                   [:red "2nd line"]))
+
+  (callout {:type  :warning 
+            :theme :minimal}
+           (bling "Callout, type :warning, :theme :minimal\n"
+                  "Second line"))
   )
 
 (defn examples-warnings-for-bad-arg-to-callout []
@@ -476,11 +486,11 @@
     (?sgr (bling [:bold.red "hello"])))
 
 (defn visual-test-suite []
-  (random-callouts)
+  #_(random-callouts)
   (bling-basics)
-  (examples-warnings-for-bad-arg-to-callout))
+  #_(examples-warnings-for-bad-arg-to-callout))
 
-#_(visual-test-suite)
+(visual-test-suite)
 
 #_(sample/explain-malli-examples)
 
