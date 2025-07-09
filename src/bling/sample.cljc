@@ -61,6 +61,59 @@
 (def ^:private printer
   #?(:cljs print-bling :clj println))
 
+(defn all-the-colors*
+  ([]
+   (all-the-colors* nil))
+  ([{:keys [label variant]}]
+   (let [colors   (filter #(not (re-find #"^system-" %)) colors-ordered)
+         max-char (apply max (map count colors))]
+     (when label (print-bling "\n" [:italic label] "\n"))
+     (for [s     colors #_(take 1 colors)
+           :when (not (re-find #"^system-" s))]
+       (let [spaces (string/join (repeat (- max-char (count s)) " "))
+             f      (fn lab
+                      ([m] (lab m s))
+                      ([m s] 
+                       (let [color-name 
+                             (if (contains? #{"medium" "light" "dark"}
+                                            variant)
+                               (str variant "-" s)
+                               s)]
+                         [(merge {:color color-name} m) s])))]
+         (bling 
+
+          (f {:background-color s
+              :color            :white
+              :font-weight      :bold}
+             (str " " s " " ))
+
+          spaces
+
+          " "
+          (f {:font-weight :bold})
+          " "
+          spaces
+
+          " "
+          (f {})
+          " "
+          spaces
+
+          " "
+          (f {:text-decoration :strikethrough})
+          " "
+          spaces
+
+          " "
+          (f {:text-decoration :underline})
+          " "
+          spaces
+
+          " "
+          (f {:font-style :italic})
+          " "
+          spaces))))))
+
 (defn all-the-colors 
   ([]
    (all-the-colors nil))
@@ -172,7 +225,9 @@
                          "This is not a real "
                          (name callout-type))))
         k :italic.subtle]
-      #?(:clj (print-commented-example-call m k body))
+      #?(:clj
+         (when-not (false? (:print-example-call? m)) 
+           (print-commented-example-call m k body)))
       (callout (assoc m :margin-top 0 :margin-bottom 0) body)))
 
 
@@ -587,6 +642,23 @@
                      :font-weight :bold}
                     (str color ", contrast " contrast)]))))  
 
+(defn bling-color-contrast []
+  (for [color 
+        ["red"    
+         "orange" 
+         "yellow" 
+         "olive"  
+         "green"  
+         "blue"   
+         "purple" 
+         "magenta"
+         "gray"
+         ]]
+    (for [contrast [:low :medium :high ]]
+      (bling [{:contrast    contrast 
+               :color       color
+               :font-weight :bold}
+              (str color ", contrast " contrast)]))))  
 
 
 ;; -----------------------------------------------------------------------------
