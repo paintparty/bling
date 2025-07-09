@@ -352,6 +352,10 @@ Eleven carefully selected colors, from the [8-bit(256 colors)](https://en.m.wiki
 <p align="center"><img src="resources/docs/chromed/colors-light.png" width="700px" /></p>
 <p align="center"><img src="resources/docs/chromed/colors-dark.png" width="700px" /></p>
 
+> [!NOTE]
+You can further optimize the contrast of the above palette, locally, for your own system, by setting a `BLING_MOOD` env var as described [here](https://github.com/paintparty/bling?tab=readme-ov-file#enhanced-contrast).
+
+<br>
 <br>
 
 ### Color aliases
