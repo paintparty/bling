@@ -435,6 +435,7 @@ map instead of a hiccup-style keyword:
 | `:colorway`       | #{`keyword?` `string?`} | The color of the sideline border, or gutter, depending on the value of `:theme`.<br />Should be one of: `:error`,  `:warning` , `:info` , `:positive`, or `:subtle`. <br>Can also be any one of the pallete colors such as  `:magenta`, `:green`,  `:negative`, `:neutral`, etc. |
 | `:theme`          | #{`keyword?` `string?`} | Theme of callout. Can be one of `:sideline`, `:sideline-bold`, `:minimal`, or `:gutter`. Defaults to `:sideline`. |
 | `:label`          | `any?`                  | Labels the callout. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string). <br>In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively. |
+| `:side-label`     | `any?`                  | Side label to the the callout label. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string). <br>In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively. |
 | `:label-theme`    | #{`keyword?` `string?`} | Theme of label. Can be one of `:marquee` or `:minimal`. Defaults to `:minimal`. |
 | `:padding-top`    | `int?`                  | Amount of padding (in newlines) at top, inside callout.<br/>Defaults to `0`. |
 | `:padding-bottom` | `int?`                  | Amount of padding (in newlines) at bottom, inside callout.<br>Defaults to `0`. In browser console, defaults to `1` in the case of callouts of type `:warning` or `:error`.|
@@ -488,6 +489,17 @@ The above calls would render the following in your terminal emulator:
 With `{:theme :sideline-bold}`: 
 <p align="center"><img src="resources/docs/chromed/callouts_sideline-bold_minimal_light.png" width="700px" /></p>
 <p align="center"><img src="resources/docs/chromed/callouts_sideline-bold_minimal_dark.png" width="700px" /></p>
+<br><br>
+
+With `{:theme :minimal}`:
+
+ <p align="center"><img src="resources/docs/chromed/callouts_minimal_light.png" width="700px" /></p>
+<p align="center"><img src="resources/docs/chromed/callouts_minimal_dark.png" width="700px" /></p>
+
+
+
+<br>
+
 <br>
 
 Callout accepts a `:label-theme` option. Supplying a value of `:marquee`, will render
@@ -500,6 +512,14 @@ the label inside a box:
 With `{:theme :sideline-bold :label-theme :marquee}`: 
 <p align="center"><img src="resources/docs/chromed/callouts_sideline-bold_marquee_light.png" width="700px" /></p>
 <p align="center"><img src="resources/docs/chromed/callouts_sideline-bold_marquee_dark.png" width="700px" /></p>
+<br>
+
+You can also pass a `:side-label` which may be useful for file info etc.
+
+With `{:theme :sideline :label-theme :marquee :side-label "foo.core:11:24"}`: 
+
+<p align="center"><img src="resources/docs/chromed/callouts_sideline_marquee_side-label_dark.png"  width="700px" /></p>
+
 <br>
 
 
@@ -624,7 +644,6 @@ More example values of `2` for `:margin-left`, to increase the weight:
 
 <p align="center"><img src="resources/docs/chromed/callouts_gutter2_with-colored-labels_dark.png" width="700px" /></p>
 <p align="center"><img src="resources/docs/chromed/callouts_gutter2_with-colored-labels_dark.png"  width="700px" /></p>
-
 
 <br>
 
