@@ -17,6 +17,19 @@ For a list of breaking changes, check [here](#breaking-changes)
 <br>
 <br>
 
+## 0.8.5
+
+<p><sub>Many thanks to <a href="https://www.clojuriststogether.org/">Clojurists Together</a> for generously supporting this release!</sub></p>
+
+2025-06-14
+
+#### Fixed
+- Updated `fireworks` dep `0.12.5`, to avoid potential problem with Babashka via Lasertag, addressed [here](https://github.com/paintparty/lasertag/issues/23). 
+
+<br>
+<br>
+
+
 ## 0.8.4
 
 <p><sub>Many thanks to <a href="https://www.clojuriststogether.org/">Clojurists Together</a> for generously supporting this release!</sub></p>
