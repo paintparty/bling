@@ -1,5 +1,5 @@
 # Changelog
-[Bling](https://github.com/paintparty/bling): Helps you quickly get rich text into your console printing. 
+[Bling](https://github.com/paintparty/bling): Hi-fidelity printing for Clojure(Script) and Babashka. 
 
 
 For a list of breaking changes, check [here](#breaking-changes)
@@ -17,11 +17,38 @@ For a list of breaking changes, check [here](#breaking-changes)
 <br>
 <br>
 
+## 0.8.6
+
+<p><sub>Many thanks to <a href="https://www.clojuriststogether.org/">Clojurists Together</a> for generously supporting this release!</sub></p>
+
+2025-07-11
+
+#### Fixed
+- Updated `fireworks` dep `0.12.6`, to avoid potential uncaught exception on custom datatypes whose coll-size cannot be determined by lasertag. Closes [#38](https://github.com/paintparty/bling/issues/38).
+
+- Prints stand-in container for custom datatypes whose coll-size cannot be determined. [#38](https://github.com/paintparty/bling/issues/38):
+```Clojure
+foo.bar/MyCustomType
+{ ... }
+```
+
+#### Added
+- Regenerative test suite for clj [8421bb7](https://github.com/paintparty/bling/commit/8421bb7c4d5702d93ec24252265ae99101c24f0e).
+
+
+- Regenerative test suite for bb [baf2f96](https://github.com/paintparty/bling/commit/baf2f9685ea1d2b9ffb7fc55f86d59c0247ae5fc).
+
+
+
+<br>
+<br>
+
+
 ## 0.8.5
 
 <p><sub>Many thanks to <a href="https://www.clojuriststogether.org/">Clojurists Together</a> for generously supporting this release!</sub></p>
 
-2025-06-14
+2025-07-09
 
 #### Fixed
 - Updated `fireworks` dep `0.12.5`, to avoid potential problem with Babashka via Lasertag, addressed [here](https://github.com/paintparty/lasertag/issues/23). 
