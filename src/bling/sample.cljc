@@ -700,7 +700,7 @@
          (with-out-str
            (pprint 
             (if opts
-              (list 'explain-malli Address-quoted v opts)
+              (list 'explain-malli (or (:schema opts) Address-quoted) v opts)
               (list 'explain-malli Address-quoted v))))))))
 
 
@@ -762,9 +762,10 @@
                      :city   "Tempare"
                      :zip    33100
                      :lonlat [61.4858322, 87.34]}}
-        opts {:display-schema? false}]
+        opts {:display-schema? false
+              :callout-opts    {:label "My custom label"}}]
     (print-explain-malli-example-header
-     "The result of bling.core/explain-malli, with :display-schema? set to false:"
+     "The result of bling.core/explain-malli, with :display-schema? set to false, and a custom callout label:"
      v
      opts)
     (explain-malli Address v opts)))
@@ -779,7 +780,7 @@
         opts {:display-schema? false
               :spacing         :compact}]
     (print-explain-malli-example-header
-     "The result of bling.core/explain-malli, with :display-schema? set to false:"
+     "The result of bling.core/explain-malli, with :display-schema? set to false, and :spacing set to compact:"
      v
      opts)
     (explain-malli Address v opts)))
@@ -829,6 +830,10 @@
 
 (defn explain-malli-bad-key-in-map []
   (println "\nThe result of bling.core/explain-malli, with bad key value in map:")
+   (print-explain-malli-example-header
+     "The result of bling.core/explain-malli, with bad key value in map:"
+     {"foo" 2}
+     {:schema [:map-of :keyword :int]})
   (explain-malli [:map-of :keyword :int] {"foo" 2}))
 
 (defn explain-malli-examples []

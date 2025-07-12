@@ -1,5 +1,4 @@
-;; TODO update version, readme, and changelog, then test, then deployeeeeeeee
-(defproject io.github.paintparty/bling "0.8.5"
+(defproject io.github.paintparty/bling "0.8.6"
   :description "Rich text console printing for Clojure(Script)"
   :url "https://github.com/paintparty/bling"
   :license {:name "MIT"}
