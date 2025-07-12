@@ -96,9 +96,9 @@
 
    This is intended to be called from repl."
   []
-  (spit (str "./test/bling/test_suite" ".clj") 
+  (spit (str "./test/bling/core_test" ".clj") 
         (str (with-out-str 
-               (pprint '(ns bling.test-suite
+               (pprint '(ns bling.core-test
                           (:require
                            [clojure.test :refer [deftest is]]
                            [bling.test-gen :refer [escape-sgr]]

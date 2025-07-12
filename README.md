@@ -885,6 +885,23 @@ If you want a simple banner in a browser dev console, you can do the following:
 <br>
 
 ## Testing
+
+Before running tests, you'll want to do this in the terminal session you are running the tests from:
+```Clojure
+export BLING_MOOD="medium"
+```
+The JVM tests require [leiningen](https://leiningen.org/) to be installed.
+```Clojure
+lein test
+```
+
+Babashka tests:
+```Clojure
+bb test:bb
+```
+<br>
+
+### Visual Test Suite
 There is a visual test suite that can be run by calling `bling.core-test/visual-test-suite`.
 
 For visual testing of output in node / deno context first do (from the root of this repo):

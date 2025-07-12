@@ -1,6 +1,6 @@
 ;; Namespace for visual testing and sandbox dev during development
 
-(ns bling.core-test
+(ns bling.visual-test
   (:require
    #?(:cljs [bling.js-env :refer [node?]])
    [fireworks.core :refer [? !? ?> !?>]] ;; <-just for debugging
@@ -23,8 +23,7 @@
    [malli.core :as m]
    [clojure.pprint :refer [pprint]]
    [clojure.string :as string]
-   [lasertag.core :refer [tag-map]]
-   ))
+   [lasertag.core :refer [tag-map]]))
 
 
 (require '[bling.explain :refer [explain-malli]])
@@ -487,7 +486,7 @@
 
 (defn visual-test-suite []
   #_(random-callouts)
-  (bling-basics)
+  #_(bling-basics)
   #_(examples-warnings-for-bad-arg-to-callout))
 
 (visual-test-suite)
@@ -559,3 +558,8 @@
 ;; (print-hifi "Hello" 
 ;;             {:find [{:path  []
 ;;                      :class :highlight-underlined}]})
+
+
+
+
+

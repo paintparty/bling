@@ -1,5 +1,5 @@
 (ns
- bling.test-suite
+ bling.core-test
  (:require
   [clojure.test :refer [deftest is]]
   [bling.test-gen :refer [escape-sgr]]
