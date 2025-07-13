@@ -31,6 +31,8 @@
 **[Malli]**
 &nbsp;•&nbsp; 
 **[Banners]**
+&nbsp;•&nbsp; 
+**[Dev]**
 </div>
 
 [Features]: #features
@@ -43,6 +45,7 @@
 [Hifi]: #high-fidelity-printing
 [Malli]: #usage-with-malli
 [Banners]: #figlet-banners
+[Dev]: #Development
 [Interop]: #printing-conventions
 [Contributing]: #contributing
 
@@ -884,7 +887,9 @@ If you want a simple banner in a browser dev console, you can do the following:
 ```
 <br>
 
-## Testing
+## Dev
+
+### Testing
 
 Before running tests, you'll want to do this in the terminal session you are running the tests from:
 ```Clojure
@@ -901,7 +906,7 @@ bb test:bb
 ```
 <br>
 
-### Visual Test Suite
+#### Visual Test Suite
 There is a visual test suite that can be run by calling `bling.core-test/visual-test-suite`.
 
 For visual testing of output in node / deno context first do (from the root of this repo):
