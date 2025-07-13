@@ -765,17 +765,17 @@
    By default, the diagram is created with a leading and trailing newlines.
    This can be set to zero, or increased, with the `:margin-block` option.
    
-| Key                | Pred                   | Description                                                  |
-| :--------          | -----------------      | ------------------------------------------------------------ |
-| `:file`            | `string?`              | File or namespace                                            |
-| `:line`            | `integer?`             | Line number                                                  |
-| `:column`          | `integer?`             | Column number                                                |
-| `:form`            | `any?`                 | The form to draw attention to. Will be cast to string and truncated at 33 chars |
-| `:header`          | `any?`                 | Typically, a string. If multi-line, string should be composed with newlines as desired. In a browser context, can be an instance of `bling.core/Enriched` (produced by using `bling.core/enriched`)|
-| `:body`            | `any?`                 | Typically, a string. If multi-line, string should be composed with newlines as desired. In a browser context, can be an instance of `bling.core/Enriched` (produced by using `bling.core/enriched`)|
-| `:margin-block`    | `int?`                 | Controls the number of blank lines above and below the diagram.<br/>Defaults to `1`.|
-| `:type`            | #{`:error` `:warning`} | Automatically sets the `:text-decoration-color`. |
-| `:text-decoration-color` | #{`keyword?` `string?`} | Controls the color of the underline. Should be one of: `:error` `:warning`, or `:neutral`.<br>Can also be any one of the pallete colors such as  `:magenta`, `:green`,  `:negative`, `:neutral`, etc. Defaults to `:neutral` |
+| Key                      | Pred                                              | Description                                                  |
+| :--------                | -----------------                                 | ------------------------------------------------------------ |
+| `:file`                  | `string?`                                         | File or namespace                                            |
+| `:line`                  | `integer?`                                        | Line number                                                  |
+| `:column`                | `integer?`                                        | Column number                                                |
+| `:form`                  | `any?`                                            | The form to draw attention to. Will be cast to string and truncated at 33 chars |
+| `:header`                | `any?`                                            | Typically, a string. If multi-line, string should be composed with newlines as desired. In a browser context, can be an instance of `bling.core/Enriched` (produced by using `bling.core/enriched`)|
+| `:body`                  | `any?`                                            | Typically, a string. If multi-line, string should be composed with newlines as desired. In a browser context, can be an instance of `bling.core/Enriched` (produced by using `bling.core/enriched`)|
+| `:margin-block`          | `int?`                                            | Controls the number of blank lines above and below the diagram.<br/>Defaults to `1`.|
+| `:type`                  | #{`:error` `:warning`}                            | Automatically sets the `:text-decoration-color`. |
+| `:text-decoration-color` | #{`keyword?` `string?`}                           | Controls the color of the underline. Should be one of: `:error` `:warning`, or `:neutral`.<br>Can also be any one of the pallete colors such as  `:magenta`, `:green`,  `:negative`, `:neutral`, etc. Defaults to `:neutral` |
 | `:text-decoration-style` | #{`:wavy` `:solid` `:dashed` `:dotted` `:double`} | Controls the color of the underline. |
 | `:text-decoration-index` | `pos-int?` | If the value of `:form` is a collection, this is the index of the item to apply text-decoration (underline). |
 "
@@ -821,9 +821,10 @@
                            [mb
                             gutter (diagram-char " ┌─ ") file-info "\n"
                             gutter (diagram-char " │ ") "\n"
-                            line (diagram-char " │ ") bolded-form "\n"
+                            line   (diagram-char " │ ") bolded-form "\n"
                             gutter (diagram-char " │ ") underline-styled
-                            mb gutter]
+                            mb
+                            "\n"]
 
                            form
                            [mb
@@ -832,9 +833,7 @@
                             mb]) 
         ret              (apply bling
                                 (util/concatv header
-                                              (when header ["\n"])
                                               diagram
-                                              (when body ["\n"])
                                               body))]
     ret))
 
