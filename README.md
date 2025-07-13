@@ -46,7 +46,7 @@
 [Hifi]: #high-fidelity-printing
 [Malli]: #usage-with-malli
 [Banners]: #figlet-banners
-[Dev]: #Development
+[Dev]: #development
 [Contributing]: #contributing
 
 <br>
@@ -87,12 +87,12 @@ Add as a dependency to your project:
 
 lein:
 ```Clojure
-[io.github.paintparty/bling "0.8.6"]
+[io.github.paintparty/bling "0.8.7"]
 ```
 
 deps:
 ```Clojure
-io.github.paintparty/bling {:mvn/version "0.8.6"}
+io.github.paintparty/bling {:mvn/version "0.8.7"}
 ```
 <br>
 
@@ -117,14 +117,14 @@ Or, import into your namespace:
 You can view an exhaustive sampling of Bling output by pasting this snippet into your terminal:
 
 ```clojure
-clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.8.6"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
+clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.8.7"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
 ```
 <br>
 
 To view the above sample with Babashka, paste this snippet into your terminal:
 
 ```clojure
-bb -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.8.6"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
+bb -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.8.7"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
 ```
 <br>
 
@@ -767,7 +767,7 @@ The trailing options map for `explain-malli` accepts the following:
 
 You can preview several examples of bling.explain/explain-malli in your terminal with the following snippet:
 ```
-clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.8.6"}}}' -e "(require '[bling.sample]) (bling.sample/explain-malli-examples)"
+clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.8.7"}}}' -e "(require '[bling.sample]) (bling.sample/explain-malli-examples)"
 ```
 
 <br>
@@ -802,7 +802,7 @@ smushing. Figlet banners only work in terminal context (JVM Clojure or Node.js C
 
 For a quick sample in your terminal:
 ```clojure
-clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.8.6"}}}' -e "(require '[bling.sample]) (println (bling.sample/print-bling-banner-font-samples))"
+clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.8.7"}}}' -e "(require '[bling.sample]) (println (bling.sample/print-bling-banner-font-samples))"
 ```
 ### Banner usage
 
@@ -906,7 +906,7 @@ If you want a simple banner in a browser dev console, you can do the following:
 ```
 <br>
 
-## Dev
+## Development
 
 ### Testing
 
@@ -925,13 +925,13 @@ bb test:bb
 #### Visual Test Suite
 There is a visual test suite that can be run by calling `bling.core-test/visual-test-suite`.
 
-For visual testing of output in node / deno context first do (from the root of this repo):
+<!-- For visual testing of output in node / deno context first do (from the root of this repo):
 
 `shadow-cljs compile node-script`
 
 Then do 
 
-`node out/bling-in-node-demo-script.js`
+`node out/bling-in-node-demo-script.js` -->
 
 <br>
 

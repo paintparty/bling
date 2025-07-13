@@ -17,6 +17,25 @@ For a list of breaking changes, check [here](#breaking-changes)
 <br>
 <br>
 
+## 0.8.7
+
+<p><sub>Many thanks to <a href="https://www.clojuriststogether.org/">Clojurists Together</a> for generously supporting this release!</sub></p>
+
+2025-07-13
+
+#### Fixed
+- Default margin-block spacing around `point-of-interest` diagrams.
+
+#### Changed
+- Updates example custom callout in readme documentation.
+
+
+<br>
+<br>
+
+
+
+
 ## 0.8.6
 
 <p><sub>Many thanks to <a href="https://www.clojuriststogether.org/">Clojurists Together</a> for generously supporting this release!</sub></p>
