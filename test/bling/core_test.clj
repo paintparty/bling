@@ -3,13 +3,34 @@
  (:require
   [clojure.test :refer [deftest is]]
   [bling.test-gen :refer [escape-sgr]]
-  [bling.core :as bling :refer [bling]]
+  [bling.core :as bling :refer [bling callout point-of-interest]]
   [bling.sample :as sample :refer [callout+]]
   [clojure.string :as string]))
 
 
+;; example callouts ------------------------------------------------------------
+#_(defn my-error-callout [{:keys [header body source]}]
+  (callout {:type        :error
+            :theme       :gutter
+            :margin-left 1
+            :padding-top 1}
+           header
+           source
+           body))
 
-
+#_(my-error-callout
+ {:header "Your header message goes here\n"
+  :source (point-of-interest 
+           {:type                  :error
+            :file                  "example.ns.core"
+            :line                  11
+            :column                1
+            :form                  '(+ foo baz)
+            :text-decoration-index 2})
+  :body   (str "The body of your template goes here.\n"
+               "Second line of copy.\n"
+               "Another line.")})
+;; -----------------------------------------------------------------------------
 
 (deftest
  all-colors

@@ -23,7 +23,7 @@
 **[Colors]**
 &nbsp;•&nbsp;
 **[Callout Blocks]**
-&nbsp;•&nbsp; 
+<br>
 **[Error Templates]**
 &nbsp;•&nbsp; 
 **[Hifi]**
@@ -33,6 +33,8 @@
 **[Banners]**
 &nbsp;•&nbsp; 
 **[Dev]**
+&nbsp;•&nbsp; 
+**[Contributing]**
 </div>
 
 [Features]: #features
@@ -40,13 +42,11 @@
 [Basic Usage]: #basic-usage
 [Colors]: #the-bling-palette
 [Callout Blocks]: #callout-blocks
-
 [Error Templates]: #templates-for-errors-and-warnings
 [Hifi]: #high-fidelity-printing
 [Malli]: #usage-with-malli
 [Banners]: #figlet-banners
 [Dev]: #Development
-[Interop]: #printing-conventions
 [Contributing]: #contributing
 
 <br>
@@ -537,37 +537,30 @@ With `{:theme :sideline :label-theme :marquee :side-label "foo.core:11:24"}`:
 **`bling.core/callout`**, paired with **`bling.core/point-of-interest`** 
 is perfect for creating your own custom error or warning messages. 
 
-
-
 Here is an example of creating a custom callout for an error message.
 You must provide the relevant `:file`, `:line`, `:column`, and `:form` values.
 
 ```Clojure
-(defn example-custom-callout
-  [{:keys [point-of-interest-opts callout-opts]}]
-  (let [poi-opts     (merge {:header "Your header message goes here."
-                             :body   (str "The body of your message goes here."
-                                          "\n"
-                                          "Another line of copy."
-                                          "\n"
-                                          "Another line."
-                                          )}
-                            point-of-interest-opts)
-        message      (point-of-interest poi-opts)
-        callout-opts (merge callout-opts
-                            {:padding-top 1})]
-    (callout callout-opts message)))
+(defn my-error-callout [{:keys [header body source]}]
+  (callout {:type        :error
+            :padding-top 1}
+           header
+           source
+           body))
 
-(example-custom-callout
- {:point-of-interest-opts {:type                  :error
-                           :file                  "example.ns.core"
-                           :line                  11
-                           :column                1
-                           :form                  '(+ foo baz)
-                           :text-decoration-index 2}
-  :callout-opts           {:type :error}})
+(my-error-callout
+ {:header "Your header message goes here\n"
+  :source (point-of-interest 
+           {:type                  :error
+            :file                  "example.ns.core"
+            :line                  11
+            :column                1
+            :form                  '(+ foo baz)
+            :text-decoration-index 2})
+  :body   (str "The body of your template goes here.\n"
+               "Second line of copy.\n"
+               "Another line.")})
 ```
-
 
 <br>
 
@@ -596,7 +589,7 @@ single map with the following options:
 | `:file`            | `string?`              | File or namespace                                            |
 | `:line`            | `integer?`             | Line number                                                  |
 | `:column`          | `integer?`             | Column number                                                |
-| `:form`            | `any?`                 | The form to draw attention to. Will be cast to string and truncated at 33 chars |
+| `:form`            | `any?`                 | The form to draw attention to. Will be cast to string and truncated at 33 chars. |
 | `:margin-block`    | `int?`                 | Controls the number of blank lines above and below the diagram.<br/>Defaults to `1`.|
 | `:type`            | #{`:error` `:warning`} | Automatically sets the `:text-decoration-color`. |
 | `:text-decoration-color` | #{`keyword?` `string?`} | Controls the color of the underline. Should be one of: `:error` `:warning`, or `:neutral`.<br>Can also be any one of the pallete colors such as  `:magenta`, `:green`,  `:negative`, `:neutral`, etc. Defaults to `:neutral` |
@@ -614,29 +607,55 @@ If you want to place more emphasis on your callouts you can pass
 defined above:
 
 ```Clojure
-(example-custom-callout
- {:file          "example.ns.core"
-  :line          11
-  :column        1
-  :form          '(+ 1 true)
-  :type          :error
-  :theme         :gutter})
+(defn my-error-callout [{:keys [header body source]}]
+  (callout {:type        :error
+            :theme       :gutter
+            :padding-top 1}
+           header
+           source
+           body))
+
+(my-error-callout
+ {:header "Your header message goes here\n"
+  :source (point-of-interest 
+           {:type                  :error
+            :file                  "example.ns.core"
+            :line                  11
+            :column                1
+            :form                  '(+ foo baz)
+            :text-decoration-index 2})
+  :body   (str "The body of your template goes here.\n"
+               "Second line of copy.\n"
+               "Another line.")})
 ```
 
 <p align="center"><img src="resources/docs/chromed/callout-with-poi_gutter_with-colored-labels_light.png" width="700px" /></p>
 <p align="center"><img src="resources/docs/chromed/callout-with-poi_gutter_with-colored-labels_dark.png" width="700px" /></p>
 
-Example value of `2` for `:margin-left`, to increase the weight:
+Example value of `1` for `:margin-left`, to increase the weight:
 
 ```Clojure
-(example-custom-callout
- {:file          "example.ns.core"
-  :line          11
-  :column        1
-  :form          '(+ 1 true)
-  :type          :error
-  :margin-left   2
-  :theme         :gutter})
+(defn my-error-callout [{:keys [header body source]}]
+  (callout {:type        :error
+            :theme       :gutter
+            :margin-left 1
+            :padding-top 1}
+           header
+           source
+           body))
+
+(my-error-callout
+ {:header "Your header message goes here\n"
+  :source (point-of-interest 
+           {:type                  :error
+            :file                  "example.ns.core"
+            :line                  11
+            :column                1
+            :form                  '(+ foo baz)
+            :text-decoration-index 2})
+  :body   (str "The body of your template goes here.\n"
+               "Second line of copy.\n"
+               "Another line.")})
 ```
 <p align="center"><img src="resources/docs/chromed/callout-with-poi_gutter2_with-colored-labels_light.png" width="700px" /></p>
 <p align="center"><img src="resources/docs/chromed/callout-with-poi_gutter2_with-colored-labels_dark.png" width="700px" /></p>
@@ -899,13 +918,10 @@ The JVM tests require [leiningen](https://leiningen.org/) to be installed.
 ```Clojure
 lein test
 ```
-
 Babashka tests:
 ```Clojure
 bb test:bb
 ```
-<br>
-
 #### Visual Test Suite
 There is a visual test suite that can be run by calling `bling.core-test/visual-test-suite`.
 
