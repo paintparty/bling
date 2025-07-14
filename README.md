@@ -493,12 +493,12 @@ The above calls would render the following in your terminal emulator:
 <p align="center"><img src="resources/docs/chromed/callouts_sideline_minimal_dark.png" width="700px" /></p>
 <br>
 
-With `{:theme :sideline-bold}`: 
+#### With `{:theme :sideline-bold}`: 
 <p align="center"><img src="resources/docs/chromed/callouts_sideline-bold_minimal_light.png" width="700px" /></p>
 <p align="center"><img src="resources/docs/chromed/callouts_sideline-bold_minimal_dark.png" width="700px" /></p>
 <br><br>
 
-With `{:theme :minimal}`:
+#### With `{:theme :minimal}`:
 
  <p align="center"><img src="resources/docs/chromed/callouts_minimal_light.png" width="700px" /></p>
 <p align="center"><img src="resources/docs/chromed/callouts_minimal_dark.png" width="700px" /></p>
@@ -509,6 +509,7 @@ With `{:theme :minimal}`:
 
 <br>
 
+#### With `{:label-theme :marquee}`:
 Callout accepts a `:label-theme` option. Supplying a value of `:marquee`, will render
 the label inside a box: 
 
@@ -516,11 +517,12 @@ the label inside a box:
 <p align="center"><img src="resources/docs/chromed/callouts_sideline_marquee_dark.png" width="700px" /></p>
 <br>
 
-With `{:theme :sideline-bold :label-theme :marquee}`: 
+#### With `{:theme :sideline-bold :label-theme :marquee}`: 
 <p align="center"><img src="resources/docs/chromed/callouts_sideline-bold_marquee_light.png" width="700px" /></p>
 <p align="center"><img src="resources/docs/chromed/callouts_sideline-bold_marquee_dark.png" width="700px" /></p>
 <br>
 
+#### Side label
 You can also pass a `:side-label` which may be useful for file info etc.
 
 With `{:theme :sideline :label-theme :marquee :side-label "foo.core:11:24"}`: 
