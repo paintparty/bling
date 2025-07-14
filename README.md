@@ -128,6 +128,7 @@ bb -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.8.7"}}}' -e "(req
 ```
 <br>
 
+
 ### Enhanced contrast
 You can optionally set a `BLING_MOOD` environmental variable on your system, which will enhance the contrast of bling output on your computer.
 
@@ -140,6 +141,13 @@ If you use a light terminal theme:
 ```
 export BLING_MOOD="light"
 ```
+
+<br>
+<br>
+
+
+### Respecting the user's preference for no color 
+Bling will respect the `NO_COLOR` environmental variable, if set on a user's system.
 
 <br>
 <br>
