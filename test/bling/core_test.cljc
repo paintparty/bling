@@ -24,9 +24,18 @@
    [clojure.pprint :refer [pprint]]
    [clojure.walk :as walk]
    [clojure.string :as string]
-   [lasertag.core :refer [tag-map]]
-   ))
+   [lasertag.core :refer [tag-map]]))
 
+'(require bling.core :refer [print-bling])
+
+(println "\n\n")
+(print-bling [:p "First paragraph"]
+             [:p [:bold
+                  "Bold, "
+                  [:italic "bold italic, "
+                   [:red "bold italic red, "]]
+                  "bold."]]
+             "Last line")
 
 
 (require '[bling.explain :refer [explain-malli]])

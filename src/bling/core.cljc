@@ -2201,16 +2201,3 @@
 
 
 
-
-["first"
-        [:br]
-        [:italic 
-         [:bold "hi" " " [:blue "blue"]]
-         " "
-         "Naked"
-         [:br]
-         [:red "hey"]]
-        [:br]
-        [:blue-bg.white.bold "GOLD"]]
-
-
