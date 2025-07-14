@@ -26,6 +26,16 @@
    [lasertag.core :refer [tag-map]]))
 
 
+(println "\n\n")
+(print-bling "First paragraph"
+             "\n\n"
+             [:bold "Bold, "]
+             [:bold.italic "bold italic, "]
+             [:bold.italic.red "bold italic red, "]
+             [:bold "bold"]
+             "\n\n"
+             "Last line")
+
 (require '[bling.explain :refer [explain-malli]])
 
 (def Address
