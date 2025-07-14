@@ -141,10 +141,7 @@ If you use a light terminal theme:
 ```
 export BLING_MOOD="light"
 ```
-
 <br>
-<br>
-
 
 ### Respecting the user's preference for no color 
 Bling will respect the `NO_COLOR` environmental variable, if set on a user's system.
