@@ -26,15 +26,16 @@
    [lasertag.core :refer [tag-map]]))
 
 
-(println "\n\n")
-(print-bling "First paragraph"
-             "\n\n"
-             [:bold "Bold, "]
-             [:bold.italic "bold italic, "]
-             [:bold.italic.red "bold italic red, "]
-             [:bold "bold"]
-             "\n\n"
-             "Last line")
+;; Sample new hiccup syntax
+;; (println "\n\n")
+;; (print-bling "First paragraph"
+;;              "\n\n"
+;;              [:bold "Bold, "]
+;;              [:bold.italic "bold italic, "]
+;;              [:bold.italic.red "bold italic red, "]
+;;              [:bold "bold"]
+;;              "\n\n"
+;;              "Last line")
 
 (require '[bling.explain :refer [explain-malli]])
 
@@ -56,6 +57,19 @@
              :city   "Tempare"
              :zip    33100
              :lonlat [61.4858322, 87.34]}})
+
+(def Myschema [:or
+               :map
+               [:vector [:or 
+                         :int
+                         #_[:fn (fn [s] (string/starts-with? s "s"))]
+                         :string
+                         #_[:and :string [:fn (fn [s] (string/starts-with? s "s"))]]]]])
+
+
+#_(explain-malli Myschema [2 :foobar false] {:display-schema? true :display-explain-data? true})
+(explain-malli Myschema [2 :foobar #_:bazbat] {:display-schema? true #_ #_:display-explain-data? true})
+
 
 ;; (explain-malli Address v {:display-schema? false :callout-opts {:label "Custom Label"}})
 

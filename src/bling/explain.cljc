@@ -1,5 +1,6 @@
 (ns bling.explain
   (:require [clojure.edn :as edn]
+            [fireworks.core :refer [? !? ?> !?>]]
             [clojure.string :as string]
             [clojure.walk :as walk]
             [bling.core :as bling]
@@ -109,6 +110,78 @@
      (when condition v)]))
 
 
+(defn- explain-data* [malli-ex-data]
+  (let [
+        ;; ret  (edn/read-string (with-out-str (prn malli-ex-data)))
+        ret2 (walk/postwalk
+              (fn [x]
+                (if (and (map? x)
+                         (contains? x :schema))
+                  (assoc x :schema (m/form (:schema x)))
+                  x))
+              malli-ex-data)]
+    ret2))
+
+(defn grouped-by-disjunctor [v malli-schema]
+  (group-by (fn [%]
+              (some->> %
+                       :path
+                       pop
+                       (map inc)
+                       (get-in (m/form malli-schema))
+                       first))
+            v))
+
+(defn grouped* [v malli-schema]
+  (reduce
+   (fn [acc [disjunctor problems]]
+     (if (contains? #{:or :and} disjunctor)
+       (let [schemas    (mapv #(-> % :schema m/form) problems)
+             all-preds? (every? #(or (keyword? %) (symbol? %)) schemas)]
+         (conj acc
+               (!? (-> problems first
+                       (assoc :schemas schemas
+                              :all-preds? all-preds?
+                              :disjunctor disjunctor
+                              :problems problems)
+                       (dissoc :path :schema)))))
+       acc))
+   []
+   (!? (grouped-by-disjunctor v malli-schema))))
+
+(defn disjunctions*
+  [{problems     :errors
+    malli-schema :schema
+    :as          malli-ex-data}]
+  (when (? :1 (seq problems))
+    (reduce-kv
+     (fn [acc k v]
+       (if (< 1 (count v))
+         (assoc acc k (grouped* v malli-schema))
+         acc))
+     {}
+     (group-by #(:in %) (:errors malli-ex-data)))))
+
+(defn- collated-problems 
+  [{problems :errors
+    :as      malli-ex-data}]
+  (let [disjunction-vals    
+        (->> malli-ex-data
+             disjunctions*
+             vals
+             (apply concat))
+
+        problems-to-remove  
+        (mapcat :problems disjunction-vals)
+
+        disjuncted-problems 
+        (mapv #(dissoc % :problems) disjunction-vals)
+
+        filtered-problems   
+        (filter #(not (contains? (into #{} problems-to-remove) %)) problems)] 
+    (concat filtered-problems
+            disjuncted-problems)))
+
 (defn explain-malli
   "Prints a malli validation error callout block via bling.core/callout.
    Within the block, the value is pretty-printed, potentially with syntax
@@ -143,23 +216,29 @@
             :callout-opts]}] 
    (let [{problems     :errors
           malli-schema :schema
-          :as          ex-data}
+          :as          malli-ex-data}
          (m/explain schema v)
 
          malli-schema-cleaned
          (clean-schema malli-schema)
-
+         
          compact?
-         (= :compact spacing)]
+         (= :compact spacing)
+
+         collated-problems
+         (collated-problems malli-ex-data)
+
+         problems
+         collated-problems #_problems]
 
      (if (seq problems)
-       (doseq [problem problems]
+       (doseq [problem collated-problems]
          (let [explain-data
                (when (true? display-explain-data?)
-                 (edn/read-string (with-out-str (prn ex-data))))
+                 (explain-data* malli-ex-data) )
 
                schema
-               (m/form (:schema problem))
+               (some-> problem :schema m/form)
 
                error-message 
                (some-> schema
@@ -169,11 +248,11 @@
                        :error/message)
 
                schema-cleaned
-               (clean-schema (:schema problem))
+               (some-> problem :schema clean-schema)
 
                missing-key
                (if (= :malli.core/missing-key (:type problem))
-                 (-> problem :path last)
+                 (some-> problem :path last)
                  :bling.explain/no-missing-key)
                
                missing-key?
@@ -183,7 +262,8 @@
                (boolean (and error-message (not missing-key?)))
 
                must-satisfy?
-               (boolean (and (not error-message) (not missing-key?)))
+               (boolean (and (not error-message)
+                             (not missing-key?)))
 
 
                file-info
@@ -252,12 +332,32 @@
 
              (let [v (or (some-> (get core-preds-by-keyword schema-cleaned) :sym)
                          schema-cleaned)]
-               (section must-satisfy? 
-                        "Must satisfy:"
-                        #?(:cljs (hifi v {:margin-inline-start 2})
-                           :clj (bling/bling 
-                            [:bold (fv v)]))))
-             
+               (if-let [schemas (:schemas problem)]
+                 (section must-satisfy? 
+                          "Must satisfy:"
+                          #?(:cljs (string/join 
+                                    "\n  or\n"
+                                    (mapv #(hifi (or (some-> (get core-preds-by-keyword %) :sym)
+                                                     %)
+                                                 {:margin-inline-start 2})
+                                          schemas))
+                             :clj (string/join 
+                                   (bling/bling "\n  "
+                                                [:italic "or"]
+                                                "\n")
+                                   (mapv #(bling/bling 
+                                          [:bold (fv (or (some-> (get core-preds-by-keyword %) :sym)
+                                                         %))])
+                                         schemas))))
+                 (section must-satisfy? 
+                          "Must satisfy:"
+                          #?(:cljs (hifi v {:margin-inline-start 2})
+                             :clj (bling/bling 
+                                   [:bold (fv v)])))))
+
+            #_[(bling/bling "\n  " [:italic "or"]
+                          "\n  "
+                          [:bold (bling.hifi/hifi 'string?)])]
 
             ;; The schema related to the problem value.
             ;; Defaults to true, displaying schema
