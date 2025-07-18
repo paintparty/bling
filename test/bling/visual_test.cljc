@@ -58,17 +58,34 @@
              :zip    33100
              :lonlat [61.4858322, 87.34]}})
 
-(def Myschema [:or
-               :map
-               [:vector [:or 
-                         :int
-                         #_[:fn (fn [s] (string/starts-with? s "s"))]
-                         :string
-                         #_[:and :string [:fn (fn [s] (string/starts-with? s "s"))]]]]])
+(def Myschema [:vector
+               #_[:fn #_{:error/message "Must be an int greater than 10"}
+                  (fn greater-than-10? [%] (< 10 %))]
+               #_[:enum :foobar]
+               [:or
+                :int
+                #_[:fn #_{:error/message "Must be an int less than 5"} #(> 5 %)]
+                ;; :pos-int
+                #_:keyword
+                [:enum :foobars]
+                #_[:fn {:error/message "Must be an int greater than 10"}
+                   (fn greater-than-10? [%] (< 10 %))]]
+               #_[:and :int [:fn #(< 10 %)]]]
+  #_[:or
+     :map
+     [:vector [:or 
+               :int
+               #_[:fn (fn [s] (string/starts-with? s "s"))]
+               :string
+               #_[:and :string [:fn (fn [s] (string/starts-with? s "s"))]]]]])
 
 
 #_(explain-malli Myschema [2 :foobar false] {:display-schema? true :display-explain-data? true})
-(explain-malli Myschema [2 :foobar #_:bazbat] {:display-schema? true #_ #_:display-explain-data? true})
+(explain-malli Myschema 
+               [#_2 :foobar #_:bazbat] 
+               {:display-schema? true
+                ;; :spacing         :compact
+                #_ #_:display-explain-data? true})
 
 
 ;; (explain-malli Address v {:display-schema? false :callout-opts {:label "Custom Label"}})
