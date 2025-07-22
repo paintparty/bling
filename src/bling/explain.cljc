@@ -219,20 +219,23 @@
   (when (enum-schema? schema)
     (->> schema rest (into #{}))))
 
+(defn- fn-schema-fn [schema]
+  (some-> schema
+          (maybe vector?)
+          (maybe #(= 2 (count %)))
+          (maybe #(= :fn (first %)))
+          (maybe #(fn? (second %)))
+          second))
 
 (defn get-satisfaction 
   [{:keys [schema schema-cleaned]}]
   (or (some-> schema enum-schema->set)
       (some-> (get core-preds-by-keyword (or schema-cleaned schema)) :sym)
       (some-> schema schema-error-message symbol)
-      (some-> schema
-              (maybe vector?)
-              (maybe #(= 2 (count %)))
-              (maybe #(= :fn (first %)))
-              (maybe #(fn? (second %)))
-              second)
+      (fn-schema-fn schema)
       schema-cleaned
       schema))
+
 
 (defn disjuncted-satisfactions
   [{:keys [schemas] :as problem}
@@ -243,7 +246,7 @@
               (str lb
                    "  "
                    "  "
-                   (some-> problem :disjunctor name)
+                   tilde (some-> problem :disjunctor name) tilde
                    lb)
               (mapv #(hifi (get-satisfaction {:schema %})
                            {:margin-inline-start 2})
@@ -251,8 +254,7 @@
        :clj (string/join 
              (bling lb
                     "  "
-                    tilde [:italic (some-> problem :disjunctor name)]
-                    tilde
+                    tilde [:italic (some-> problem :disjunctor name)] tilde
                     lb)
              (mapv #(bling 
                      [:bold (-> {:schema %}
@@ -260,6 +262,7 @@
                                 hifi
                                 indented-string)])
                    schemas)))))
+
 
 (defn- file-info* 
   [{:keys [:file :line :column :function-name]}]
@@ -271,7 +274,6 @@
                  ":"
                  column))))
 
-'[vector? {:of [:or string? greater-than-10?]}]
 
 (defn explain-malli
   "Prints a malli validation error callout block via bling.core/callout.
@@ -303,7 +305,6 @@
             display-explain-data?
             callout-opts]
      :as   explain-malli-opts}] 
-   (? explain-malli-opts)
    (let [{problems     :errors
           malli-schema :schema
           :as          malli-ex-data}
@@ -402,7 +403,7 @@
                
 
                (when must-satisfy? 
-                 (if (contains? (? problem) :disjunctor)
+                 (if (contains? problem :disjunctor)
                    (section "Must satisfy:"
                             (if (:all-disjunctions-are-printable? problem)
                               (disjuncted-satisfactions 

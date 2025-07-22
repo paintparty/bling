@@ -79,9 +79,20 @@
                :string
                #_[:and :string [:fn (fn [s] (string/starts-with? s "s"))]]]]])
 
+#_(def my-schema [:vector
+                [:or
+                 :int
+                 :string]]
+  #_[:or
+     :map
+     [:vector [:or 
+               :int
+               #_[:fn (fn [s] (string/starts-with? s "s"))]
+               :string
+               #_[:and :string [:fn (fn [s] (string/starts-with? s "s"))]]]]])
 
-#_(explain-malli Myschema [2 :foobar false] {:display-schema? true :display-explain-data? true})
-(explain-malli Myschema 
+#_(explain-malli my-schema [2 :foobar false] #_{:display-schema? true :display-explain-data? false})
+#_(explain-malli Myschema 
                [#_2 :foobar #_:bazbat] 
                {:display-schema? true
                 ;; :spacing         :compact
