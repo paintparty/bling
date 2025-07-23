@@ -14,6 +14,19 @@ For a list of breaking changes, check [here](#breaking-changes)
 
 #### Removed
 
+
+<br>
+<br>
+
+## 0.8.8
+
+<p><sub>Many thanks to <a href="https://www.clojuriststogether.org/">Clojurists Together</a> for generously supporting this release!</sub></p>
+
+2025-07-23
+
+#### Added
+- Inital implementation of handling `:or` and `:and` disjunctions for Malli schema validation reporting in `bling.explain/explain-malli`.
+
 <br>
 <br>
 

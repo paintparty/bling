@@ -1,12 +1,11 @@
 (ns bling.explain
-  (:require [clojure.edn :as edn]
+  (:require [fireworks.core :refer [? !? ?> !?>]]
             [clojure.string :as string]
             [clojure.walk :as walk]
-            [bling.core :as bling]
+            [bling.core :refer [bling]]
             [bling.hifi :refer [hifi]]
             [bling.util :as util :refer [maybe]]
             [malli.core :as m]))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Malli explain 
@@ -100,13 +99,180 @@
         (:in problem)))
 
 
-(defn- section [compact? label-style condition label v]
+(defn- section
+  [label v {:keys [compact? label-style]}]
   (let  [section-break        (if compact? "\n\n" "\n\n\n")
          section-header-break (if compact? "\n" "\n\n")]
-    [(when condition section-break)
-     (when condition (bling/bling [label-style label]))
-     (when condition section-header-break)
-     (when condition v)]))
+    [section-break
+     (bling [label-style label])
+     section-header-break
+     v]))
+
+
+(defn- explain-data* [malli-ex-data]
+  (let [ret2 (walk/postwalk
+              (fn [x]
+                (if (and (map? x)
+                         (contains? x :schema))
+                  (assoc x :schema (m/form (:schema x)))
+                  x))
+              malli-ex-data)]
+    ret2))
+
+(defn- grouped-by-disjunctor [v malli-schema]
+  (group-by (fn [%]
+              (some->> %
+                       :path
+                       pop
+                       (map inc)
+                       (get-in (m/form malli-schema))
+                       first))
+            v))
+
+(defn- schema-error-message [schema]
+  (some-> schema
+          (maybe vector?)
+          second
+          (maybe map?)
+          :error/message))
+
+(defn- enum-schema? [schema]
+  (and (vector? schema)
+       (< 1 (count schema))
+       (= :enum (first schema))))
+
+(defn- fn-schema? [schema]
+  (let [n (count schema)]
+    (and (vector? schema)
+         (>= 2 n)
+         (let [[k a b] schema]
+           (boolean (and (= k (first schema))
+                         (if (= 2 n) (fn? a) (and (map? a) (fn? b)))))))))
+
+(defn grouped* [v malli-schema]
+  (reduce
+   (fn [acc [disjunctor problems]]
+     (if (contains? #{:or :and} disjunctor)
+       (let [schemas             
+             (mapv #(-> % :schema m/form) problems)
+
+             kw-or-sym?          
+             #(or (keyword? %) (symbol? %))
+
+             all-disjunctions-are-printable?
+             (every? #(or (kw-or-sym? %)
+                          #_(boolean (schema-error-message %))
+                          (fn-schema? %)
+                          (enum-schema? %))
+                     schemas)]
+         (conj acc
+               (-> problems first
+                   (assoc :schemas             
+                          schemas
+                          :all-disjunctions-are-printable?
+                          all-disjunctions-are-printable?
+                          :disjunctor          
+                          disjunctor
+                          :problems            
+                          problems)
+                   (dissoc :path #_:schema))))
+       acc))
+   []
+   (!? (grouped-by-disjunctor v malli-schema))))
+
+
+(defn disjunctions*
+  [{problems     :errors
+    malli-schema :schema
+    :as          malli-ex-data}]
+  (when (!? :1 (seq problems))
+    (reduce-kv
+     (fn [acc k v]
+       (if (< 1 (count v))
+         (assoc acc k (grouped* v malli-schema))
+         acc))
+     {}
+     (group-by #(:in %) (:errors malli-ex-data)))))
+
+(defn- collated-problems 
+  [{problems :errors
+    :as      malli-ex-data}]
+  (let [disjunction-vals    
+        (->> malli-ex-data
+             disjunctions*
+             vals
+             (apply concat))
+
+        problems-to-remove  
+        (mapcat :problems disjunction-vals)
+
+        disjuncted-problems 
+        (mapv #(dissoc % :problems) disjunction-vals)
+
+        filtered-problems   
+        (filter #(not (contains? (into #{} problems-to-remove) %)) problems)] 
+    (concat filtered-problems
+            disjuncted-problems)))
+
+
+(defn- enum-schema->set [schema]
+  (when (enum-schema? schema)
+    (->> schema rest (into #{}))))
+
+(defn- fn-schema-fn [schema]
+  (some-> schema
+          (maybe vector?)
+          (maybe #(= 2 (count %)))
+          (maybe #(= :fn (first %)))
+          (maybe #(fn? (second %)))
+          second))
+
+(defn get-satisfaction 
+  [{:keys [schema schema-cleaned]}]
+  (or (some-> schema enum-schema->set)
+      (some-> (get core-preds-by-keyword (or schema-cleaned schema)) :sym)
+      (some-> schema schema-error-message symbol)
+      (fn-schema-fn schema)
+      schema-cleaned
+      schema))
+
+
+(defn disjuncted-satisfactions
+  [{:keys [schemas] :as problem}
+   m]
+  (let [lb    (if (:compact? m) "\n" "\n\n")
+        tilde (when (:surround-disjunctor-with-tilde? m) "~")]
+    #?(:cljs (string/join 
+              (str lb
+                   "  "
+                   "  "
+                   tilde (some-> problem :disjunctor name) tilde
+                   lb)
+              (mapv #(hifi (get-satisfaction {:schema %})
+                           {:margin-inline-start 2})
+                    schemas))
+       :clj (string/join 
+             (bling lb
+                    "  "
+                    tilde [:italic (some-> problem :disjunctor name)] tilde
+                    lb)
+             (mapv #(bling 
+                     [:bold (-> {:schema %}
+                                get-satisfaction
+                                hifi
+                                indented-string)])
+                   schemas)))))
+
+
+(defn- file-info* 
+  [{:keys [:file :line :column :function-name]}]
+  (when (and file line column)
+    (symbol (str file
+                 (when function-name (str "/" function-name ))
+                 ":"
+                 line
+                 ":"
+                 column))))
 
 
 (defn explain-malli
@@ -133,149 +299,151 @@
    (explain-malli schema v nil))
   ([schema 
     v
-    {:keys [:file
-            :line
-            :column
-            :function-name
-            :spacing
-            :display-schema?
-            :display-explain-data?
-            :callout-opts]}] 
+    {:keys [spacing
+            surround-disjunctor-with-tilde?
+            display-schema?
+            display-explain-data?
+            callout-opts]
+     :as   explain-malli-opts}] 
    (let [{problems     :errors
           malli-schema :schema
-          :as          ex-data}
-         (m/explain schema v)
-
-         malli-schema-cleaned
-         (clean-schema malli-schema)
-
-         compact?
-         (= :compact spacing)]
-
+          :as          malli-ex-data}
+         (m/explain schema v)]
      (if (seq problems)
-       (doseq [problem problems]
-         (let [explain-data
-               (when (true? display-explain-data?)
-                 (edn/read-string (with-out-str (prn ex-data))))
-
-               schema
-               (m/form (:schema problem))
-
-               error-message 
-               (some-> schema
-                       (maybe vector?)
-                       second
-                       (maybe map?)
-                       :error/message)
-
-               schema-cleaned
-               (clean-schema (:schema problem))
-
-               missing-key
-               (if (= :malli.core/missing-key (:type problem))
-                 (-> problem :path last)
-                 :bling.explain/no-missing-key)
-               
-               missing-key?
-               (not= missing-key :bling.explain/no-missing-key)
-
-               error-message?
-               (boolean (and error-message (not missing-key?)))
-
-               must-satisfy?
-               (boolean (and (not error-message) (not missing-key?)))
-
-
-               file-info
-               (when (and file line column)
-                 (symbol (str file
-                              (when function-name (str "/" function-name ))
-                              ":"
-                              line
-                              ":"
-                              column)))
-               
-               label-style :italic
-               
-               fv
-               #(indented-string (hifi %))
-               
-               display-schema?
-               (and (not (true? display-explain-data?))
-                    (not (false? display-schema?)))
-               
-               section
-               (partial section compact? label-style)]
-           
-
-           (apply 
-            bling.core/callout
-            (concat
-             [(merge {:colorway       :error
-                      :theme          #?(:cljs :minimal :clj :sideline)
-                      :label-theme    #?(:clj :marquee :cljs :pipe)
-                      :label          "Malli Schema Error"
-                      :side-label     (when file-info
-                                        (bling/bling [:italic file-info]))
-                      :margin-top     1
-                      :padding-top    (if compact? 1 2)
-                      :padding-bottom (if compact? 0 1)}
-                     callout-opts)
-              
-              (hifi v
-                    (let [pth (problem-path missing-key? problem v)]
-                      {:find (merge {:path  pth
-                                     :class (if (coll? (get-in v pth))
-                                              :highlight-error
-                                              :highlight-error-underlined)})}))]
+       (let [malli-schema-cleaned
+             (clean-schema malli-schema)
              
-             (section missing-key? 
-                      "Missing key:"
-                      #?(:cljs
-                         (bling/bling "  " [:bold missing-key])
-                         :clj
-                         (bling/bling [:bold (fv missing-key)])))
+             compact?
+             (= :compact spacing)
+
+             collated-problems
+             (collated-problems malli-ex-data)
+
+             problems
+             collated-problems #_problems]
+         (doseq [problem problems]
+           (let [explain-data    (when (true? display-explain-data?)
+                                   (explain-data* malli-ex-data) )
+
+                 schema          (some-> problem :schema m/form)
+
+                 error-message   (schema-error-message schema)
+
+                 schema-cleaned  (some-> problem :schema clean-schema)
+
+                 missing-key     (if (= :malli.core/missing-key (:type problem))
+                                   (some-> problem :path last)
+                                   :bling.explain/no-missing-key)
+                 
+                 missing-key?    (not= missing-key :bling.explain/no-missing-key)
+
+                 error-message?  (boolean (and error-message (not missing-key?)))
+
+                 must-satisfy?   (boolean (and (not error-message)
+                                               (not missing-key?)))
 
 
-             (section (not missing-key?) 
-                      "Problem values:"
-                      #?(:cljs
-                         (bling/bling "  " [:bold (:value problem)])
-                         :clj
-                         (bling/bling [:bold (fv (:value problem))])))
-
-
-             (section error-message? 
-                      "Message:" 
-                      (indented-string error-message))
+                 file-info       (file-info* explain-malli-opts )
+                 
+                 label-style     :italic
+                 
+                 fv              #(indented-string (hifi %))
+                 
+                 display-schema? (and (not (true? display-explain-data?))
+                                      (not (false? display-schema?)))
+                 
+                 section-opts    {:compact?    compact?
+                                  :label-style label-style}]
              
 
-             (let [v (or (some-> (get core-preds-by-keyword schema-cleaned) :sym)
-                         schema-cleaned)]
-               (section must-satisfy? 
-                        "Must satisfy:"
-                        #?(:cljs (hifi v {:margin-inline-start 2})
-                           :clj (bling/bling 
-                            [:bold (fv v)]))))
-             
+             (apply 
+              bling.core/callout
+              (concat
+               [(merge {:colorway       :error
+                        :theme          #?(:cljs :minimal :clj :sideline)
+                        :label-theme    #?(:clj :marquee :cljs :pipe)
+                        :label          "Malli Schema Error"
+                        :side-label     (when file-info
+                                          (bling [:italic file-info]))
+                        :margin-top     1
+                        :padding-top    (if compact? 1 2)
+                        :padding-bottom (if compact? 0 1)}
+                       callout-opts)
+                
+                (hifi v
+                      (let [pth (problem-path missing-key? problem v)]
+                        {:find (merge {:path  pth
+                                       :class (if (coll? (get-in v pth))
+                                                :highlight-error
+                                                :highlight-error-underlined)})}))]
+               
+
+               (when missing-key? 
+                 (section "Missing key:"
+                          #?(:cljs
+                             (bling "  " [:bold missing-key])
+                             :clj
+                             (bling [:bold (fv missing-key)]))
+                          section-opts))
+
+
+               (when-not missing-key? 
+                 (section "Problem value:"
+                          #?(:cljs
+                             (bling "  " [:bold (:value problem)])
+                             :clj
+                             (bling [:bold (fv (:value problem))]))
+                          section-opts))
+
+
+               (when error-message? 
+                 (section "Message:" 
+                          (indented-string error-message)
+                          section-opts))
+               
+
+               (when must-satisfy? 
+                 (if (contains? problem :disjunctor)
+                   (section "Must satisfy:"
+                            (if (:all-disjunctions-are-printable? problem)
+                              (disjuncted-satisfactions 
+                               problem 
+                               {:compact?                        
+                                compact?
+                                :surround-disjunctor-with-tilde? 
+                                surround-disjunctor-with-tilde?})
+                              #?(:cljs (hifi (:schemas problem)
+                                             {:margin-inline-start 2})
+                                 :clj (bling [:bold (fv (:schemas problem))])))
+                            section-opts)
+                   (let [v
+                         (get-satisfaction {:schema         schema
+                                            :schema-cleaned schema-cleaned})]
+                     (section "Must satisfy:"
+                              #?(:cljs (hifi v {:margin-inline-start 2})
+                                 :clj (bling [:bold (fv v)]))
+                              section-opts))))
+
 
             ;; The schema related to the problem value.
             ;; Defaults to true, displaying schema
-             (section display-schema? 
-                      "Schema:"
-                      #?(:cljs
-                         (hifi malli-schema-cleaned {:margin-inline-start 2})
-                         :clj
-                         (fv malli-schema-cleaned)))
+               (when display-schema? 
+                 (section "Schema:"
+                          #?(:cljs
+                             (hifi (m/form malli-schema) {:margin-inline-start 2})
+                             :clj
+                             (fv (m/form malli-schema)))
+                          section-opts))
 
 
             ;; The result of calling malli.core/explain on the value.
             ;; Defaults to false, not displaying schema
-             (section (true? display-explain-data?) 
-                      "Result of malli.core/explain:"
-                      #?(:cljs
-                         (hifi explain-data {:margin-inline-start 2})
-                         :clj
-                         (fv explain-data)))))))
+               (when (true? display-explain-data?)
+                 (section "Result of malli.core/explain:"
+                          #?(:cljs
+                             (hifi explain-data {:margin-inline-start 2})
+                             :clj
+                             (fv explain-data))
+                          section-opts)))))))
 
        (println "Success!")))))
