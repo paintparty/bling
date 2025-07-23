@@ -2,19 +2,24 @@
 
 <br>
 
-This document is a brief overview of the development goals for Bling / Fireworks / Lasertag in Q3 2025.
 
 [Bling](https://github.com/paintparty/bling) is library that enables rich console printing for Clojure, ClojureScript, and Babashka.
 
-[Fireworks](https://github.com/paintparty/fireworks) features a hi-fidelity printing engine, leveraged by Bling to construct awesome error messages.
+[Fireworks](https://github.com/paintparty/fireworks) features a hi-fidelity printing engine, leveraged by Bling to construct nice error messages.
 
 [Lasertag](https://github.com/paintparty/bling) is a focused utility library, used to tag values for themeable, colorized output.
+
+<br>
+<br>
+
+Thanks to the generous support from Clojurists Together, [I'm happy to report that a great deal of progress was made in Q2 of 2025!](https://github.com/paintparty/bling/blob/main/resources/docs/Bling-Q2-report-2.md). Building on the momentum, this document is a brief overview of the development goals for Bling / Fireworks / Lasertag in Q3 2025.
+
 
 <br>
 
 ## General Direction
 
-"Better error messages" has consistently topped the list of desired improvements to Clojure, according to the last 10 years of results from the annual [State of Clojure Survey](https://clojure.org/news/2024/12/02/state-of-clojure-2024). One of the initial goals of Bling was to provide an excellent starting point for rolling your own error messages. This has been a success - [`bling.core/callout`](https://github.com/paintparty/bling?tab=readme-ov-file#callout-blocks) offers Clojure developers a sensible, accessible, and flexible template system. More recently, specific [support for Malli](https://github.com/paintparty/bling?tab=readme-ov-file#usage-with-malli) validation errors was added by leveraging said callout functions combined with the newly-added [hi-fidelity](https://github.com/paintparty/bling?tab=readme-ov-file#high-fidelity-printing) printing capabilities. Going forward, Bling will add additional, opt-in functionality that will deliver the same succinct error presentation to any & all exceptions that occur when developing with Clojure.
+"Better error messages" has consistently topped the list of desired improvements to Clojure, according to the last 10 years of results from the annual [State of Clojure Survey](https://clojure.org/news/2024/12/02/state-of-clojure-2024). One of the initial goals of Bling was to provide an excellent starting point for rolling your own error messages. This has been a success - [`bling.core/callout`](https://github.com/paintparty/bling?tab=readme-ov-file#callout-blocks) offers Clojure developers a sensible, accessible, and flexible templating system. More recently, specific [support for Malli](https://github.com/paintparty/bling?tab=readme-ov-file#usage-with-malli) validation errors was added by combining these callout functions with the newly-added [hi-fidelity](https://github.com/paintparty/bling?tab=readme-ov-file#high-fidelity-printing) printing capabilities. Going forward, Bling will add additional, opt-in functionality that will deliver the same succinct error presentation to any & all exceptions that occur when developing with Clojure.
 
 
 <br>
@@ -85,11 +90,11 @@ Currently, both Bling and Fireworks use `clojure.spec.alpha` to validate the sha
 
 
 ### Editor integration
-For Fireworks, publish editor plugins/extensions/integrations for Emacs, VS Code, and IntelliJ. These are fairly simple extensions that just involve some basic form rewriting for wrapping/unwrapping forms. I've already created initial working versions locally for all the 3 editors listed above.
+We would like to publish Fireworks editor plugins/extensions/integrations for Emacs, VS Code, and IntelliJ. These are fairly simple extensions that just involve some basic form rewriting for wrapping/unwrapping forms. Initial working versions have been created locally for all the 3 editors listed above.
 
 
 ### Documentation of interactive workflow. 
-Produce written and/or video documentation a live hot-reloading dev environment for JVM Clojure, powered by Fireworks and Bling, with versions for both Leiningen and Deps. I recently [merged a PR that that adds this to the library `test-refresh`](https://github.com/jakemcc/test-refresh/pull/91) . This sort of thing could also potentially be incorporated into other similar projects such as `metabase/hawk` and `tonsky/clj-reload`. I think this could have a potentially significant value for some newcomers to Clojure.
+Produce written and/or video documentation a live hot-reloading dev environment for JVM Clojure, powered by Fireworks and Bling, with versions for both Leiningen and Deps. I recently [merged a PR that that adds this to the library `test-refresh`](https://github.com/jakemcc/test-refresh/pull/91). This sort of thing could also potentially be incorporated into other similar projects such as `metabase/hawk` and `tonsky/clj-reload`. I think this could have a potentially significant value for some newcomers to Clojure.
 
 
 ### Call-site options for quick formatting changes.
