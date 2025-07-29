@@ -211,7 +211,7 @@ With `{:theme :sideline :label-theme :marquee :side-label "foo.core:11:24"}`:
 <br>
 <br>
 
-### Enhanced support & improved docs for creating custom and warning callouts
+### Enhanced support & improved docs for creating custom error and warning callouts
 
 `bling.core/callout` now accepts any number of arguments, which makes the templatization a little more flexible:
 ```Clojure
