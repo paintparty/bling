@@ -7,6 +7,7 @@
             [bling.util :as util :refer [maybe]]
             [malli.core :as m]))
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Malli explain 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -100,13 +101,22 @@
 
 
 (defn- section
-  [label v {:keys [compact? label-style]}]
+  [label v {:keys [compact? label-style margin-top section-break?]
+            :or   {section-break? true}}]
   (let  [section-break        (if compact? "\n\n" "\n\n\n")
          section-header-break (if compact? "\n" "\n\n")]
-    [section-break
-     (bling [label-style label])
-     section-header-break
-     v]))
+    (into []
+          (remove nil?
+                  [(if section-break? section-break "\n")
+                   #_(if-let [margin-top
+                            (when (or (zero? margin-top)
+                                      (pos-int? margin-top))
+                              (string/join (repeat margin-top "\n")))] 
+                     margin-top
+                     section-break)
+                   (when label (bling [label-style label]))
+                   (when label section-header-break)
+                   v]))))
 
 
 (defn- explain-data* [malli-ex-data]
@@ -300,6 +310,9 @@
   ([schema 
     v
     {:keys [spacing
+            highlighted-problem-section-label
+            preamble-section-label
+            preamble-section-body
             surround-disjunctor-with-tilde?
             display-schema?
             display-explain-data?
@@ -370,13 +383,33 @@
                         :padding-bottom (if compact? 0 1)}
                        callout-opts)
                 
-                (hifi v
-                      (let [pth (problem-path missing-key? problem v)]
-                        {:find (merge {:path  pth
-                                       :class (if (coll? (get-in v pth))
-                                                :highlight-error
-                                                :highlight-error-underlined)})}))]
+                ;; (when problem-highlight-section-heading "\n")
+                ;; (when problem-highlight-section-heading
+                ;;   (bling [:italic problem-highlight-section-heading]))
+                ;; (when problem-highlight-section-heading
+                ;;       (if compact? "\n" "\n\n"))
+                
+                ]
                
+               (when preamble-section-body
+                 (section preamble-section-label 
+                          #?(:cljs
+                             (bling "  " preamble-section-body)
+                             :clj
+                             (bling (fv preamble-section-body)))
+                          (assoc section-opts :section-break? false)))
+
+
+               (section highlighted-problem-section-label
+                        (hifi v
+                              (let [pth (problem-path missing-key? problem v)]
+                                {:find (merge {:path  pth
+                                               :class (if (coll? (get-in v pth))
+                                                        :highlight-error
+                                                        :highlight-error-underlined)})}))
+                        (assoc section-opts
+                               :section-break?
+                               (if preamble-section-body true false)))
 
                (when missing-key? 
                  (section "Missing key:"
@@ -408,10 +441,8 @@
                             (if (:all-disjunctions-are-printable? problem)
                               (disjuncted-satisfactions 
                                problem 
-                               {:compact?                        
-                                compact?
-                                :surround-disjunctor-with-tilde? 
-                                surround-disjunctor-with-tilde?})
+                               {:compact?                        compact?
+                                :surround-disjunctor-with-tilde? surround-disjunctor-with-tilde?})
                               #?(:cljs (hifi (:schemas problem)
                                              {:margin-inline-start 2})
                                  :clj (bling [:bold (fv (:schemas problem))])))
@@ -447,3 +478,11 @@
                           section-opts)))))))
 
        (println "Success!")))))
+
+;; (def explain-malli
+;;   #?(:cljs
+;;      (when ^boolean js/goog.DEBUG
+;;            (fn [& args] nil)
+;;            explain-malli)
+;;      :clj
+;;      explain-malli))
