@@ -69,17 +69,17 @@
              :tag "negative integer"}})
 
 
-(defn clean-schema [schema]
+(defn- clean-schema [schema]
   (walk/postwalk
    (fn [x]
      (if (map? x) (dissoc x :error/message) x))
    (m/form schema)))
 
 
-(defn indented-string [s]
+(defn- indented-string [n s]
   (when s
     (string/join "\n"
-                 (map #(str "  "  %) 
+                 (map #(str (string/join (repeat n " "))  %) 
                       (string/split s
                                     #"\n")))))
 
@@ -101,10 +101,24 @@
 
 
 (defn- section
-  [label v {:keys [compact? label-style margin-top section-break?]
-            :or   {section-break? true}}]
-  (let  [section-break        (if compact? "\n\n" "\n\n\n")
-         section-header-break (if compact? "\n" "\n\n")]
+  [label 
+   v 
+   {:keys [compact?
+           ultra-compact?
+           label-style
+           margin-top
+           section-break?
+           omit-section-labels]
+    :or   {section-break? true}}]
+  (let  [section-break        (cond ultra-compact? "\n"
+                                    compact?       "\n\n" 
+                                    :else          "\n\n\n")
+         section-header-break (if (or ultra-compact? compact?) "\n" "\n\n")
+         label (when label 
+                 (if (and omit-section-labels 
+                          (contains? omit-section-labels label))
+                   nil
+                   label))]
     (into []
           (remove nil?
                   [(if section-break? section-break "\n")
@@ -248,7 +262,7 @@
 
 
 (defn disjuncted-satisfactions
-  [{:keys [schemas] :as problem}
+  [{:keys [schemas section-body-indentation] :as problem}
    m]
   (let [lb    (if (:compact? m) "\n" "\n\n")
         tilde (when (:surround-disjunctor-with-tilde? m) "~")]
@@ -267,10 +281,13 @@
                     tilde [:italic (some-> problem :disjunctor name)] tilde
                     lb)
              (mapv #(bling 
-                     [:bold (-> {:schema %}
-                                get-satisfaction
-                                hifi
-                                indented-string)])
+                     [:bold (let [indented-string
+                                  (partial indented-string
+                                           section-body-indentation)]
+                              (-> {:schema %}
+                                  get-satisfaction
+                                  hifi
+                                  indented-string))])
                    schemas)))))
 
 
@@ -310,24 +327,41 @@
   ([schema 
     v
     {:keys [spacing
+            success-message
             highlighted-problem-section-label
+            section-body-indentation
+            omit-section-labels
+            omit-sections
+            select-keys-in-problem-path?
             preamble-section-label
             preamble-section-body
             surround-disjunctor-with-tilde?
+            highlight-missing-keys?
             display-schema?
             display-explain-data?
+            file-info-str
             callout-opts]
+     :or   {success-message :bling.explain/explain-malli-success}
      :as   explain-malli-opts}] 
    (let [{problems     :errors
           malli-schema :schema
           :as          malli-ex-data}
-         (m/explain schema v)]
+         (m/explain schema v)
+
+         indentation 
+         (or section-body-indentation 2)
+
+         indentation-str 
+         (string/join (repeat indentation " "))]
      (if (seq problems)
        (let [malli-schema-cleaned
              (clean-schema malli-schema)
              
              compact?
              (= :compact spacing)
+
+             ultra-compact?
+             (= :ultra-compact spacing)
 
              collated-problems
              (collated-problems malli-ex-data)
@@ -356,17 +390,29 @@
                                                (not missing-key?)))
 
 
-                 file-info       (file-info* explain-malli-opts )
+                 file-info       (or (when (string? file-info-str) file-info-str)
+                                     (file-info* explain-malli-opts ))
                  
                  label-style     :italic
-                 
-                 fv              #(indented-string (hifi %))
+
+                 fv              #(indented-string indentation (hifi %))
                  
                  display-schema? (and (not (true? display-explain-data?))
                                       (not (false? display-schema?)))
                  
-                 section-opts    {:compact?    compact?
-                                  :label-style label-style}]
+
+                 omit-sections   (some->> omit-sections
+                                          seq
+                                          (into #{}))
+
+                 omit-section-labels (some->> omit-section-labels
+                                              seq
+                                              (into #{}))
+
+                 section-opts    {:compact?            compact?
+                                  :ultra-compact?      ultra-compact?
+                                  :label-style         label-style
+                                  :omit-section-labels omit-section-labels}]
              
 
              (apply 
@@ -379,59 +425,68 @@
                         :side-label     (when file-info
                                           (bling [:italic file-info]))
                         :margin-top     1
-                        :padding-top    (if compact? 1 2)
-                        :padding-bottom (if compact? 0 1)}
-                       callout-opts)
-                
-                ;; (when problem-highlight-section-heading "\n")
-                ;; (when problem-highlight-section-heading
-                ;;   (bling [:italic problem-highlight-section-heading]))
-                ;; (when problem-highlight-section-heading
-                ;;       (if compact? "\n" "\n\n"))
-                
-                ]
+                        :padding-top    (cond ultra-compact? 0 compact? 1 :else 2)
+                        :padding-bottom (if (or ultra-compact? compact?) 0 1)}
+                       callout-opts)]
                
                (when preamble-section-body
                  (section preamble-section-label 
                           #?(:cljs
-                             (bling "  " preamble-section-body)
+                             (bling indentation-str preamble-section-body)
                              :clj
                              (bling (fv preamble-section-body)))
                           (assoc section-opts :section-break? false)))
 
 
                (section highlighted-problem-section-label
-                        (hifi v
-                              (let [pth (problem-path missing-key? problem v)]
-                                {:find (merge {:path  pth
-                                               :class (if (coll? (get-in v pth))
-                                                        :highlight-error
-                                                        :highlight-error-underlined)})}))
+                        (let [pth         (problem-path missing-key? problem v)
+                              narrowed-map (when (and select-keys-in-problem-path?
+                                                      (seq pth)
+                                                      (not-any? coll? pth)
+                                                      (map? v))
+                                             (let [trimmed (select-keys v pth)]
+                                               (when (seq trimmed) trimmed)))
+                              v           (or narrowed-map v)]
+                          (hifi v
+                                {:find                (into []
+                                                            (remove nil? 
+                                                                    [{:path  pth
+                                                                      :class (if (coll? (get-in v pth))
+                                                                               :highlight-error
+                                                                               :highlight-error-underlined)}
+                                                                     (when narrowed-map
+                                                                       {:pred  #(= % (first pth))
+                                                                        :class :info-error})]))
+                                 :margin-inline-start indentation}))
                         (assoc section-opts
                                :section-break?
                                (if preamble-section-body true false)))
 
+
                (when missing-key? 
                  (section "Missing key:"
-                          #?(:cljs
-                             (bling "  " [:bold missing-key])
-                             :clj
-                             (bling [:bold (fv missing-key)]))
+                          (hifi missing-key
+                                (merge {:margin-inline-start indentation}
+                                       (when highlight-missing-keys?
+                                         {:find {:pred  #(= % missing-key)
+                                                 :class :info-error}})))
                           section-opts))
 
 
-               (when-not missing-key? 
-                 (section "Problem value:"
-                          #?(:cljs
-                             (bling "  " [:bold (:value problem)])
-                             :clj
-                             (bling [:bold (fv (:value problem))]))
-                          section-opts))
+               (when-not (contains? omit-sections :problem-value)
+                 (when-not missing-key? 
+                   (section "Problem value:"
+                            #?(:cljs
+                               (bling indentation-str [:bold (:value problem)])
+                               :clj
+                               (bling [:bold (fv (:value problem))]))
+                            section-opts)))
 
 
                (when error-message? 
                  (section "Message:" 
-                          (indented-string error-message)
+                          (indented-string section-body-indentation
+                                           error-message)
                           section-opts))
                
 
@@ -442,6 +497,7 @@
                               (disjuncted-satisfactions 
                                problem 
                                {:compact?                        compact?
+                                :section-body-indentation        section-body-indentation
                                 :surround-disjunctor-with-tilde? surround-disjunctor-with-tilde?})
                               #?(:cljs (hifi (:schemas problem)
                                              {:margin-inline-start 2})
@@ -451,7 +507,7 @@
                          (get-satisfaction {:schema         schema
                                             :schema-cleaned schema-cleaned})]
                      (section "Must satisfy:"
-                              #?(:cljs (hifi v {:margin-inline-start 2})
+                              #?(:cljs (hifi v {:margin-inline-start indentation})
                                  :clj (bling [:bold (fv v)]))
                               section-opts))))
 
@@ -461,7 +517,7 @@
                (when display-schema? 
                  (section "Schema:"
                           #?(:cljs
-                             (hifi (m/form malli-schema) {:margin-inline-start 2})
+                             (hifi (m/form malli-schema) {:margin-inline-start indentation})
                              :clj
                              (fv (m/form malli-schema)))
                           section-opts))
@@ -472,17 +528,36 @@
                (when (true? display-explain-data?)
                  (section "Result of malli.core/explain:"
                           #?(:cljs
-                             (hifi explain-data {:margin-inline-start 2})
+                             (hifi explain-data {:margin-inline-start indentation})
                              :clj
                              (fv explain-data))
                           section-opts)))))))
 
-       (println "Success!")))))
-
-;; (def explain-malli
-;;   #?(:cljs
-;;      (when ^boolean js/goog.DEBUG
-;;            (fn [& args] nil)
-;;            explain-malli)
-;;      :clj
-;;      explain-malli))
+       (when-not (nil? success-message)
+         (case success-message 
+           ::explain-malli-success-verbose
+           (apply
+            bling.core/callout 
+            (concat [(? (merge {:type :positive}
+                            callout-opts
+                            {:label "Malli Schema Validation Success"}))]
+                    ["\n\n"
+                     (bling [:italic "Source:"])
+                     "\n\n"
+                     (bling (? indentation-str) file-info-str)
+                     "\n\n\n"
+                     (bling [:italic "Value:"])
+                     "\n\n"
+                     (hifi v {:margin-inline-start 2})
+                     "\n\n\n"
+                     (bling [:italic "Schema:"])
+                     "\n\n"
+                     #_(hifi schema {:margin-inline-start 2})
+                     ])
+            )
+           ::explain-malli-success-simple
+           (println (str "Malli schema validation success"
+                         (when file-info-str
+                           (str " @ " file-info-str))))
+           (println success-message)
+           ))))))
