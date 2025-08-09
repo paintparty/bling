@@ -5,6 +5,7 @@
             [bling.core :refer [bling]]
             [bling.hifi :refer [hifi]]
             [bling.util :as util :refer [maybe]]
+            [bling.macros :refer [keyed]]
             [malli.core :as m]))
 
 
@@ -79,7 +80,7 @@
 (defn- indented-string [n s]
   (when s
     (string/join "\n"
-                 (map #(str (string/join (repeat n " "))  %) 
+                 (map #(str (string/join (repeat (or n 0) " "))  %) 
                       (string/split s
                                     #"\n")))))
 
@@ -114,20 +115,14 @@
                                     compact?       "\n\n" 
                                     :else          "\n\n\n")
          section-header-break (if (or ultra-compact? compact?) "\n" "\n\n")
-         label (when label 
-                 (if (and omit-section-labels 
-                          (contains? omit-section-labels label))
-                   nil
-                   label))]
+         label                (when label 
+                                (if (and omit-section-labels 
+                                         (contains? omit-section-labels label))
+                                  nil
+                                  label))]
     (into []
           (remove nil?
-                  [(if section-break? section-break "\n")
-                   #_(if-let [margin-top
-                            (when (or (zero? margin-top)
-                                      (pos-int? margin-top))
-                              (string/join (repeat margin-top "\n")))] 
-                     margin-top
-                     section-break)
+                  [(when section-break? section-break)
                    (when label (bling [label-style label]))
                    (when label section-header-break)
                    v]))))
@@ -262,14 +257,14 @@
 
 
 (defn disjuncted-satisfactions
-  [{:keys [schemas section-body-indentation] :as problem}
-   m]
-  (let [lb    (if (:compact? m) "\n" "\n\n")
+  [{:keys [schemas] :as problem}
+   {:keys [indentation-str] :as m}]
+  (let [lb    (if (or (:ultra-compact? m) (:compact? m)) "\n" "\n\n")
         tilde (when (:surround-disjunctor-with-tilde? m) "~")]
     #?(:cljs (string/join 
               (str lb
-                   "  "
-                   "  "
+                   indentation-str
+                   indentation-str
                    tilde (some-> problem :disjunctor name) tilde
                    lb)
               (mapv #(hifi (get-satisfaction {:schema %})
@@ -277,17 +272,19 @@
                     schemas))
        :clj (string/join 
              (bling lb
-                    "  "
+                    indentation-str
                     tilde [:italic (some-> problem :disjunctor name)] tilde
                     lb)
              (mapv #(bling 
-                     [:bold (let [indented-string
-                                  (partial indented-string
-                                           section-body-indentation)]
-                              (-> {:schema %}
-                                  get-satisfaction
-                                  hifi
-                                  indented-string))])
+                     ;; Remove this enum-schema? check when :bold is supported for hifi printing:
+                     ;; https://github.com/paintparty/fireworks/issues/70
+                     (let [weight (if (enum-schema? %) :normal :bold)] 
+                       [weight (let [indented-string
+                                     (partial indented-string (:indentation m))]
+                                 (-> {:schema %}
+                                     get-satisfaction
+                                     hifi
+                                     indented-string))]))
                    schemas)))))
 
 
@@ -301,6 +298,31 @@
                  ":"
                  column))))
 
+#_(defn- highlighted-problem-section 
+  [{:keys [missing-key?
+           problem
+           v
+           indentation
+           select-keys-in-problem-path?]}]
+  (let [pth          (problem-path missing-key? problem v)
+        narrowed-map (when (and select-keys-in-problem-path?
+                                (seq pth)
+                                (not-any? coll? pth)
+                                (map? v))
+                       (let [trimmed (select-keys v pth)]
+                         (when (seq trimmed) trimmed)))
+        v            (or narrowed-map v)]
+    (hifi v
+          {:find                (into []
+                                      (remove nil? 
+                                              [{:path  pth
+                                                :class (if (coll? (get-in v pth))
+                                                         :highlight-error
+                                                         :highlight-error-underlined)}
+                                               (when narrowed-map
+                                                 {:pred  #(= % (first pth))
+                                                  :class :info-error})]))
+           :margin-inline-start indentation})) )
 
 (defn explain-malli
   "Prints a malli validation error callout block via bling.core/callout.
@@ -352,7 +374,7 @@
          (or section-body-indentation 2)
 
          indentation-str 
-         (string/join (repeat indentation " "))]
+         (string/join (repeat (or indentation 0) " "))]
      (if (seq problems)
        (let [malli-schema-cleaned
              (clean-schema malli-schema)
@@ -418,7 +440,7 @@
              (apply 
               bling.core/callout
               (concat
-               [(merge {:colorway       :error
+               [(? (merge {:colorway       :error
                         :theme          #?(:cljs :minimal :clj :sideline)
                         :label-theme    #?(:clj :marquee :cljs :pipe)
                         :label          "Malli Schema Error"
@@ -427,7 +449,7 @@
                         :margin-top     1
                         :padding-top    (cond ultra-compact? 0 compact? 1 :else 2)
                         :padding-bottom (if (or ultra-compact? compact?) 0 1)}
-                       callout-opts)]
+                       callout-opts))]
                
                (when preamble-section-body
                  (section preamble-section-label 
@@ -439,6 +461,7 @@
 
 
                (section highlighted-problem-section-label
+                        ;; TODO - use fn highlighted-problem-section
                         (let [pth         (problem-path missing-key? problem v)
                               narrowed-map (when (and select-keys-in-problem-path?
                                                       (seq pth)
@@ -458,9 +481,9 @@
                                                                        {:pred  #(= % (first pth))
                                                                         :class :info-error})]))
                                  :margin-inline-start indentation}))
-                        (assoc section-opts
+                        (? (assoc section-opts
                                :section-break?
-                               (if preamble-section-body true false)))
+                               (if preamble-section-body true false))))
 
 
                (when missing-key? 
@@ -496,16 +519,16 @@
                             (if (:all-disjunctions-are-printable? problem)
                               (disjuncted-satisfactions 
                                problem 
-                               {:compact?                        compact?
-                                :section-body-indentation        section-body-indentation
-                                :surround-disjunctor-with-tilde? surround-disjunctor-with-tilde?})
+                               (keyed [compact?
+                                       ultra-compact?
+                                       indentation
+                                       indentation-str
+                                       surround-disjunctor-with-tilde?]))
                               #?(:cljs (hifi (:schemas problem)
                                              {:margin-inline-start 2})
                                  :clj (bling [:bold (fv (:schemas problem))])))
                             section-opts)
-                   (let [v
-                         (get-satisfaction {:schema         schema
-                                            :schema-cleaned schema-cleaned})]
+                   (let [v (get-satisfaction (keyed [schema schema-cleaned]))]
                      (section "Must satisfy:"
                               #?(:cljs (hifi v {:margin-inline-start indentation})
                                  :clj (bling [:bold (fv v)]))
@@ -538,9 +561,9 @@
            ::explain-malli-success-verbose
            (apply
             bling.core/callout 
-            (concat [(? (merge {:type :positive}
+            (concat [(merge {:type :positive}
                             callout-opts
-                            {:label "Malli Schema Validation Success"}))]
+                            {:label "Malli Schema Validation Success"})]
                     ["\n\n"
                      (bling [:italic "Source:"])
                      "\n\n"
@@ -553,8 +576,7 @@
                      (bling [:italic "Schema:"])
                      "\n\n"
                      #_(hifi schema {:margin-inline-start 2})
-                     ])
-            )
+                     ]))
            ::explain-malli-success-simple
            (println (str "Malli schema validation success"
                          (when file-info-str

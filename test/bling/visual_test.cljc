@@ -92,12 +92,30 @@
                #_[:and :string [:fn (fn [s] (string/starts-with? s "s"))]]]]])
 
 #_(explain-malli my-schema [2 :foobar false] #_{:display-schema? true :display-explain-data? false})
+
+
 #_(explain-malli Myschema 
                [#_2 :foobar #_:bazbat] 
-               {:display-schema? true
+               {:display-schema? false
+                :highlighted-problem-section-label "fudge"
                 ;; :spacing         :compact
                 #_ #_:display-explain-data? true})
 
+#_(explain-malli Myschema 
+               [#_2 :foobar #_:bazbat] 
+               {:display-schema? false
+                :highlighted-problem-section-label "fudge"
+                :spacing         :compact
+                #_ #_:display-explain-data? true})
+
+#_(explain-malli Myschema 
+               [#_2 :foobar #_:bazbat] 
+               {:display-schema? false
+                :highlighted-problem-section-label "fudge"
+                :spacing         :ultra-compact
+                #_ #_:display-explain-data? true})
+
+;; (callout {:label-theme :marquee :label "hey"} "hi" )
 
 ;; (explain-malli Address v {:display-schema? false :callout-opts {:label "Custom Label"}})
 
