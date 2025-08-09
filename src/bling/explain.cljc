@@ -440,16 +440,19 @@
              (apply 
               bling.core/callout
               (concat
-               [(? (merge {:colorway       :error
+               [(merge {:colorway       :error
                         :theme          #?(:cljs :minimal :clj :sideline)
                         :label-theme    #?(:clj :marquee :cljs :pipe)
                         :label          "Malli Schema Error"
                         :side-label     (when file-info
-                                          (bling [:italic file-info]))
-                        :margin-top     1
+                                          #?(:cljs
+                                             file-info
+                                             :clj
+                                             (bling [:italic file-info])))
+                        :margin-top     #?(:cljs 0 :clj 1)
                         :padding-top    (cond ultra-compact? 0 compact? 1 :else 2)
                         :padding-bottom (if (or ultra-compact? compact?) 0 1)}
-                       callout-opts))]
+                       callout-opts)]
                
                (when preamble-section-body
                  (section preamble-section-label 
@@ -481,9 +484,9 @@
                                                                        {:pred  #(= % (first pth))
                                                                         :class :info-error})]))
                                  :margin-inline-start indentation}))
-                        (? (assoc section-opts
+                        (assoc section-opts
                                :section-break?
-                               (if preamble-section-body true false))))
+                               (if preamble-section-body true false)))
 
 
                (when missing-key? 

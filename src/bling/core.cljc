@@ -2,6 +2,7 @@
 
 (ns bling.core
   (:require [clojure.string :as string]
+            [fireworks.core :refer [? !? ?> !?>]]
             [bling.macros :refer [let-map keyed]]
             [bling.defs :as defs]
             [bling.util :as util]
@@ -1337,7 +1338,7 @@
                       (some->> side-label (str " ")))
 
                args
-               (concat [label padding-top-str] value [padding-bottom-str])
+               (concat [label "\n" padding-top-str] value [padding-bottom-str])
 
                {:keys [tagged css]}
                (reduce (fn [acc arg]
@@ -1462,7 +1463,7 @@
     sp             (fn [k n] (spacing (get m k) n))
     padding-top    (resolve-padding-top theme sp)
     padding-bottom (sp :padding-bottom 0)
-    margin-top     (sp :margin-top 1)
+    margin-top     (sp :margin-top #?(:cljs 0 :clj 1))
     margin-bottom  (sp :margin-bottom 0)
     margin-left    (sp :margin-left 0)
     padding-left   (resolve-padding-left m theme)
