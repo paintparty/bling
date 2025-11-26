@@ -83,18 +83,8 @@ Create a stand-alone documentation site featuring an interactive wizard to quick
 Currently, both Bling and Fireworks use `clojure.spec.alpha` to validate the shape of args to macros, as well as the shape of data for `config.edn` (used to config hifi printing options). Expound is used to humanize validation errors. All of these specs will be converted to Malli and Bling's own `explain-malli` can be leveraged as a replacement for Expound.
 
 
-### Editor integration
-We would like to publish Fireworks editor plugins/extensions/integrations for Emacs, VS Code, and IntelliJ. These are fairly simple extensions that just involve some basic form rewriting for wrapping/unwrapping forms. Initial working versions have been created locally for all the 3 editors listed above.
-
-
 ### Documentation of interactive workflow. 
 Produce written and/or video documentation a live hot-reloading dev environment for JVM Clojure, powered by Fireworks and Bling, with versions for both Leiningen and Deps. I recently [merged a PR that that adds this to the library `test-refresh`](https://github.com/jakemcc/test-refresh/pull/91) . This sort of thing could also potentially be incorporated into other similar projects such as `metabase/hawk` and `tonsky/clj-reload`. I think this could have a potentially significant value for some newcomers to Clojure.
-
-
-### Call-site options for quick formatting changes.
-For hifi printing, support call-site option to disable all truncation and ellipsis
-<br>
-[#14](https://github.com/paintparty/fireworks/issues/14)
 
 
 ### Migrate hi-fidelity printing responsibilities
@@ -117,8 +107,6 @@ For hifi printing, move Fireworks colorizing/formatting functionality into `blin
   - Support a `:trace` mode with `fireworks.core/?` debugging macro. [#23](https://github.com/paintparty/fireworks/issues/23)
 
   - Create a stand-alone documentation site featuring an interactive UI to preview samples of hifi printing on different data, with stock Fireworks themes. This UI will also allow the user to easily create a custom colorization themes for hifi-printing
-
-  - Add support for automatic detection of the 3 levels of color support (16-color, 256-color, or Truecolor), using an approach similar to https://github.com/chalk/supports-color. [#42](https://github.com/paintparty/fireworks/issues/42)
 
   - Support arbitrary hex colors, and their conversion, if necessary, to x256. An efficient Manhattan distance algorithm for doing this conversion [already exists](https://github.com/paintparty/fireworks/blob/035ec4cb048db05f4cca3691f946931b3a87f624/src/fireworks/color.cljc#L26) in Fireworks  [#43](https://github.com/paintparty/fireworks/issues/43)
 
