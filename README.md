@@ -1,4 +1,4 @@
-<p><sub>Many thank to <a href="https://www.clojuriststogether.org/">Clojurists Together</a> for generously supporting this project!</sub></p>
+<p><sub>Many thanks to <a href="https://www.clojuriststogether.org/">Clojurists Together</a> for generously supporting this project!</sub></p>
 
 <!-- TODO - Update images with new colors -->
 # Bling
