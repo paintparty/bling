@@ -2,4 +2,5 @@
 
 (defn ^:public explain-malli
   ([_])
-  ([_ _]))
+  ([_ _])
+  ([_ _ _]))
