@@ -4,6 +4,8 @@
   (:require
    #?(:cljs [bling.js-env :refer [node?]])
    [fireworks.core :refer [? !? ?> !?>]] ;; <-just for debugging
+   [fireworks.state]
+   [fireworks.color]
    [bling.core :as bling :refer [?sgr bling print-bling callout point-of-interest bling-colors*]]
    [bling.sample :as sample]
    [bling.util :as util]
@@ -19,11 +21,34 @@
    [bling.fonts.isometric-1 :refer [isometric-1]]
    [bling.fontlib]
    [bling.banner]
+   [bling.browser]
    [bling.hifi :refer [print-hifi hifi]]
    [malli.core :as m]
    [clojure.pprint :refer [pprint]]
    [clojure.string :as string]
    [lasertag.core :refer [tag-map]]))
+
+(def my-sample (hifi ["string" 1234]))
+
+(def bling-text 
+  (bling [:blue.bold.italic.yellow-bg.underline "blue+bold+italic+yellow-bg"])
+  #_(bling [:blue "blue"]
+         " "
+         [:blue.bold "blue-bold"]
+         " "
+         [:blue.bold.italic "blue-bold"]
+         " "
+         [:blue.bold.italic.yellow-bg "blue-bold"]
+         ))
+
+#_(fireworks.state/?sgr my-sample)
+#_(fireworks.state/?sgr bling-text)
+
+#_(? (bling.browser/ansi-sgr-string->browser-dev-console-array my-sample))
+#_(println bling-text)
+;; (? :pp (bling.browser/ansi-sgr-string->browser-dev-console-array bling-text))
+(? :pp (bling.browser/ansi-sgr-string->browser-dev-console-array (hifi :foo)))
+
 
 
 ;; Sample new hiccup syntax
