@@ -3,10 +3,12 @@
 (ns bling.core
   (:require [clojure.string :as string]
             [clojure.walk :as walk]
-            [fireworks.core :refer [? !? ?> !?> pprint]]
-            [bling.macros :refer [let-map keyed]]
+            [bling.ansi :as ansi :refer [adjusted-char-count]]
+            [bling.browser]
             [bling.defs :as defs]
+            [bling.macros :refer [let-map keyed]]
             [bling.util :as util :refer [maybe]]
+            [fireworks.core :refer [? !? ?> !?> pprint]]
             #?(:cljs [goog.object])
             #?(:cljs [bling.js-env :refer [node?]])))
 
@@ -241,22 +243,21 @@
 ;; Helper functions -----------------------------------------------------------
 
 (defn ^:public ?sgr
-  "For debugging of sgr code printing.
+  "For debugging of ANSI SGR tagged output.
 
-   Prints the value with escaped sgr codes so you can read them in terminal
-   emulators (otherwise text would just get colored).
+   Prints the value with escaped ANSI SGR codes so you can read them in terminal
+   emulators (otherwise text would just get colored). Preserves coloring.
 
    Returns the value."
   [s]
-  ;; TODO - try to figure out way you can preserve the color in the output,
-  ;; which would help even more for debugging.
-  (println (string/replace s
-                           #"\u001b\[([0-9;]*)[mK]"
-                           (str "\033[38;5;231;48;5;247m"
-                                "\\\\033["
-                                "$1"
-                                "m"
-                                "\033[0;m")))
+  (println 
+   (string/replace s
+                   #"\u001b\[((?:[0-9]|;|(?:9|4(?::[1-5])?))*)m"
+                   (str "\033[38;5;231;48;5;247m" ; <- white on gray, actual ansi sgr tag for fake ansi tag
+                        "\\\\033[$1m"             ; <- fake ansi sgr tag text
+                        "\033[0m"                 ; <- reset, actual ansi sgr for resetting fake ansi tag
+                        "\033[$1m"                ; <- original ansi sgr, to preserve coloring
+                        )))
   s)
 
 (defn ^:public !?sgr
@@ -1236,23 +1237,6 @@
           []
           (string/split s #"\n")))
 
-(def ansi-esc "\u001b\\[")
-
-(def ansi-sgr-text-decoration-base
-  "(?:9|4(?::[1-5])?)")
-
-(def ansi-sgr-freeform
-  (str "[0-9;" ansi-sgr-text-decoration-base "]*m"))
-
-(def ansi-sgr-re (re-pattern (str ansi-esc ansi-sgr-freeform)))
-
-(defn ansi-sgr-count [s]
-  (some->> s
-           (re-seq ansi-sgr-re)
-           (reduce (fn [n s] (+ n (count s))) 0)))
-
-(defn- adjusted-char-count [s]
-  (- (count s) (or (when-not (= s "\n") (ansi-sgr-count s)) 0)))
 
 (defn wrapped-string-inner
   [max-cols
@@ -2057,7 +2041,7 @@
                 "\033[0;m")]
 
     #?(:cljs
-       (if node? (f o) (str "%c" (:value o) "%c"))
+       (f o)
        :clj
        (f o))))
 
@@ -2127,9 +2111,7 @@
                         :value \"hi\"}"
   [[style v]]
   (let [[style v] #?(:cljs
-                     (if node?
-                       (href-console style v)
-                       (href-browser-dev-console style v))
+                     (href-console style v)
                      :clj
                      (href-console style v))]
     (->EnrichedText
@@ -2490,79 +2472,41 @@
      :args          args}))
 
 
-(defn ^:public bling-data [coll]
-  #?(:cljs
-     (if node?
-       (-> coll bling-data* :tagged)
-       (bling-data* coll))
-     :clj
-     (-> coll bling-data* :tagged)))
-
-
-(defn ^:public bling-data-css [coll]
-  (-> coll bling-data* :css))
+;; (defn ^:public bling-data [coll]
+;;   #?(:cljs
+;;      (if node?
+;;        (-> coll bling-data* :tagged)
+;;        (bling-data* coll))
+;;      :clj
+;;      (-> coll bling-data* :tagged)))
 
 
 (defn ^:public bling
-  "In a terminal emulator context, returns a string tagged with SGR codes to
-   style the text as desired.
-   
-   In a browser context, returns an object, which is an instance of
-   `bling.core/Enriched`, a js object with the the following fields:
-
-   `tagged`
-   A string with the appropriate tags for styling in browser consoles
-  
-   `css`
-   An array of styles that sync with the tagged string.
-
-   `args`
-   A ClojureScript vector of the original args.
-
-   `consoleArray`
-   An array by `Array.unshift`ing the tagged string onto the css array.
-   This is the format that is needed for printing in a browser console, e.g.
-   `(.apply js/console.log js/console (goog.object/get o \"consoleArray\"))`.
-
-   For browser usage, sugar for the above `.apply` call is provided with
-   `bling.core/print-bling`. You can use it like this:
-   `(print-bling (bling [:bold.blue \"my blue text\"]))`"
-
+  "Giving any number of strings or hiccup-like vectors, returns a string tagged
+   with ANSI SGR codes to style the text as desired."
   [& coll]
+  #_(!? :js (-> coll bling-data* :tagged))
+  (-> coll bling-data* :tagged))
 
-  (let [coll coll #_(hiccup->coll-of-strs-and-hiccup)
-        f    #(:tagged (bling-data* coll))]
+(defn ^:public print-bling
+  "In JVM Clojure, cljs(Node), and bb, `print-bling` is sugar for:
+   (println (bling [:bold.blue \"my blue text\"]))
+
+   In cljs (browser dev consoles), `print-bling` is sugar for the the following:
+   `(->> (bling [:bold.blue \"my blue text\"])
+         bling.browser/ansi-sgr-string->browser-dev-console-array
+         (.apply js/console.log js/console))`
+
+  Example:
+  `(print-bling [:bold.blue \"my blue text\"])"
+  [& args]
+  (let [bling-str (apply bling args)]
     #?(:cljs
        (if node?
-         (f)
-         (let [{:keys [css tagged console-array args]} (bling-data* coll)]
-           ;;  (js/console.log "tagged:" tagged)
-           ;;  (js/console.log "css:" css)
-           ;;  (js/console.log "console-array:" console-array)
-           ;;  (.apply js/console.log js/console js-arr)
-           (Enriched. tagged
-                      (into-array css)
-                      console-array
-                      args)))
-       :clj (f))))
-
-#?(:cljs
-   (defn ^:public print-bling
-     "For browser usage, sugar for the the following:
-      `(.apply js/console.log js/console (goog.object/get o \"consoleArray\"))`
-
-      Example:
-      `(print-bling (bling [:bold.blue \"my blue text\"]))"
-     [& args]
-     (if node?
-       (println (apply bling args))
-       (let [o (apply bling args)]
-         (.apply js/console.log
-                 js/console
-                 (goog.object/get o "consoleArray")))))
-
-   :clj
-   (defn ^:public print-bling
-     "Equivalent to (println (apply bling args))"
-     [& args]
-     (println (apply bling args))))
+         (println bling-str)
+         (->> args
+              (apply bling)
+              bling.browser/ansi-sgr-string->browser-dev-console-array
+              (.apply js/console.log js/console)))
+       :clj
+       (println bling-str))))

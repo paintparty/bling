@@ -33,12 +33,14 @@
    [lasertag.core :refer [tag-map]]
 
    [clj-commons.ansi :refer [compose]]
-   [taoensso.tufte :as tufte :refer [p profile]]
-
-   ))
+   [taoensso.tufte :as tufte :refer [p profile]]))
 
 
- (
+#_(? (count (re-seq ansi-sgr-re (bling [:red "Hi"]))))
+
+#_(?sgr (bling [:red.wavy-underline "Hi"] " there " [:blue.yellow-bg "GOLD"]))
+
+(
   ;; boxed-callout
   callout
   #_(bling "This namespace is automatically generated in bling.test-gen.\n"
@@ -61,7 +63,7 @@
 
   {
    ;;  :label (bling [:bold.neutral "Where's the beef asdfasdfsadfasdfasdfas fasdfasdf asdfasdfasdf asdfasdfasfdaaasfdsaf?"])
-   :theme                :gutter
+   :theme                :boxed
    :label                (bling [:bold.neutral "Where's the beef aldflasdjfasldf ad?"])
    :side-label           (bling [:italic "My side label that is kind of too long"])
    :box-drawing-style    :double
