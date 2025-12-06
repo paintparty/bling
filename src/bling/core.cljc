@@ -1827,17 +1827,296 @@
      (updated-css css x)]))
 
 
+;; Hydration of :p vectors ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn p-tag-match [x]
+  (some-> x
+          (maybe vector?)
+          first
+          (maybe keyword?)
+          name
+          (->> (re-find #"^p(?:\.(\S+))?"))))
+
+
+(defn p-tag? [x]
+  (boolean (p-tag-match x)))
+
+
+(defn p-tag [x last?]
+  (when-let [tag
+             (p-tag-match x)]
+    (let [tag
+          (or (some-> tag
+                      second
+                      keyword)
+              :normal)
+          ret
+          (reduce (fn [acc v]
+                    (conj acc
+                          (cond (= v [:br])
+                                "\n"
+                                (vector? v)
+                                v
+                                :else
+                                [tag v])))
+                  []
+                  (rest x))]
+      (if last?
+        ret
+        (conj ret "\n\n")))))
+
+
+(defn bling-p-vector? [x]
+  (boolean (and (vector? x)
+                (p-tag? x))))
+
+
+(defn bling-vector? [x]
+  (boolean (and (vector? x)
+                (-> x
+                    (nth 0)
+                    (maybe #(or (keyword? %) (map? %))))
+                (not-any? bling-p-vector? x))))
+
+
+(defn bling-br-vector? [x]
+  (= [:br] x))
+
+
+(defn bling-p-vector-problems [x]
+  (doall (filter
+          #(not (or (bling-vector? %)
+                    (bling-br-vector? %)
+                    (not (coll? %))))
+          x)))
+
+
+
+(defn args-profile [args]
+  (mapv (fn [x]
+          (let [k
+                (cond (bling-p-vector? x)
+                      :bling/p-vector
+                      (bling-vector? x)
+                      :bling/vector
+                      (bling-br-vector? x)
+                      :bling/br-vector
+                      (not (coll? x))
+                      :bling/non-coll)
+
+                bling-p-vector-problems
+                (when (= k :bling/p-vector)
+                  (seq (bling-p-vector-problems x)))
+
+                problem
+                (if bling-p-vector-problems
+                  :bling.core/invalid-args-to-p-vector
+                  (when (nil? k)
+                    :bling.core/invalid-arg))]
+            (merge {:type    k
+                    :value   x}
+                   (when problem {:problem problem})
+                   (when bling-p-vector-problems
+                     {:bling/p-vector-problems bling-p-vector-problems}))))
+        args))
+
+
+(defn hydrate-bling-args [args]
+  (let [profile (args-profile args)]
+
+    (when (seq profile)
+      (println "\nargs profile")
+      (pprint profile))
+
+    (if (some #(contains? #{:bling/p-vector :bling/br-vector} (:type %))
+              profile)
+      (let [last-index (dec (count args))]
+        (into []
+              (apply concat
+                     (map-indexed (fn [i x]
+                                    (or (p-tag x (= i last-index))
+                                        (cond
+                                          (= x [:br])
+                                          ["\n"]
+                                          :else
+                                          [x])))
+                                  args))))
+      args)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+
+
+
+;; Hiccup w nested styles, supports :p elements ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn- tags->maps [coll]
+  (walk/postwalk
+   (fn [x]
+     (if-let [k (some-> x
+                        (maybe vector?)
+                        (nth 0 nil)
+                        (maybe keyword?))]
+       (if (= [:br] x)
+         "\n"
+         (into [(-> k
+                    name
+                    (string/split #"\.")
+                    (->> (reduce (partial tag->map true) {})))]
+               (rest x)))
+       x))
+   coll))
+
+
+(defn- get-style-map [x]
+  (some-> x
+          (maybe vector?)
+          (nth 0 nil)
+          (maybe map?)))
+
+
+(defn- wrapped-val? [x]
+  (boolean (some-> x
+                   (maybe vector?)
+                   (maybe #(= 2 (count %)))
+                   (nth 0 nil)
+                   (maybe map?))))
+
+
+(defn- nest-styles [coll]
+  (walk/prewalk
+   (fn [x]
+     (if-let [m (get-style-map x)]
+       ;; If it is a vector with multiple things
+       (mapv (fn [v]
+               (if-let [m2 (get-style-map v)]
+                 (into [(merge m m2)] (rest v))
+                 v))
+             x)
+       x))
+   coll))
+
+
+(defn- wrap-naked-strings [coll]
+  (walk/postwalk
+   (fn [x]
+     (if-let [m (get-style-map x)]
+       (if (and (< 2 (count x))
+                (some #(not (coll? %)) x))
+         (mapv #(if (not (coll? %))
+                  [m %]
+                  %)
+               (rest x))
+         x)
+       x))
+   coll))
+
+
+(defn- rollup [acc coll]
+  (reduce
+   (fn [acc x]
+     (cond
+       (and (vector? x)
+            (every? wrapped-val? x))
+       (apply conj acc x)
+
+       (wrapped-val? x)
+       (conj acc x)
+
+       (vector? x)
+       (rollup acc x)
+
+       (not (coll? x))
+       (conj acc x)
+
+       :else
+       acc))
+   acc
+   coll))
+
+
+(defn- p-tag-match* [x]
+  (some-> x
+          (maybe vector?)
+          (nth 0 nil)
+          (maybe keyword?)
+          name
+          (->> (re-find #"^p(?:\.(\S+))?"))))
+
+
+(defn- p-tag* [x]
+  (when-let [tag
+             (p-tag-match* x)]
+    (or (some-> tag second keyword)
+        :normal)))
+
+
+(defn- padded-paragraphs
+  "Normalizes any :p vectors, adding 2 newlines to end of vector, unless the
+   :p vector is the last arg.
+   
+   Example:
+
+   (padded-paragraphs 
+    [[:p.bold 
+      \"foo\"
+      [:red \"bar\"]]
+     \"baz\"])
+   =>
+   [[:bold 
+     \"foo\"
+     [:red \"bar\"]
+     \"\n\n\"]
+    \"baz\"]"
+  [args]
+  (let [last-index (dec (count args))]
+    (into []
+          (map-indexed (fn [i x]
+                         (if-let [tag (p-tag* x)]
+                           (into [tag]
+                                 (concat (rest x)
+                                         (when-not (= i last-index)
+                                           ["\n" "\n"])))
+                           x))
+                       args))))
+
+
+(defn- nested->flat
+  "Hydrates args that are :p elements and flattens nested bling hiccup vectors"
+  [args]
+  (-> args
+      padded-paragraphs
+      tags->maps
+      nest-styles
+      wrap-naked-strings
+      (->> (rollup []))
+      ;; Maybe unwrap vals here if {:font-style :normal}, for perf
+      ))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn contains-nested? [args]
+  (some #(when (vector? %)
+           (or (some-> (nth % 0 nil) (= :p))
+               (some vector? %)))
+        args))
+
 (defn bling-data* [args]
-  (let [[coll css] (reduce enriched-data-inner
+  (let [args       (if (contains-nested? args)
+                     (nested->flat (into [] args))
+                     args)
+        [coll css] (reduce enriched-data-inner
                            [[] []]
                            args)
-        tagged (string/join coll)]
+        tagged     (string/join coll)]
 
     #_#?(:cljs
-       (js/console.log css)
-       :clj
-       (println css))
-    
+         (js/console.log css)
+         :clj
+         (println css))
+
     {:console-array (into-array (util/concatv [tagged] css))
      :tagged        tagged
      :css           css
