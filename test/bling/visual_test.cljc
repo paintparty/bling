@@ -4,7 +4,14 @@
   (:require
    #?(:cljs [bling.js-env :refer [node?]])
    [fireworks.core :refer [? !? ?> !?>]] ;; <-just for debugging
-   [bling.core :as bling :refer [?sgr bling print-bling callout point-of-interest bling-colors*]]
+   [bling.core :as bling :refer [?sgr
+                                 bling
+                                 print-bling
+                                 callout
+                                 point-of-interest
+                                 bling-colors*
+                                 boxed-callout
+                                 ]]
    [bling.sample :as sample]
    [bling.util :as util]
    [bling.defs]
@@ -23,7 +30,193 @@
    [malli.core :as m]
    [clojure.pprint :refer [pprint]]
    [clojure.string :as string]
-   [lasertag.core :refer [tag-map]]))
+   [lasertag.core :refer [tag-map]]
+
+   [clj-commons.ansi :refer [compose]]
+   [taoensso.tufte :as tufte :refer [p profile]]
+
+   ))
+
+
+ (
+  ;; boxed-callout
+  callout
+  #_(bling "This namespace is automatically generated in bling.test-gen.\n"
+           "\n"
+           "Do not manually add anything to this namespace.\n"
+           "\n"
+           "To regenerate, set " [:bold "bling.test-gen/write-tests?"] " to `true`, then run " [:bold "lein test"] ".\n"
+           "\n"
+           "If you want do any experimentation use `bling.visual-test`\n")
+
+  #_(bling "This namespace is automatically generated in " [:bold "bling.test-gen"] ".\n"
+           "\n"
+           "Do not manually add anything to this namespace.\n"
+           "\n"
+           "To regenerate, set " [:bold "bling.test-gen/write-tests?"] " to " [:bold "true"] ", then run " [:bold "lein test"] ".\n"
+           "\n"
+           "If you want do any experimentation use " [:bold "bling.visual-test"] ".\n")
+
+  
+
+  {
+   ;;  :label (bling [:bold.neutral "Where's the beef asdfasdfsadfasdfasdfas fasdfasdf asdfasdfasdf asdfasdfasfdaaasfdsaf?"])
+   :theme                :gutter
+   :label                (bling [:bold.neutral "Where's the beef aldflasdjfasldf ad?"])
+   :side-label           (bling [:italic "My side label that is kind of too long"])
+   :box-drawing-style    :double
+   :border-char          "╳"
+   :vertical-border-char "╳╳"
+   :border-color         :orange
+   :padding-left         3
+   :padding-top          1
+   }
+
+  (bling [:p "This namespace is automatically generated in " [:bold "bling.test-gen"]]
+         [:p "Do not manually add anything to this namespace."]
+         [:p "To regenerate, set " [:bold "bling.test-gen/write-tests?"] " to " [:bold "true"] ", then run " [:bold "lein test"] "."]
+         [:p "If you want do any experimentation use " [:bold "bling.visual-test"] "."])
+  
+  )
+
+
+#_(println "                                                 *")
+
+#_(println (count "This namespace is automatically generated in abcd."))
+
+#_(println
+ (util/wrapped-string
+  (bling 
+   "This namespace is automatically generated in " [:bold "abcd"] ".\n"
+   "\n"
+   "Do not manually add anything to this namespace.\n"
+   "\n"
+   "ssssssssssssssssssssssssssssssssssssssssssssssssssssaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  ;;  "\n"
+  ;;  "To regenerate, set `bling.test-gen/write-tests?` to `true`, then run `lein test`.\n"
+  ;;  "\n"
+  ;;  "If you want do any experimentation use `bling.visual-test`\n"
+   )
+  {:max-width 50}))
+
+#_(profile ; Profile any `p` forms called during body execution
+ {} ; Profiling options; we'll use the defaults for now
+ (dotimes [_ 10000]
+   #_(p :nested
+      (bling [:p "First paragraph"]
+             [:p [:bold
+                  "Bold, "
+                  [:italic "bold italic, "
+                   [:red "bold italic red, "]]
+                  "bold."]]
+             "Last line"))
+   (p :unested
+      (bling "First paragraph"
+             "\n\n"
+             [:bold "Bold, "] 
+             [:bold.italic "bold italic, "] 
+             [:bold.red.italic "bold italic red, "] 
+             [:bold "bold."]
+             "\n\n"
+             "Last line"))))
+
+;; (println clj-commons.ansi/*color-enabled*) ; Prints "initial value"
+
+;; (binding [clj-commons.ansi/*color-enabled* true]
+;;   (println clj-commons.ansi/*color-enabled*)) ; Prints "new value"
+
+#_(binding [clj-commons.ansi/*color-enabled* true]
+ (profile ; Profile any `p` forms called during body execution
+   {} ; Profiling options; we'll use the defaults for now
+   (dotimes [_ 5000]
+     #_(p :pretty
+        (compose "First paragraph"
+                 "\n\n"
+                 [:bold "Bold, " [:italic "bold italic, " [:red "bold italic red, "]] "bold."]
+                 "\n\n"
+                 "Last line"))
+     (p :nested
+          (bling [:p "First paragraph"]
+                 [:p [:bold
+                      "Bold, "
+                      [:italic "bold italic, "
+                       [:red "bold italic red, "]]
+                      "bold."]]
+                 "Last line"))
+     #_(p :unested
+        (bling "First paragraph"
+               "\n\n"
+               [:bold "Bold, "] 
+               [:bold.italic "bold italic, "] 
+               [:bold.red.italic "bold italic red, "] 
+               [:bold "bold."]
+               "\n\n"
+               "Last line"))))
+
+  ;; (println clj-commons.ansi/*color-enabled*) 
+  ;; (println "\n\n")
+  ;; (println "-------------------------------")
+  ;; (println (clj-commons.ansi/when-color-enabled 42))
+  ;; (println (compose "First paragraph"
+  ;;                   "\n\n"
+  ;;                   [:bold "Bold, " [:italic "bold italic, " [:red "bold italic red, "]] "bold."]
+  ;;                   "\n\n"
+  ;;                   "Last line"))
+  ;; (println  "-------------------------------")
+
+  (println "\n\n")
+  (println "-------------------------------")
+  (println (bling [:p "First paragraph"]
+                  [:p [:bold
+                       "Bold, "
+                       [:italic "bold italic, "
+                        [:red "bold italic red, "]]
+                       "bold."]]
+                  "Last line"))
+  (println  "-------------------------------")
+
+  ;; (println "\n\n")
+  ;; (println  "-------------------------------")
+  ;; (println (bling "First paragraph"
+  ;;                 "\n\n"
+  ;;                 [:bold "Bold, "] 
+  ;;                 [:bold.italic "bold italic, "] 
+  ;;                 [:bold.red.italic "bold italic red, "] 
+  ;;                 [:bold "bold."]
+  ;;                 "\n\n"
+  ;;                 "Last line"))
+  ;; (println  "-------------------------------")
+  
+  )
+
+
+
+
+;; example callouts ------------------------------------------------------------
+#_(defn my-error-callout [{:keys [header body source]}]
+  (callout {:type        :error
+            :theme       :gutter
+            :margin-left 1
+            :padding-top 1}
+           header
+           source
+           body))
+
+#_(my-error-callout
+ {:header "Your header message goes here\n"
+  :source (point-of-interest 
+           {:type                  :error
+            :file                  "example.ns.core"
+            :line                  11
+            :column                1
+            :form                  '(+ foo baz)
+            :text-decoration-index 2})
+  :body   (str "The body of your template goes here.\n"
+               "Second line of copy.\n"
+               "Another line.")})
+;; -----------------------------------------------------------------------------
+
+
 
 
 ;; Sample new hiccup syntax

@@ -1,36 +1,26 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                            ;;
+;;   This namespace is automatically generated in bling.test-gen.             ;;
+;;                                                                            ;;
+;;   Do not manually add anything to this namespace.                          ;;
+;;                                                                            ;;
+;;   To regenerate, set `bling.test-gen/write-tests?` to `true`, then run     ;;
+;;   `lein test`.                                                             ;;
+;;                                                                            ;;
+;;   If you want do any experimentation use `bling.visual-test`               ;;
+;;                                                                            ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (ns
  bling.core-test
  (:require
   [clojure.test :refer [deftest is]]
   [bling.test-gen :refer [escape-sgr]]
-  [bling.core :as bling :refer [bling callout point-of-interest]]
+  [bling.core :as bling :refer [bling]]
   [bling.sample :as sample :refer [callout+]]
   [clojure.string :as string]))
 
 
-;; example callouts ------------------------------------------------------------
-#_(defn my-error-callout [{:keys [header body source]}]
-  (callout {:type        :error
-            :theme       :gutter
-            :margin-left 1
-            :padding-top 1}
-           header
-           source
-           body))
-
-#_(my-error-callout
- {:header "Your header message goes here\n"
-  :source (point-of-interest 
-           {:type                  :error
-            :file                  "example.ns.core"
-            :line                  11
-            :column                1
-            :form                  '(+ foo baz)
-            :text-decoration-index 2})
-  :body   (str "The body of your template goes here.\n"
-               "Second line of copy.\n"
-               "Another line.")})
-;; -----------------------------------------------------------------------------
 
 (deftest
  all-colors
@@ -57,16 +47,15 @@
   (=
    (->
     (bling
-     (bling
-      [:underline "underline"]
-      "\n"
-      [:double-underline "double-underline"]
-      "\n"
-      [:wavy-underline "wavy-underline"]
-      "\n"
-      [:dotted-underline "dotted-underline"]
-      "\n"
-      [:dashed-underline "dashed-underline"]))
+     [:underline "underline"]
+     "\n"
+     [:double-underline "double-underline"]
+     "\n"
+     [:wavy-underline "wavy-underline"]
+     "\n"
+     [:dotted-underline "dotted-underline"]
+     "\n"
+     [:dashed-underline "dashed-underline"])
     escape-sgr
     string/join)
    "〠4〠underline〠0;〠\n[4:2mdouble-underline〠0;〠\n[4:3mwavy-underline〠0;〠\n[4:4mdotted-underline〠0;〠\n[4:5mdashed-underline〠0;〠")))
@@ -77,8 +66,7 @@
  (is
   (=
    (->
-    (bling
-     (callout+ {:data? true, :print-example-call? false, :type :info}))
+    (callout+ {:data? true, :print-example-call? false, :type :info})
     escape-sgr
     string/join)
    "〠38;5;39〠┌〠0;〠〠38;5;39〠─〠0;〠〠1〠 INFO〠0;〠\n〠38;5;39〠│〠0;〠  Callout with type of :info\n〠38;5;39〠└〠0;〠")))
@@ -89,12 +77,11 @@
  (is
   (=
    (->
-    (bling
-     (callout+
-      {:data? true,
-       :print-example-call? false,
-       :type :info,
-       :label "My custom label"}))
+    (callout+
+     {:data? true,
+      :print-example-call? false,
+      :type :info,
+      :label "My custom label"})
     escape-sgr
     string/join)
    "〠38;5;39〠┌〠0;〠〠38;5;39〠─〠0;〠〠1〠 My custom label〠0;〠\n〠38;5;39〠│〠0;〠  Callout with type of :info and custom :label\n〠38;5;39〠└〠0;〠")))
@@ -105,9 +92,7 @@
  (is
   (=
    (->
-    (bling
-     (callout+
-      {:data? true, :print-example-call? false, :type :warning}))
+    (callout+ {:data? true, :print-example-call? false, :type :warning})
     escape-sgr
     string/join)
    "〠38;5;208〠┌〠0;〠〠38;5;208〠─〠0;〠〠1〠 WARNING〠0;〠\n〠38;5;208〠│〠0;〠  Callout with type of :warning\n〠38;5;208〠│〠0;〠  This is not a real warning\n〠38;5;208〠└〠0;〠")))
@@ -118,8 +103,7 @@
  (is
   (=
    (->
-    (bling
-     (callout+ {:data? true, :print-example-call? false, :type :error}))
+    (callout+ {:data? true, :print-example-call? false, :type :error})
     escape-sgr
     string/join)
    "〠38;5;196〠┌〠0;〠〠38;5;196〠─〠0;〠〠1〠 ERROR〠0;〠\n〠38;5;196〠│〠0;〠  Callout with type of :error\n〠38;5;196〠│〠0;〠  This is not a real error\n〠38;5;196〠└〠0;〠")))
@@ -130,12 +114,11 @@
  (is
   (=
    (->
-    (bling
-     (callout+
-      {:data? true,
-       :print-example-call? false,
-       :colorway :positive,
-       :label "SUCCESS!"}))
+    (callout+
+     {:data? true,
+      :print-example-call? false,
+      :colorway :positive,
+      :label "SUCCESS!"})
     escape-sgr
     string/join)
    "〠38;5;40〠┌〠0;〠〠38;5;40〠─〠0;〠〠1〠 SUCCESS!〠0;〠\n〠38;5;40〠│〠0;〠  Callout with colorway of :positive and custom :label\n〠38;5;40〠└〠0;〠")))
@@ -146,12 +129,11 @@
  (is
   (=
    (->
-    (bling
-     (callout+
-      {:theme :sideline-bold,
-       :data? true,
-       :print-example-call? false,
-       :type :info}))
+    (callout+
+     {:theme :sideline-bold,
+      :data? true,
+      :print-example-call? false,
+      :type :info})
     escape-sgr
     string/join)
    "〠38;5;39〠┏〠0;〠〠38;5;39〠━〠0;〠〠1〠 INFO〠0;〠\n〠38;5;39〠┃〠0;〠  Callout with type of :info\n〠38;5;39〠┗〠0;〠")))
@@ -162,13 +144,12 @@
  (is
   (=
    (->
-    (bling
-     (callout+
-      {:theme :sideline-bold,
-       :data? true,
-       :print-example-call? false,
-       :type :info,
-       :label "My custom label"}))
+    (callout+
+     {:theme :sideline-bold,
+      :data? true,
+      :print-example-call? false,
+      :type :info,
+      :label "My custom label"})
     escape-sgr
     string/join)
    "〠38;5;39〠┏〠0;〠〠38;5;39〠━〠0;〠〠1〠 My custom label〠0;〠\n〠38;5;39〠┃〠0;〠  Callout with type of :info and custom :label\n〠38;5;39〠┗〠0;〠")))
@@ -179,12 +160,11 @@
  (is
   (=
    (->
-    (bling
-     (callout+
-      {:theme :sideline-bold,
-       :data? true,
-       :print-example-call? false,
-       :type :warning}))
+    (callout+
+     {:theme :sideline-bold,
+      :data? true,
+      :print-example-call? false,
+      :type :warning})
     escape-sgr
     string/join)
    "〠38;5;208〠┏〠0;〠〠38;5;208〠━〠0;〠〠1〠 WARNING〠0;〠\n〠38;5;208〠┃〠0;〠  Callout with type of :warning\n〠38;5;208〠┃〠0;〠  This is not a real warning\n〠38;5;208〠┗〠0;〠")))
@@ -195,12 +175,11 @@
  (is
   (=
    (->
-    (bling
-     (callout+
-      {:theme :sideline-bold,
-       :data? true,
-       :print-example-call? false,
-       :type :error}))
+    (callout+
+     {:theme :sideline-bold,
+      :data? true,
+      :print-example-call? false,
+      :type :error})
     escape-sgr
     string/join)
    "〠38;5;196〠┏〠0;〠〠38;5;196〠━〠0;〠〠1〠 ERROR〠0;〠\n〠38;5;196〠┃〠0;〠  Callout with type of :error\n〠38;5;196〠┃〠0;〠  This is not a real error\n〠38;5;196〠┗〠0;〠")))
@@ -211,13 +190,12 @@
  (is
   (=
    (->
-    (bling
-     (callout+
-      {:theme :sideline-bold,
-       :data? true,
-       :print-example-call? false,
-       :colorway :positive,
-       :label "SUCCESS!"}))
+    (callout+
+     {:theme :sideline-bold,
+      :data? true,
+      :print-example-call? false,
+      :colorway :positive,
+      :label "SUCCESS!"})
     escape-sgr
     string/join)
    "〠38;5;40〠┏〠0;〠〠38;5;40〠━〠0;〠〠1〠 SUCCESS!〠0;〠\n〠38;5;40〠┃〠0;〠  Callout with colorway of :positive and custom :label\n〠38;5;40〠┗〠0;〠")))
@@ -228,13 +206,12 @@
  (is
   (=
    (->
-    (bling
-     (callout+
-      {:label-theme :marquee,
-       :theme :sideline-bold,
-       :data? true,
-       :print-example-call? false,
-       :type :info}))
+    (callout+
+     {:label-theme :marquee,
+      :theme :sideline-bold,
+      :data? true,
+      :print-example-call? false,
+      :type :info})
     escape-sgr
     string/join)
    "〠38;5;39〠   ┏━━━━━━━━┓〠0;〠\n〠38;5;39〠┏━━┫  〠0;〠〠〠INFO〠0;〠〠38;5;39〠  ┃〠0;〠\n〠38;5;39〠┃  ┗━━━━━━━━┛〠0;〠\n〠38;5;39〠┃〠0;〠  Callout with type of :info\n〠38;5;39〠┗〠0;〠")))
@@ -245,14 +222,13 @@
  (is
   (=
    (->
-    (bling
-     (callout+
-      {:label-theme :marquee,
-       :theme :sideline-bold,
-       :data? true,
-       :print-example-call? false,
-       :type :info,
-       :label "My custom label"}))
+    (callout+
+     {:label-theme :marquee,
+      :theme :sideline-bold,
+      :data? true,
+      :print-example-call? false,
+      :type :info,
+      :label "My custom label"})
     escape-sgr
     string/join)
    "〠38;5;39〠   ┏━━━━━━━━━━━━━━━━━━━┓〠0;〠\n〠38;5;39〠┏━━┫  〠0;〠〠〠My custom label〠0;〠〠38;5;39〠  ┃〠0;〠\n〠38;5;39〠┃  ┗━━━━━━━━━━━━━━━━━━━┛〠0;〠\n〠38;5;39〠┃〠0;〠  Callout with type of :info and custom :label\n〠38;5;39〠┗〠0;〠")))
@@ -263,13 +239,12 @@
  (is
   (=
    (->
-    (bling
-     (callout+
-      {:label-theme :marquee,
-       :theme :sideline-bold,
-       :data? true,
-       :print-example-call? false,
-       :type :warning}))
+    (callout+
+     {:label-theme :marquee,
+      :theme :sideline-bold,
+      :data? true,
+      :print-example-call? false,
+      :type :warning})
     escape-sgr
     string/join)
    "〠38;5;208〠   ┏━━━━━━━━━━━┓〠0;〠\n〠38;5;208〠┏━━┫  〠0;〠〠〠WARNING〠0;〠〠38;5;208〠  ┃〠0;〠\n〠38;5;208〠┃  ┗━━━━━━━━━━━┛〠0;〠\n〠38;5;208〠┃〠0;〠  Callout with type of :warning\n〠38;5;208〠┃〠0;〠  This is not a real warning\n〠38;5;208〠┗〠0;〠")))
@@ -280,13 +255,12 @@
  (is
   (=
    (->
-    (bling
-     (callout+
-      {:label-theme :marquee,
-       :theme :sideline-bold,
-       :data? true,
-       :print-example-call? false,
-       :type :error}))
+    (callout+
+     {:label-theme :marquee,
+      :theme :sideline-bold,
+      :data? true,
+      :print-example-call? false,
+      :type :error})
     escape-sgr
     string/join)
    "〠38;5;196〠   ┏━━━━━━━━━┓〠0;〠\n〠38;5;196〠┏━━┫  〠0;〠〠〠ERROR〠0;〠〠38;5;196〠  ┃〠0;〠\n〠38;5;196〠┃  ┗━━━━━━━━━┛〠0;〠\n〠38;5;196〠┃〠0;〠  Callout with type of :error\n〠38;5;196〠┃〠0;〠  This is not a real error\n〠38;5;196〠┗〠0;〠")))
@@ -297,14 +271,13 @@
  (is
   (=
    (->
-    (bling
-     (callout+
-      {:label-theme :marquee,
-       :theme :sideline-bold,
-       :data? true,
-       :print-example-call? false,
-       :colorway :positive,
-       :label "SUCCESS!"}))
+    (callout+
+     {:label-theme :marquee,
+      :theme :sideline-bold,
+      :data? true,
+      :print-example-call? false,
+      :colorway :positive,
+      :label "SUCCESS!"})
     escape-sgr
     string/join)
    "〠38;5;40〠   ┏━━━━━━━━━━━━┓〠0;〠\n〠38;5;40〠┏━━┫  〠0;〠〠〠SUCCESS!〠0;〠〠38;5;40〠  ┃〠0;〠\n〠38;5;40〠┃  ┗━━━━━━━━━━━━┛〠0;〠\n〠38;5;40〠┃〠0;〠  Callout with colorway of :positive and custom :label\n〠38;5;40〠┗〠0;〠")))
@@ -315,12 +288,11 @@
  (is
   (=
    (->
-    (bling
-     (callout+
-      {:theme :gutter,
-       :data? true,
-       :print-example-call? false,
-       :type :info}))
+    (callout+
+     {:theme :gutter,
+      :data? true,
+      :print-example-call? false,
+      :type :info})
     escape-sgr
     string/join)
    "〠38;5;39〠〠0;〠〠38;5;39〠▆〠0;〠  〠1〠INFO〠0;〠\n〠38;5;39〠〠38;5;39〠█〠0;〠〠0;〠  Callout with type of :info")))
@@ -331,13 +303,12 @@
  (is
   (=
    (->
-    (bling
-     (callout+
-      {:theme :gutter,
-       :data? true,
-       :print-example-call? false,
-       :type :info,
-       :label "My custom label"}))
+    (callout+
+     {:theme :gutter,
+      :data? true,
+      :print-example-call? false,
+      :type :info,
+      :label "My custom label"})
     escape-sgr
     string/join)
    "〠38;5;39〠〠0;〠〠38;5;39〠▆〠0;〠  〠1〠My custom label〠0;〠\n〠38;5;39〠〠38;5;39〠█〠0;〠〠0;〠  Callout with type of :info and custom :label")))
@@ -348,12 +319,11 @@
  (is
   (=
    (->
-    (bling
-     (callout+
-      {:theme :gutter,
-       :data? true,
-       :print-example-call? false,
-       :type :warning}))
+    (callout+
+     {:theme :gutter,
+      :data? true,
+      :print-example-call? false,
+      :type :warning})
     escape-sgr
     string/join)
    "〠38;5;208〠〠0;〠〠38;5;208〠▆〠0;〠  〠1〠WARNING〠0;〠\n〠38;5;208〠〠38;5;208〠█〠0;〠〠0;〠  Callout with type of :warning\n〠38;5;208〠〠38;5;208〠█〠0;〠〠0;〠  This is not a real warning")))
@@ -364,12 +334,11 @@
  (is
   (=
    (->
-    (bling
-     (callout+
-      {:theme :gutter,
-       :data? true,
-       :print-example-call? false,
-       :type :error}))
+    (callout+
+     {:theme :gutter,
+      :data? true,
+      :print-example-call? false,
+      :type :error})
     escape-sgr
     string/join)
    "〠38;5;196〠〠0;〠〠38;5;196〠▆〠0;〠  〠1〠ERROR〠0;〠\n〠38;5;196〠〠38;5;196〠█〠0;〠〠0;〠  Callout with type of :error\n〠38;5;196〠〠38;5;196〠█〠0;〠〠0;〠  This is not a real error")))
@@ -380,13 +349,12 @@
  (is
   (=
    (->
-    (bling
-     (callout+
-      {:theme :gutter,
-       :data? true,
-       :print-example-call? false,
-       :colorway :positive,
-       :label "SUCCESS!"}))
+    (callout+
+     {:theme :gutter,
+      :data? true,
+      :print-example-call? false,
+      :colorway :positive,
+      :label "SUCCESS!"})
     escape-sgr
     string/join)
    "〠38;5;40〠〠0;〠〠38;5;40〠▆〠0;〠  〠1〠SUCCESS!〠0;〠\n〠38;5;40〠〠38;5;40〠█〠0;〠〠0;〠  Callout with colorway of :positive and custom :label")))
