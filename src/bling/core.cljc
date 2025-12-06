@@ -1168,6 +1168,352 @@
          (:margin-bottom-str m))))
 
 
+;; -----------------------------------------------------------------------------
+;; Boxed callout start 
+;; -----------------------------------------------------------------------------
+
+(def bdc
+  {:h  {:double     "═"
+        :bold       "━"
+        :thin       "─"
+        :thin-round "─"}
+
+   :v  {:double     "║"
+        :bold       "┃"
+        :thin       "│"
+        :thin-round "│"}
+
+   :tl {:double     "╔"
+        :bold       "┏"
+        :thin       "┌"
+        :thin-round "╭"}
+
+   :tr {:double     "╗"
+        :bold       "┓"
+        :thin       "┐"
+        :thin-round "╮"}
+
+   :bl {:double     "╚"
+        :bold       "┗"
+        :thin       "└"
+        :thin-round "╰"}
+
+   :br {:double     "╝"
+        :bold       "┛"
+        :thin       "┘"
+        :thin-round "╯"}})
+
+(def box-drawing-styles (into #{} (-> bdc :h keys)))
+
+(defn string->wrapped-string-coll
+  "Expects cols to be an int representing the max number of cols available per
+   line. Expects s to be a string. Returns a vector of strings."
+  [cols s]
+  (loop [ln         nil
+         lns        []
+         [wd & wds] (string/split s #"\s+")]
+    (cond
+      (nil? wd)
+      (if ln
+        (conj lns ln)
+        lns)
+
+      (nil? ln)
+      (recur wd lns wds)
+
+      (<= (+ (count ln) 1 (count wd)) cols)
+      (recur (str ln " " wd) lns wds)
+
+      :else
+      (recur wd (conj lns ln) wds))))
+
+
+(defn lines-with-wrapped
+  "Given a string with line-breaks, returns a collection of strings, each string
+   representing a line.
+   
+   `max-cols` is the max width, per line. If a line exceeds the value of
+   `max-cols`, it will be wrapped into additional lines."
+  [s max-cols]
+  (reduce (fn [acc ln]
+            (into acc
+                  (if (< max-cols (count ln))
+                    (string->wrapped-string-coll max-cols ln)
+                    [ln])))
+          []
+          (string/split s #"\n")))
+
+(def ansi-esc "\u001b\\[")
+
+(def ansi-sgr-text-decoration-base
+  "(?:9|4(?::[1-5])?)")
+
+(def ansi-sgr-freeform
+  (str "[0-9;" ansi-sgr-text-decoration-base "]*m"))
+
+(def ansi-sgr-re (re-pattern (str ansi-esc ansi-sgr-freeform)))
+
+(defn ansi-sgr-count [s]
+  (some->> s
+           (re-seq ansi-sgr-re)
+           (reduce (fn [n s] (+ n (count s))) 0)))
+
+(defn- adjusted-char-count [s]
+  (- (count s) (or (when-not (= s "\n") (ansi-sgr-count s)) 0)))
+
+(defn wrapped-string-inner
+  [max-cols
+   {:keys [result col]
+    :as   acc}
+   word]
+  (if (= word "")
+    acc
+    (let [nl?              (= word "\n")
+          space+word       (str (when-not (or nl? (zero? col)) " ") word)
+          space+word-width (adjusted-char-count space+word)
+          exceeds?         (< max-cols (+ col space+word-width))
+          string-to-concat (if exceeds?
+                             (str "\n" word)
+                             (if nl? word space+word))
+          new-col          (if exceeds?
+                             (count word)
+                             (if nl? 0 (+ col space+word-width)))]
+
+      #_(when exceeds? (prn "exceeds-"))
+      #_(? :-
+           {:print-with prn
+            :when       ansi-sgr-seq}
+           {:col              col
+            :word             word
+            :space+word       space+word
+            :space+word-width space+word-width
+            :ansi-sgr-seq     ansi-sgr-seq
+            :ansi-sgr-count   ansi-sgr-count
+            :string-to-concat string-to-concat
+            :new-col          new-col})
+
+      {:result (str result string-to-concat)
+       :col    new-col})))
+
+(defn- wrap-single-word [max-cols s]
+  (->> s
+       seq
+       (partition-all max-cols)
+       (mapv string/join)))
+
+(defn wrapped-string
+  "Given a string with line-breaks, returns a string, with additional line
+   breaks insert, such that the width of every line of text is below the
+   `max-cols` threshold."
+  [s {:keys [max-width]}]
+  ;; (prn s)
+  (-> s
+      (string/replace #"\n" " \n ")
+      (string/split #" ")
+      (->> (reduce (fn [acc s]
+                     (into acc
+                           (if (< max-width (adjusted-char-count s))
+                             (wrap-single-word max-width s)
+                             [s])))
+                   []))
+      (->> (reduce (partial wrapped-string-inner max-width)
+                   {:result "" :col 0}))
+      :result))
+
+(defn- colored-border [s border-color]
+  (if border-color
+    (bling [{:color border-color} s])
+    s))
+
+(defn- label-profile
+  [{:keys [pd
+           horizontal-border-char
+           border-color
+           label]}]
+  (let [label-str          (or (some-> label
+                                       (maybe string?)
+                                       (str " ")
+                                       (->> (str " ")))
+                               "")
+        label-char-count   (adjusted-char-count label-str)
+        label-pd-str       (when (and (pos? label-char-count) pd)
+                             (-> pd
+                                 dec
+                                 (util/sjr horizontal-border-char)
+                                 (colored-border border-color)))
+        label-pd-str-count (or (some-> label-pd-str
+                                       adjusted-char-count)
+                               0)]
+    (keyed [label-str
+            label-char-count
+            label-pd-str
+            label-pd-str-count])))
+
+(defn- block-border*
+  [{:keys [pd-left
+           pd-right
+           horizontal-border-char
+           border-color
+           cols
+           corner-border-char]
+    :as m}]
+  (fn [lc rc label side-label]
+    (let [{:keys [label-str
+                  label-char-count
+                  label-pd-str
+                  label-pd-str-count]}
+          (label-profile (assoc m :label label :pd pd-left))
+
+          {side-label-str          :label-str
+           side-label-char-count   :label-char-count
+           side-label-pd-str       :label-pd-str
+           side-label-pd-str-count :label-pd-str-count}
+          (label-profile (assoc m :label side-label :pd pd-right))
+
+          middle-border
+          (colored-border
+           (util/sjr (- cols
+                        2
+                        label-pd-str-count
+                        label-char-count
+                        side-label-char-count
+                        side-label-pd-str-count)
+                     horizontal-border-char)
+           border-color)]
+      ;; Assemble the border pieces
+      (str (colored-border (corner-border-char lc) border-color)
+           label-pd-str
+           label-str
+           middle-border
+           side-label-str
+           side-label-pd-str
+           (colored-border (corner-border-char rc) border-color)))))
+
+
+(defn boxed-callout
+  "Creates a callout with a border on all sides"
+  ([s] (boxed-callout s nil))
+  ([s {:keys     [cols
+                  border-char
+                  vertical-border-char
+                  horizontal-border-char
+                  box-drawing-style
+                  border-color
+                  label
+                  side-label]
+       pd-top    :padding-top
+       pd-bottom :padding-bottom
+       pd-left   :padding-left
+       pd-right  :padding-right
+       pd-block  :padding-block
+       pd-inline :padding-inline}]
+   (let [box-drawing-style          (if box-drawing-style
+                                      (or (maybe box-drawing-style box-drawing-styles)
+                                          :thin)
+                                      (when-not (or (string? border-char)
+                                                    (and (string? vertical-border-char)
+                                                         (string? horizontal-border-char)))
+                                        :thin))
+         vertical-border-char       (-> (or (some->> box-drawing-style (-> bdc :v))
+                                            vertical-border-char
+                                            border-char
+                                            bdc)
+                                        (colored-border border-color))
+         vertical-border-char-count (adjusted-char-count vertical-border-char)
+         horizontal-border-char     (or (some->> box-drawing-style (-> bdc :h))
+                                        (let [c (as-str
+                                                 (or horizontal-border-char
+                                                     border-char
+                                                     bdc))]
+                                          (if (< 1 (count c))
+                                            (subs c 0 1)
+                                            c)))
+         pd-block                   (or (maybe pd-block pos-int?) 1)
+         pd-inline                  (or (maybe pd-inline pos-int?) 2)
+         pd-top                     (or (maybe pd-top pos-int?) pd-block)
+         pd-bottom                  (or (maybe pd-bottom pos-int?) pd-block)
+         pd-hrz                     #(min (or (maybe % pos-int?) pd-inline) 10)
+         pd-right                   (pd-hrz pd-right)
+         pd-left                    (pd-hrz pd-left)
+         cols                       (or cols 80)
+         max-inner-cols             (- cols
+                                       pd-left
+                                       pd-right
+                                       (* 2 vertical-border-char-count))
+         pd-left-str                (util/sjr pd-left " ")
+         start                      (str vertical-border-char pd-left-str)
+         start-count                (adjusted-char-count start)
+         pd-ln                      (str vertical-border-char
+                                         (util/sjr (- cols
+                                                      (* 2 vertical-border-char-count))
+                                                   " ")
+                                         vertical-border-char
+                                         "\n")
+         pd-top-ln                  (util/sjr pd-top pd-ln)
+         pd-bottom-ln               (util/sjr pd-bottom pd-ln)
+         corner-border-char         #(or (some->> box-drawing-style (-> bdc %))
+                                         horizontal-border-char)
+         block-border               (block-border* (keyed [pd-left
+                                                           pd-right
+                                                           horizontal-border-char
+                                                           border-color
+                                                           cols
+                                                           corner-border-char]))
+         label                      (as-str label)
+         truncated-label            (some-> label
+                                            (maybe #(< (- cols 4) (count %)))
+                                            (subs 0 (- cols (+ 4 3)))
+                                            (str "..."))
+         label                      (or truncated-label label)
+         side-label                 (as-str side-label)
+         truncated-side-label       (when-not label
+                                      (some-> side-label
+                                              (maybe #(< (- cols 2) (count %)))
+                                              (subs 0 (- cols (+ 2 3)))
+                                              (str "...")))
+         side-label-for-border      (when-not truncated-label
+                                      (when side-label
+                                        (if label
+                                          (when (< 4 (- cols (+ (adjusted-char-count label)
+                                                                (adjusted-char-count side-label)
+                                                                4)))
+                                            side-label)
+                                          truncated-side-label)))
+         top-border                 (colored-border (block-border :tl :tr label side-label-for-border)
+                                                    border-color)
+         bottom-border              (colored-border (block-border :bl :br nil nil)
+                                                    border-color)
+         ;;  lns                    (lines-with-wrapped s max-inner-cols)
+         body-with-maybe-side-label (str (when (and side-label (not side-label-for-border))
+                                           (str side-label "\n\n"))
+                                         s)
+         lns                        (string/split
+                                     (wrapped-string body-with-maybe-side-label
+                                                     {:max-width max-inner-cols})
+                                     #"\n")]
+     (str top-border
+          "\n"
+          pd-top-ln
+          (string/join
+           "\n"
+           (mapv (fn [ln]
+                   (str start
+                        ln
+                        (util/sjr (- cols
+                                     (+ start-count (adjusted-char-count ln))
+                                     vertical-border-char-count)
+                                  " ")
+                        vertical-border-char))
+                 lns))
+          "\n"
+          pd-bottom-ln
+          bottom-border))))
+
+;; -----------------------------------------------------------------------------
+;; Boxed callout end 
+;; -----------------------------------------------------------------------------
+
+
 (def rainbow-colors
   ["red" "orange" "yellow" "green" "black" "white" "blue" "purple" "magenta"])
 
@@ -1182,65 +1528,98 @@
             "system-purple"
             "system-fuchsia"]))
 
+(defn- border-left-str [theme gutter-str]
+  (case theme
+    "sideline"
+    "│"
+    "sideline-bold"
+    "┃"
+    "gutter"
+    gutter-str
+    "rainbow-gutter"
+    gutter-str
+    " "))
+
 (defn callout*
-  [{:keys [theme] :as m}]
-  (let [char                   defs/gutter-char
-        border-style           {:color    (:color m)
-                                :contrast :medium}
-        gutter?                (= "gutter" theme)
-        rainbow?               (= "rainbow-gutter" theme)
-        gutter-str             (if rainbow? 
-                                 (bling [{:color (last rainbow-colors)} char])
-                                 (bling [border-style char]))
-        rainbow-gutter-str     (apply bling
-                                      (for [s (drop-last rainbow-colors)]
-                                        [{:color s} char]))
-        rainbow-gutter-str-odd (apply bling
-                                      (for [s (drop-last rainbow-colors-system)]
-                                        [{:color s} char]))
-        cr                     (fn [k ch] (char-repeat (or (k m) 0) ch))
-        gutter-str-zero        (bling [border-style
-                                       (string/join 
-                                        (cr :margin-left
-                                            defs/gutter-char-lower-seven-eighths))])
-        margin-left-str-zero   gutter-str-zero
-        border-left-str-zero   defs/gutter-char-lower-seven-eighths
-        s                      (ansi-callout-str
-                                (merge
-                                 m
-                                 {:border-style      border-style
-                                  :border-left-str   (case theme
-                                                       "sideline"
-                                                       "│"
-                                                       "sideline-bold"
-                                                       "┃"
-                                                       "gutter"
-                                                       gutter-str
-                                                       "rainbow-gutter"
-                                                       gutter-str
-                                                       " ")
-                                  :padding-left-str  (cr :padding-left " ")
-                                  :margin-left-str   (if rainbow?
-                                                       rainbow-gutter-str
-                                                       (cr
-                                                        :margin-left
-                                                        (case theme
-                                                          "gutter"
-                                                          gutter-str
-                                                          "rainbow-gutter"
-                                                          rainbow-gutter-str
-                                                          " ")))
-                                  :margin-top-str    (cr :margin-top "\n")
-                                  :margin-bottom-str (cr :margin-bottom "\n")}
-                                 
-                                 (when rainbow?
-                                   {:margin-left-str-odd rainbow-gutter-str-odd})
-                                 (when gutter?
-                                   (keyed [margin-left-str-zero
-                                           border-left-str-zero]))))]
-    (if (true? (:data? m))
-      s
-      (some-> s println))))
+  [{:keys [theme]
+    :as   m}]
+  (if (= "boxed" theme)
+    (let [s (boxed-callout (:value m) m)]
+      (if (true? (:data? m))
+        s
+        (some-> s println)))
+    (let [char
+          defs/gutter-char
+
+          border-style
+          {:color    (:color m)
+           :contrast :medium}
+
+          gutter?
+          (= "gutter" theme)
+
+          rainbow?
+          (= "rainbow-gutter" theme)
+
+          gutter-str
+          (if rainbow?
+            (bling [{:color (last rainbow-colors)} char])
+            (bling [border-style char]))
+
+          rainbow-gutter-str
+          (apply bling
+                 (for [s (drop-last rainbow-colors)]
+                   [{:color s} char]))
+
+          rainbow-gutter-str-odd
+          (apply bling
+                 (for [s (drop-last rainbow-colors-system)]
+                   [{:color s} char]))
+
+          cr
+          (fn [k ch] (char-repeat (or (k m) 0) ch))
+
+          gutter-str-zero
+          (bling [border-style
+                  (string/join
+                   (cr :margin-left
+                       defs/gutter-char-lower-seven-eighths))])
+
+          margin-left-str-zero
+          gutter-str-zero
+
+          border-left-str-zero
+          defs/gutter-char-lower-seven-eighths
+
+          margin-left-str
+          (if rainbow?
+            rainbow-gutter-str
+            (cr
+             :margin-left
+             (case theme
+               "gutter"         gutter-str
+               "rainbow-gutter" rainbow-gutter-str
+               " ")))
+
+          s
+          (ansi-callout-str
+           (merge
+            m
+            {:border-style      border-style
+             :border-left-str   (border-left-str theme gutter-str)
+             :padding-left-str  (cr :padding-left " ")
+             :margin-left-str   margin-left-str
+             :margin-top-str    (cr :margin-top "\n")
+             :margin-bottom-str (cr :margin-bottom "\n")}
+
+            (when rainbow?
+              {:margin-left-str-odd rainbow-gutter-str-odd})
+            (when gutter?
+              (keyed [margin-left-str-zero
+                      border-left-str-zero]))))]
+      (if (true? (:data? m))
+        s
+        (some-> s println)))))
 
 #?(:cljs
    (do 
