@@ -9,11 +9,15 @@
             [bling.macros :refer [let-map keyed]]
             [bling.util :as util :refer [maybe]]
             [fireworks.core :refer [? !? ?> !?> pprint]]
+
+            #?(:cljs [bling.js-env :refer [node?]])
+            ;; TODO - eliminate goog.object req
             #?(:cljs [goog.object])
-            #?(:cljs [bling.js-env :refer [node?]])))
+            ))
 
 (declare xterm-colors-by-id)
 
+;; TODO - Move to ansi ns
 (def ^:private ESC "\u001B[")
 (def ^:private OSC "\u001B]")
 (def ^:private BEL "\u0007")
@@ -37,6 +41,7 @@
              SEP
              BEL])))
 
+;; TODO - Move to defs namespace
 (def ^:private browser-dev-console-props
   [:text-decoration-line
    :text-decoration-style
@@ -74,6 +79,7 @@
    :margin-right
    :margin-left])
 
+;; TODO - Move to colors namespace?
 (def ^:public system-colors-source
   {"system-black"   {:sgr 0}
    "system-maroon"  {:sgr 1}
@@ -98,6 +104,7 @@
 ;; support "light-orange to force light"
 
 
+;; TODO - Move to colors namespace?
 (def ^:private bling-colors-dark
   (apply
    array-map
@@ -122,6 +129,7 @@
     "black"   {:sgr 16}
     "white"   {:sgr 231}]))
 
+;; TODO - Move to colors namespace?
 (def ^:private bling-colors-light
   (apply
    array-map
@@ -145,6 +153,7 @@
     "white"   {:sgr 231}]))
 
 ;; TODO Add the light and dark variants to x-term-colors-by-id
+;; TODO - Move to colors namespace?
 (def ^:public bling-colors*
   (apply
    array-map
@@ -218,7 +227,6 @@
    "neutral"  "neutral"})
 
 
-
 (def ^:private all-color-names
   ;; TODO - perf use reduce here?
   (into #{}
@@ -233,11 +241,6 @@
                  m))
              {}
              colors-source))
-
-(def ^:private alert-type->label
-  {"warning" "WARNING"
-   "error"   "ERROR"
-   "info"    "INFO"})
 
 
 ;; Helper functions -----------------------------------------------------------
@@ -277,12 +280,6 @@
     (string/join (repeat n (or s "")))))
 
 (defn- spaces [n] (string/join (repeat n " ")))
-
-;; TODO - confirm we don't need this anymore and delete
-(defn- readable-sgr [x]
-  (let [f #(str "\\033" (subs x 1))]
-    #?(:cljs (if node? (f) x)
-       :clj  (f))))
 
 (defn- ns-info-str
   [{:keys [file line column file-line-column]}]
@@ -340,14 +337,6 @@
                           (count form-as-str)
                           0
                           text-decoration-style)}))
-
-(defn- css-stylemap->str [m]
-  (reduce-kv (fn [acc k v]
-               (if (and k v)
-                 (str acc (as-str k) ":" (as-str v) ";")
-                 acc))
-             ""
-             m))
 
 (defn- x->sgr [x k]
   (when x
@@ -410,6 +399,7 @@
     ret))
 
 
+;; Move to colors namespace? or you already have them in vector by index?
 ;; Color-related fns  ---------------------------------------------------------
 (def ^:private xterm-colors-by-id
   {0   "#000000"                                            ;; system-black
@@ -468,7 +458,9 @@
 
 (defn- assoc-hex-colors [m]
   (reduce-kv (fn [m color {:keys [sgr sgr-light sgr-dark css-light css-dark css]}]
-               (let [hex (get xterm-colors-by-id sgr nil)]
+               (let [hex
+                     ;; TODO - try with colors/by-index to see if perf boost
+                     (get xterm-colors-by-id sgr nil)]
                  (merge (assoc m
                                color
                                (merge {:sgr sgr
@@ -498,14 +490,11 @@
 
 (declare callout)
 (declare bling)
-(declare bling!)
 (declare print-bling)
 
-(defn- reduce-colors-to-sgr-or-css
+(defn- reduce-colors-to-sgr
   "This is where the actual color value gets pulled out of the color map that is
-   associated with each color (in bling.core/all-color-names). The sgr-or-css-kw
-   will be :sgr or :css, depending on whether execution context is a terminal
-   emulator or browser dev console.
+   associated with each color (in bling.core/all-color-names).
 
    For terminal environments, a light or dark theme can be optionally specified
    via an environmental variable:
@@ -523,54 +512,54 @@
    contrast for users that develop with a dark-themed terminal.
    
    If `LIGHT` OR `DARK` values are detected for the `BLING_MOOD` env var, the
-   value of the `:sgr-or-css-kw` will be changed inside this function, from
+   value of the `:sgr` will be changed inside this function, from
    `:sgr` to `:sgr-light` or `:sgr-dark`"
-  [sgr-or-css-kw {:keys [contrast] :as m}]
-  (let [sgr?
-        (= sgr-or-css-kw :sgr)]
-    (reduce-kv (fn [m k v]
-                 (assoc m k
-                        (if (map? v)
-                          (if (and sgr? (= :color k))
-                            (or (let [kw
-                                      (case contrast
-                                        :low
-                                        (case defs/bling-mood
-                                          "light" :sgr-light
-                                          "dark" :sgr-dark
-                                          :sgr)
-
-                                        :medium
-                                        :sgr
-
-                                        ;; covers :high
-                                        (case defs/bling-mood
-                                          "light" :sgr-dark
-                                          "dark" :sgr-light
-                                          :sgr))]
-                                  (kw v))
-                                (:sgr v))
-                            (if (= :color k)
-                              (let [kw
+  [{:keys [contrast] :as m}]
+  (reduce-kv (fn [m k v]
+               (assoc m k
+                      (if (and (map? v)
+                               (contains? #{:color :background-color} k))
+                        (if (= :color k)
+                          (or (let [kw
                                     (case contrast
                                       :low
                                       (case defs/bling-mood
-                                        "light" :css-light
-                                        "dark" :css-dark
-                                        :css)
+                                        "light" :sgr-light
+                                        "dark" :sgr-dark
+                                        :sgr)
 
                                       :medium
-                                      :css
+                                      :sgr
 
+                                      ;; covers :high
                                       (case defs/bling-mood
-                                        "light" :css-dark
-                                        "dark" :css-light
-                                        :css))]
+                                        "light" :sgr-dark
+                                        "dark" :sgr-light
+                                        :sgr))]
                                 (kw v))
-                              (sgr-or-css-kw v)))
-                          v)))
-               {}
-               m)))
+                              (:sgr v))
+
+                          ;; Branch for background color
+                          ;; TODO - consider supporting something like
+                          ;; [{:red.yellow-bg-soft} "foo"]
+                          ;; or 
+                          ;; [{:red.yellow-bg-hard} "foo"]
+
+                          ;; Would involve selecting another set of soft colors
+                          ;; for light and dark
+
+                          ;; Which one would be the default for
+                          ;; [{:red.yellow-bg} "foo"]
+
+                          ;; maybe the hard one, cos that would be the same for
+                          ;; light and dark, and user may not have a light or
+                          ;; dark mood set.
+
+                          ;; and then maybe you don't need "-hard", just "soft"
+                          (:sgr v))
+                        v)))
+             {}
+             m))
 
 (defn- convert-color [m k v]
   (assoc m
@@ -682,6 +671,7 @@
                  "Type of value received:\n"
                  [:bold (str (type error))])))))
 
+
 ;; Race-condition-free version of clojure.core/println,
 ;; Maybe useful to keep around if any weird behavior arises.
 #?(:clj
@@ -692,6 +682,9 @@
 ;; Shared cljs fns -------------------------------------------------------------
 #?(:cljs
    (do
+
+     ;; TODO Delete this once you convert fireworks to using new pipeline
+
      (deftype
       ^{:doc
         "A js object with the the following fields:
@@ -733,6 +726,7 @@
 
 ;; Line and point of interest public fns  -------------------------------------
 (defn- enriched-args [o]
+  ;; TODO - eliminate branching
   #?(:cljs
      (if node?
        (when o [o])
@@ -1600,147 +1594,47 @@
 
 #?(:cljs
    (do
-     (defn enriched->js-arr [value label padding-top padding-bottom-str]
-       (let [rich-value?  (instance? Enriched value)
-             rich-label?  (instance? Enriched label)
-             tagged       (if rich-value?
-                            (goog.object/get value "tagged")
-                            value)
-             css          (if rich-value?
-                            (goog.object/get value "css")
-                            #js[])
-             label-tagged (some-> (if rich-label?
-                                    (goog.object/get label "tagged")
-                                    label)
-                                  (str "\n"))
-             label-css    (if rich-label?
-                            (goog.object/get label "css")
-                            #js[])
-             arr          (.concat #js[(str label-tagged
-                                            padding-top
-                                            tagged
-                                            padding-bottom-str)]
-                                   (.concat label-css css))]
-         arr))
+     (defn ^:public print-to-browser-dev-console [s]
+       (->> s
+            bling.browser/ansi-sgr-string->browser-dev-console-array
+            (.apply js/console.log js/console)))
+
+     (defn- browser-callout-label
+       [{:keys [margin-top label label-theme side-label color]
+         :as m}]
+       (let [border-style {:color    color
+                           :contrast :medium}
+             pipe?        (= label-theme "pipe")]
+         (bling (when (pos? margin-top)
+                  (string/join (repeat margin-top "\n")))
+                (when pipe? [border-style "══"])
+                [:bold (some->> label (str (when pipe? " ")))]
+                (when pipe? " ")
+                (when pipe? [border-style "════"])
+                (some->> side-label (str " ")))))
 
      (defn padding-block [n warning-or-error?]
-       (if (pos-int? n) (char-repeat n "\n") (when warning-or-error? "\n")))))
+       (if (pos-int? n) (char-repeat n "\n") (when warning-or-error? "\n")))
 
-#?(:cljs
-   (defn browser-callout
-     [{:keys [value
-              side-label
-              label
-              label-theme
-              warning?
-              error?
-              padding-bottom
-              padding-top
-              margin-top
-              data?]
-       :as   m}]
-     (let [f                  (cond warning?
-                                    (.-warn js/console)
-                                    error?
-                                    (.-error js/console)
-                                    :else
-                                    (.-log js/console))
-           warning-or-error?  (or warning? error?)
-           semantic-type?     (or warning-or-error?)
-           padding-bottom-str (padding-block padding-bottom
-                                             warning-or-error?)
-           padding-top-str    (padding-block padding-top
-                                             semantic-type?)
-           #_#_arr                (cond
-                                    (or (instance? Enriched value)
-                                        (instance? Enriched label))
-                                    ;; Either the label or body is enriched
-                                    (enriched->js-arr value
-                                                      label
-                                                      padding-top-str
-                                                      padding-bottom-str)
+     (defn browser-callout
+       [{:keys [value
+                warning?
+                error?
+                padding-bottom
+                padding-top]
+         :as   m}]
+       (let [warning-or-error?  (or warning? error?)
+             semantic-type?     (or warning-or-error?)
+             padding-bottom-str (padding-block padding-bottom warning-or-error?)
+             padding-top-str    (padding-block padding-top semantic-type?)
+             label              (browser-callout-label m)
+             body               (str label 
+                                     "\n"
+                                     padding-top-str
+                                     value 
+                                     padding-bottom-str)]
+         (print-to-browser-dev-console body)))))
 
-                                    ;; Nothing is enriched
-                                    ;; The empty string in the css slot needs to
-                                    ;; be there in order to properly add a
-                                    ;; single newline.
-                                    :else
-                                    #js[(str (if (coll? label)
-                                               (some-> label
-                                                       (util/shortened 50)
-                                                       (str "\n"))
-                                               (some-> label
-                                                       (str "\n")))
-                                             padding-top-str
-                                             (str value)
-                                             padding-bottom-str)
-                                        ""])
-
-           border-style
-           {:color    (:color m)
-            :contrast :medium}
-
-           ;; TODO - Add a :pipe label theme, which will opt-in to the pipe style below
-           pipe?
-           (= label-theme "pipe")
-
-           label
-           (bling (when (pos? margin-top)
-                    (string/join (repeat margin-top "\n")))
-                  (when pipe? [border-style "══"])
-                  [:bold (some->> label (str (when pipe? " ")))]
-                  (when pipe? " ")
-                  (when pipe? [border-style "════"])
-                  (some->> side-label (str " ")))
-
-           args
-           (concat [label "\n" padding-top-str] value [padding-bottom-str])
-
-           {:keys [tagged css]}
-           (reduce (fn [acc arg]
-                     #_(js/console.log arg)
-                     (cond
-                       (instance? Enriched arg)
-                       (assoc acc
-                              :tagged
-                              (conj (:tagged acc) (.-tagged arg))
-                              :css
-                              (.concat (:css acc) (.-css arg)))
-
-                       (and (map? arg)
-                            (every? #(contains? arg %)
-                                    [:ns-str
-                                     :quoted-form
-                                     :file-info-str
-                                     :formatted+
-                                     :formatted]))
-                       (assoc acc
-                              :tagged
-                              (conj (:tagged acc)
-                                    (-> arg
-                                        :formatted
-                                        :string))
-                              :css
-                              (.concat (:css acc)
-                                       (-> arg
-                                           :formatted
-                                           :css-styles
-                                           into-array)))
-
-                       :else
-                       {:tagged (conj (:tagged acc) (str arg))
-                        :css    (.concat (:css acc) #js[])}))
-                   {:tagged []
-                    :css    #js[]}
-                   args)]
-
-       (.apply f js/console (.concat #js[(string/join tagged)]
-                                     css))
-
-       #_(if (true? data?)
-           "hi"
-           arr
-           (.apply f js/console arr)))))
 
 (defn- default-opt [m k strs default]
   (or (some-> (k m)
@@ -1941,11 +1835,8 @@
        (map? x)
        (callout x nil)
 
-       ;; The case when user just passes a string, or an instance of an Enriched (bling) object (cljs)
-       #?(:cljs
-          (or (string? x) (instance? Enriched x))
-          :clj
-          (string? x))
+       ;; The case when user just passes a string
+       (string? x)
        (callout {} x)
 
        ;; Internal warning from bling about bad args
@@ -1979,8 +1870,7 @@
        (let [opts          x
              ;;  value         (some-> args (maybe #(not (string/blank? %))))
              callout-opts  (callout-opts* opts)
-             callout-opts+ (merge {:value #?(:cljs args
-                                             :clj (string/join "" args))}
+             callout-opts+ (merge {:value (string/join "" args)}
                                   opts
                                   callout-opts)]
          #?(:cljs
@@ -1989,61 +1879,24 @@
               (browser-callout callout-opts+))
 
             :clj
-            (callout* callout-opts+))))))
-  #_([opts value]
-     (if-not (map? opts)
-       ;; Internal warning from bling about bad args
-       (callout
-        {:type :warning}
-        (point-of-interest
-         {:type   :warning
-          :header "bling.core/callout"
-          :form   (cons 'callout (list opts value))
-          :body   (str "bling-core/callout expects a map of options,\n"
-                       "followed by any number of values (usually strings).\n\n"
-                       "Nothing will be printed.")}))
-       (let [value         (some-> value (maybe #(not (string/blank? %))))
-             callout-opts  (callout-opts* opts)
-             callout-opts+  (merge {:value value}
-                                   opts
-                                   callout-opts)]
-         #?(:cljs
-            (if node?                                                             ;; TODO <- move to enriched or data
-              (callout* callout-opts+)
-              (browser-callout callout-opts+))
-
-            :clj
-            (callout* callout-opts+))))))
+            (callout* callout-opts+)))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Enriched text public fns and helpers  
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Enriched text public fns and helpers  --------------------------------------
 
 
 (defn- ^:private tagged-str
-  "Expects an EnrichedText record.
-   In Clojure, returns string wrapped with appropriate sgr codes for rich
-   printing. In ClojureScript, returns a string wrapped in style escape
-   chars (%c)."
+  "Expects an EnrichedText record. Returns string wrapped with appropriate ANSI
+   SGR codes for styling."
   [o]
-  (let [f #(str (->> %
-                     :style
-                     (reduce-colors-to-sgr-or-css :sgr)
-                     m->sgr)
-                (:value %)
-                "\033[0;m")]
-
-    #?(:cljs
-       (f o)
-       :clj
-       (f o))))
+  (str (->> o
+            :style
+            reduce-colors-to-sgr
+            m->sgr)
+       (:value o)
+       "\033[0;m"))
 
 
 (defn- tag->map
@@ -2111,191 +1964,43 @@
                         :value \"hi\"}"
   [[style v]]
   (let [[style v] #?(:cljs
-                     (href-console style v)
+                     (let [f (if node? href-console href-browser-dev-console)]
+                       (f style v))
                      :clj
                      (href-console style v))]
     (->EnrichedText
      (str v)
      (let [m (cond
+               ;; The style is provided as a map e.g.
+               ;; (bling [{:font-weight      :bold
+               ;;          :font-style       :italic
+               ;;          :color            :red
+               ;;          :background-color :yellow-bg
+               ;;          :text-decoration  :wavy-underline}
+               ;;         "Hello"])
                (map? style)
+               ;; TODO - can this be more performant?
                (reduce-kv convert-color {} style)
 
-               (or (keyword? style)
-                   (string? style))
+               ;; The style is provided as a tokenized kw e.g. 
+               ;; (bling [:bold.red.wavy-underline "Hello"])
+               (keyword? style)
                (-> style
                    name
-                   (string/split (if (keyword? style)
-                                   #"\."
-                                   #" "))
+                   (string/split #"\.")
                    (->> (reduce tag->map {}))))]
        (if (and defs/no-color? (map? m))
          (dissoc m :color :background-color)
          m)))))
 
 
-(defn- reorder-text-decoration-shorthand [style]
-  (if-let [td (or (get style :text-decoration)
-                  (get style "text-decoration"))]
-    (->> (reduce-kv (fn [acc k v]
-                      (conj acc k v))
-                    [:text-decoration td]
-                    (dissoc style :text-decoration))
-         (apply array-map))
-    style))
-
-
-(defn- updated-css [css-styles x]
-  (if-let [style (some-> x
-                         (maybe et-vec?)
-                         enriched-text
-                         :style)]
-    (let [style  (->> (select-keys style browser-dev-console-props)
-                      (reduce-colors-to-sgr-or-css :css)
-                      (reorder-text-decoration-shorthand))
-          ks     (keys style)
-          resets (reduce (fn [acc k]
-                           (assoc acc k "initial"))
-                         {}
-                         ks)]
-
-      ;; (prn {:style style :ks ks :resets ks})
-
-      (conj css-styles
-            (css-stylemap->str style)
-            (css-stylemap->str resets)))
-    css-styles))
-
-
 (defn- enriched-data-inner
-  [[coll css] x]
+  [coll x]
   (let [s (cond (et-vec? x)
                 (tagged-str (enriched-text x))
                 (not (coll? x))
                 (as-str x))]
-    [(conj coll s)
-     (updated-css css x)]))
-
-
-;; Hydration of :p vectors ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defn p-tag-match [x]
-  (some-> x
-          (maybe vector?)
-          first
-          (maybe keyword?)
-          name
-          (->> (re-find #"^p(?:\.(\S+))?"))))
-
-
-(defn p-tag? [x]
-  (boolean (p-tag-match x)))
-
-
-(defn p-tag [x last?]
-  (when-let [tag
-             (p-tag-match x)]
-    (let [tag
-          (or (some-> tag
-                      second
-                      keyword)
-              :normal)
-          ret
-          (reduce (fn [acc v]
-                    (conj acc
-                          (cond (= v [:br])
-                                "\n"
-                                (vector? v)
-                                v
-                                :else
-                                [tag v])))
-                  []
-                  (rest x))]
-      (if last?
-        ret
-        (conj ret "\n\n")))))
-
-
-(defn bling-p-vector? [x]
-  (boolean (and (vector? x)
-                (p-tag? x))))
-
-
-(defn bling-vector? [x]
-  (boolean (and (vector? x)
-                (-> x
-                    (nth 0)
-                    (maybe #(or (keyword? %) (map? %))))
-                (not-any? bling-p-vector? x))))
-
-
-(defn bling-br-vector? [x]
-  (= [:br] x))
-
-
-(defn bling-p-vector-problems [x]
-  (doall (filter
-          #(not (or (bling-vector? %)
-                    (bling-br-vector? %)
-                    (not (coll? %))))
-          x)))
-
-
-
-(defn args-profile [args]
-  (mapv (fn [x]
-          (let [k
-                (cond (bling-p-vector? x)
-                      :bling/p-vector
-                      (bling-vector? x)
-                      :bling/vector
-                      (bling-br-vector? x)
-                      :bling/br-vector
-                      (not (coll? x))
-                      :bling/non-coll)
-
-                bling-p-vector-problems
-                (when (= k :bling/p-vector)
-                  (seq (bling-p-vector-problems x)))
-
-                problem
-                (if bling-p-vector-problems
-                  :bling.core/invalid-args-to-p-vector
-                  (when (nil? k)
-                    :bling.core/invalid-arg))]
-            (merge {:type    k
-                    :value   x}
-                   (when problem {:problem problem})
-                   (when bling-p-vector-problems
-                     {:bling/p-vector-problems bling-p-vector-problems}))))
-        args))
-
-
-(defn hydrate-bling-args [args]
-  (let [profile (args-profile args)]
-
-    (when (seq profile)
-      (println "\nargs profile")
-      (pprint profile))
-
-    (if (some #(contains? #{:bling/p-vector :bling/br-vector} (:type %))
-              profile)
-      (let [last-index (dec (count args))]
-        (into []
-              (apply concat
-                     (map-indexed (fn [i x]
-                                    (or (p-tag x (= i last-index))
-                                        (cond
-                                          (= x [:br])
-                                          ["\n"]
-                                          :else
-                                          [x])))
-                                  args))))
-      args)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-
+    (conj coll s)))
 
 
 ;; Hiccup w nested styles, supports :p elements ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2442,43 +2147,23 @@
       (->> (rollup []))
       ;; Maybe unwrap vals here if {:font-style :normal}, for perf
       ))
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn contains-nested? [args]
+(defn- contains-nested? [args]
   (some #(when (vector? %)
            (or (some-> (nth % 0 nil) (= :p))
                (some vector? %)))
         args))
 
-(defn bling-data* [args]
-  (let [args       (if (contains-nested? args)
-                     (nested->flat (into [] args))
-                     args)
-        [coll css] (reduce enriched-data-inner
-                           [[] []]
-                           args)
-        tagged     (string/join coll)]
+(defn- bling-data* [args]
+  (let [args   (if (contains-nested? args)
+                 (nested->flat (into [] args))
+                 args)
+        coll   (reduce enriched-data-inner [] args)
+        tagged (string/join coll)]
 
-    #_#?(:cljs
-         (js/console.log css)
-         :clj
-         (println css))
-
-    {:console-array (into-array (util/concatv [tagged] css))
-     :tagged        tagged
-     :css           css
-     :args          args}))
-
-
-;; (defn ^:public bling-data [coll]
-;;   #?(:cljs
-;;      (if node?
-;;        (-> coll bling-data* :tagged)
-;;        (bling-data* coll))
-;;      :clj
-;;      (-> coll bling-data* :tagged)))
+    {:tagged tagged
+     :args   args}))
 
 
 (defn ^:public bling
@@ -2504,9 +2189,6 @@
     #?(:cljs
        (if node?
          (println bling-str)
-         (->> args
-              (apply bling)
-              bling.browser/ansi-sgr-string->browser-dev-console-array
-              (.apply js/console.log js/console)))
+         (print-to-browser-dev-console bling-str))
        :clj
        (println bling-str))))

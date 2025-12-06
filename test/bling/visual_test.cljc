@@ -5,6 +5,7 @@
    #?(:cljs [bling.js-env :refer [node?]])
    [fireworks.core :refer [? !? ?> !?>]] ;; <-just for debugging
    [bling.core :as bling :refer [?sgr
+                                 !?sgr
                                  bling
                                  print-bling
                                  callout
@@ -40,7 +41,7 @@
 
 #_(?sgr (bling [:red.wavy-underline "Hi"] " there " [:blue.yellow-bg "GOLD"]))
 
-(
+#_(
   ;; boxed-callout
   callout
   #_(bling "This namespace is automatically generated in bling.test-gen.\n"
@@ -747,7 +748,7 @@
     (println '(print-bling [:blue "Hello"]))
     (print-bling [:blue "Hello"])
 
-    (?sgr (bling [:bold.red "hello"])))
+    (!?sgr (bling [:bold.red "hello"])))
 
 (defn visual-test-suite []
   #_(random-callouts)

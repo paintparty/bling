@@ -106,7 +106,7 @@
 
           :else
           {"line-height" "1.4"
-           "color"       "default"})))
+           "color"       "initial"})))
 
 
 (defn- style-map->css-style-str [m]
@@ -165,3 +165,41 @@
                      [with-format-specifiers]))]
 
     #?(:cljs (into-array vc) :clj vc)))
+
+
+
+;; Cruft from core
+;; TODO - Does this reordering need to be incorparated?
+;; What about the reset?
+
+#_(defn- reorder-text-decoration-shorthand [style]
+  (if-let [td (or (get style :text-decoration)
+                  (get style "text-decoration"))]
+    (->> (reduce-kv (fn [acc k v]
+                      (conj acc k v))
+                    [:text-decoration td]
+                    (dissoc style :text-decoration))
+         (apply array-map))
+    style))
+
+
+#_(defn- updated-css [css-styles x]
+  (if-let [style (some-> x
+                         (maybe et-vec?)
+                         enriched-text
+                         :style)]
+    (let [style  (->> (select-keys style browser-dev-console-props)
+                      (reduce-colors-to-sgr-or-css :css)
+                      (reorder-text-decoration-shorthand))
+          ks     (keys style)
+          resets (reduce (fn [acc k]
+                           (assoc acc k "initial"))
+                         {}
+                         ks)]
+
+      ;; (prn {:style style :ks ks :resets ks})
+
+      (conj css-styles
+            (css-stylemap->str style)
+            (css-stylemap->str resets)))
+    css-styles))
