@@ -1,7 +1,6 @@
 (ns bling.browser
   (:require [clojure.string :as string]
             [bling.ansi :as ansi]
-            [fireworks.core :refer [? !? ?> !?>]]
             [fireworks.color]))
 
 (defn- capture-group [s]
@@ -91,22 +90,22 @@
 
 (defn- ansi-sgr->style-map [s]
   (let [[tag v] (find-sgr-pattern2 s)]
-    ;; (? :- [tag v])
-    (cond (= "freeform" tag)
-          (let [fgc       (sgr-color->map v :fgc)
-                bgc       (sgr-color->map v :bgc)
-                style-map (text-style-map v fgc bgc)]
-            style-map)
-
-          (= "color" tag)
-          (sgr-color->map v :fgc)
-
-          (contains? #{"font-style" "text-decoration" "font-weight"} tag)
-          (text-style-map v nil nil)
-
-          :else
-          {"line-height" "1.4"
-           "color"       "initial"})))
+    (assoc (cond (= "freeform" tag)
+                 (let [fgc       (sgr-color->map v :fgc)
+                       bgc       (sgr-color->map v :bgc)
+                       style-map (text-style-map v fgc bgc)]
+                   style-map)
+                 
+                 (= "color" tag)
+                 (sgr-color->map v :fgc)
+                 
+                 (contains? #{"font-style" "text-decoration" "font-weight"} tag)
+                 (text-style-map v nil nil)
+                 
+                 :else
+                 {})
+           "line-height"
+           1.275)))
 
 
 (defn- style-map->css-style-str [m]
@@ -167,39 +166,9 @@
     #?(:cljs (into-array vc) :clj vc)))
 
 
+#?(:cljs
+   (defn print-to-browser-dev-console [s]
+     (->> s
+          ansi-sgr-string->browser-dev-console-array
+          (.apply js/console.log js/console))))
 
-;; Cruft from core
-;; TODO - Does this reordering need to be incorparated?
-;; What about the reset?
-
-#_(defn- reorder-text-decoration-shorthand [style]
-  (if-let [td (or (get style :text-decoration)
-                  (get style "text-decoration"))]
-    (->> (reduce-kv (fn [acc k v]
-                      (conj acc k v))
-                    [:text-decoration td]
-                    (dissoc style :text-decoration))
-         (apply array-map))
-    style))
-
-
-#_(defn- updated-css [css-styles x]
-  (if-let [style (some-> x
-                         (maybe et-vec?)
-                         enriched-text
-                         :style)]
-    (let [style  (->> (select-keys style browser-dev-console-props)
-                      (reduce-colors-to-sgr-or-css :css)
-                      (reorder-text-decoration-shorthand))
-          ks     (keys style)
-          resets (reduce (fn [acc k]
-                           (assoc acc k "initial"))
-                         {}
-                         ks)]
-
-      ;; (prn {:style style :ks ks :resets ks})
-
-      (conj css-styles
-            (css-stylemap->str style)
-            (css-stylemap->str resets)))
-    css-styles))
