@@ -1,6 +1,6 @@
 ;; This is for testing in node
 (ns bling.script-test
-  (:require [bling.core-test]))
+  (:require [bling.visual-test]))
 
 (defn main [& cli-args]
-  (bling.core-test/visual-test-suite))
+  (bling.visual-test/visual-test-suite))

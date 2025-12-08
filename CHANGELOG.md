@@ -14,6 +14,45 @@ For a list of breaking changes, check [here](#breaking-changes)
 
 #### Removed
 
+## 0.9.0
+
+<p><sub>Many thanks to <a href="https://www.clojuriststogether.org/">Clojurists Together</a> for generously supporting this release!</sub></p>
+
+2025-07-23
+
+#### Added
+- Enhanced hiccup support for paragraphs and nested styles.[#15](https://github.com/paintparty/bling/issues/15)
+
+- Boxed callouts, available via `:theme` value of `:boxed`.[#47](https://github.com/paintparty/bling/issues/47)
+
+- Post-processing pipeline for browser dev console targets. Appearance of callouts in browser dev console should be identical with terminal emulator output.[#41](https://github.com/paintparty/bling/issues/41)
+
+- `bling.ansi` namespace for ansi-sgr utilities
+
+#### Fixed 
+- `?sgr` debugging utility works better and preserves original styling.
+
+<br>
+<br>
+
+## 0.8.7
+
+<p><sub>Many thanks to <a href="https://www.clojuriststogether.org/">Clojurists Together</a> for generously supporting this release!</sub></p>
+
+2025-07-13
+
+#### Fixed
+- Default margin-block spacing around `point-of-interest` diagrams.
+
+#### Changed
+- Updates example custom callout in readme documentation.
+
+
+<br>
+<br>
+
+
+
 
 <br>
 <br>
