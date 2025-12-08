@@ -21,8 +21,6 @@
    [malli.core :as m]
    [bling.core :refer [?sgr
                        bling
-                       bling-data
-                       bling-data*
                        callout
                        print-bling
                        point-of-interest]]

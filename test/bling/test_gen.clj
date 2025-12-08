@@ -1,7 +1,8 @@
 (ns bling.test-gen
   (:require
    [fireworks.core :refer [? !? ?> !?> pprint]] ;; <-just for debugging
-   [bling.core :as bling :refer [bling]]
+   [bling.core :as bling :refer [bling boxed-callout]]
+   [bling.util :as util :refer [maybe]]
    [bling.sample :as sample :refer [callout+]]
    [clojure.string :as string]))
 
@@ -78,18 +79,26 @@
                             escape-sgr
                             string/join))
                   (list '=
-                        (concat (list '->
-                                      (list 'bling qv))
+                        (concat (list '-> qv)
                                 '[escape-sgr string/join])
                         (-> v
-                            bling
                             escape-sgr
                             string/join))))))))
     @tests)))
 
 
+(def comment-box-text
+  (str "This namespace is automatically generated in bling.test-gen.\n"
+       "\n"
+       "Do not manually add anything to this namespace.\n"
+       "\n"
+       "To regenerate, set `bling.test-gen/write-tests?` to `true`, then run `lein test`.\n"
+       "\n"
+       "If you want do any experimentation use `bling.visual-test`\n") )   
+
+
 (defn write-tests-ns!
-  "This updates/generates a fireworks.test-suite namespace.
+  "This updates/generates a bling.test-suite namespace.
       
    Used ocasionally during dev, when tests are modified or added, or functionality
    changes.
@@ -97,16 +106,19 @@
    This is intended to be called from repl."
   []
   (spit (str "./test/bling/core_test" ".clj") 
-        (str (with-out-str 
-               (pprint '(ns bling.core-test
-                          (:require
-                           [clojure.test :refer [deftest is]]
-                           [bling.test-gen :refer [escape-sgr]]
-                           [bling.core :as bling :refer [bling]]
-                           [bling.sample :as sample :refer [callout+]]
-                           [clojure.string :as string]))))
-             "\n\n\n\n\n"
-             (deftests-str))
+        (str 
+         (boxed-callout comment-box-text {:padding-inline 3})
+         "\n\n"
+         (with-out-str 
+           (pprint '(ns bling.core-test
+                      (:require
+                       [clojure.test :refer [deftest is]]
+                       [bling.test-gen :refer [escape-sgr]]
+                       [bling.core :as bling :refer [bling]]
+                       [bling.sample :as sample :refer [callout+]]
+                       [clojure.string :as string]))))
+         "\n\n\n"
+         (deftests-str))
         :append false))
 
 
@@ -159,5 +171,5 @@
 
 ;; Call this from repl or uncomment here to regenerate test suite
 (when write-tests? 
-  (println "--- Writing new fireworks.test_suite namespace --------------------")
+  (println "--- Writing new bling.core_test namespace --------------------")
   (write-tests-ns!))

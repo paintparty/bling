@@ -2,15 +2,23 @@
 
 (ns bling.core
   (:require [clojure.string :as string]
-            [fireworks.core :refer [? !? ?> !?>]]
-            [bling.macros :refer [let-map keyed]]
+            [clojure.walk :as walk]
+            [bling.ansi :as ansi :refer [adjusted-char-count]]
+            [bling.browser]
             [bling.defs :as defs]
-            [bling.util :as util]
+            [bling.macros :refer [let-map keyed]]
+            [bling.util :as util :refer [maybe]]
+
+            #?(:cljs [bling.js-env :refer [node?]])
+            ;; TODO - eliminate goog.object req
             #?(:cljs [goog.object])
-            #?(:cljs [bling.js-env :refer [node?]])))
+            
+            [bling.browser :as browser]))
+
 
 (declare xterm-colors-by-id)
 
+;; TODO - Move to ansi ns
 (def ^:private ESC "\u001B[")
 (def ^:private OSC "\u001B]")
 (def ^:private BEL "\u0007")
@@ -34,6 +42,7 @@
              SEP
              BEL])))
 
+;; TODO - Move to defs namespace
 (def ^:private browser-dev-console-props
   [:text-decoration-line
    :text-decoration-style
@@ -71,6 +80,7 @@
    :margin-right
    :margin-left])
 
+;; TODO - Move to colors namespace?
 (def ^:public system-colors-source
   {"system-black"   {:sgr 0}
    "system-maroon"  {:sgr 1}
@@ -95,12 +105,11 @@
 ;; support "light-orange to force light"
 
 
+;; TODO - Move to colors namespace?
 (def ^:private bling-colors-dark
-  (apply 
-   array-map 
-   [
-    
-    "red"     {:sgr 124 :css "#af0000"}
+  (apply
+   array-map
+   ["red"     {:sgr 124 :css "#af0000"}
 
     "orange"  {:sgr 172 :css "#d78700"}
 
@@ -121,11 +130,11 @@
     "black"   {:sgr 16}
     "white"   {:sgr 231}]))
 
-(def ^:private bling-colors-light 
-  (apply 
-   array-map 
-   [
-    "red"     {:sgr 203 :css "#ff5f5f"}
+;; TODO - Move to colors namespace?
+(def ^:private bling-colors-light
+  (apply
+   array-map
+   ["red"     {:sgr 203 :css "#ff5f5f"}
 
     "orange"  {:sgr 214 :css "#ffaf00"}
 
@@ -145,6 +154,7 @@
     "white"   {:sgr 231}]))
 
 ;; TODO Add the light and dark variants to x-term-colors-by-id
+;; TODO - Move to colors namespace?
 (def ^:public bling-colors*
   (apply
    array-map
@@ -192,14 +202,14 @@
                                              css-dark
                                              :css-light
                                              css-light))
-                                (when-not (contains? #{"black" "white"} k) 
+                                (when-not (contains? #{"black" "white"} k)
                                   [(str "medium-" k) {:sgr sgr-medium
                                                       :css css-medium}
                                    (str "dark-" k)   {:sgr sgr-dark
                                                       :css css-dark}
                                    (str "light-" k)  {:sgr sgr-light
                                                       :css css-light}]))))
-              [] 
+              []
               bling-colors*)))
 
 
@@ -218,7 +228,6 @@
    "neutral"  "neutral"})
 
 
-
 (def ^:private all-color-names
   ;; TODO - perf use reduce here?
   (into #{}
@@ -234,31 +243,25 @@
              {}
              colors-source))
 
-(def ^:private alert-type->label
-  {"warning" "WARNING"
-   "error"   "ERROR"
-   "info"    "INFO"})
-
 
 ;; Helper functions -----------------------------------------------------------
 
 (defn ^:public ?sgr
-  "For debugging of sgr code printing.
+  "For debugging of ANSI SGR tagged output.
 
-   Prints the value with escaped sgr codes so you can read them in terminal
-   emulators (otherwise text would just get colored).
+   Prints the value with escaped ANSI SGR codes so you can read them in terminal
+   emulators (otherwise text would just get colored). Preserves coloring.
 
    Returns the value."
   [s]
-  ;; TODO - try to figure out way you can preserve the color in the output,
-  ;; which would help even more for debugging.
-  (println (string/replace s
-                           #"\u001b\[([0-9;]*)[mK]"
-                           (str "\033[38;5;231;48;5;247m"
-                                "\\\\033["
-                                "$1"
-                                "m"
-                                "\033[0;m")))
+  (println 
+   (string/replace s
+                   #"\u001b\[((?:[0-9]|;|(?:9|4(?::[1-5])?))*)m"
+                   (str "\033[38;5;231;48;5;247m" ; <- white on gray, actual ansi sgr tag for fake ansi tag
+                        "\\\\033[$1m"             ; <- fake ansi sgr tag text
+                        "\033[0m"                 ; <- reset, actual ansi sgr for resetting fake ansi tag
+                        "\033[$1m"                ; <- original ansi sgr, to preserve coloring
+                        )))
   s)
 
 (defn ^:public !?sgr
@@ -266,12 +269,6 @@
    Returns the value."
   [s]
   s)
-
-(defn- maybe [x pred]
-  (when (if (set? pred)
-          (contains? pred x)
-          (pred x))
-    x))
 
 (defn- nameable? [x]
   (or (string? x) (keyword? x) (symbol? x)))
@@ -285,12 +282,6 @@
 
 (defn- spaces [n] (string/join (repeat n " ")))
 
-;; TODO - confirm we don't need this anymore and delete
-(defn- readable-sgr [x]
-  (let [f #(str "\\033" (subs x 1))]
-    #?(:cljs (if node? (f) x)
-       :clj  (f))))
-
 (defn- ns-info-str
   [{:keys [file line column file-line-column]}]
   (if (not (string/blank? file-line-column))
@@ -298,7 +289,7 @@
     (str (some-> file (str ":")) line ":" column)))
 
 
-                                                                  
+
 (defn- poi-text-underline-str [n str-index text-decoration-style]
   (str (string/join (repeat str-index " "))
        (string/join (repeat n
@@ -314,28 +305,28 @@
 (defn poi-text-underline
   [{:keys [form form-as-str text-decoration-index text-decoration-style] :as m}]
   (if (and text-decoration-index
-              (or (pos? text-decoration-index)
-                  (zero? text-decoration-index))
-              (coll? form)
-              (< (count (as-str form)) form-limit))
+           (or (pos? text-decoration-index)
+               (zero? text-decoration-index))
+           (coll? form)
+           (< (count (as-str form)) form-limit))
     (let [form
           (into [] form)
 
           data
           (reverse
-            (for [n (-> form count range reverse)]
-              (let [v            (-> form (nth n nil))
-                    value-as-str (str v)
-                    len          (-> v str count)
-                    sv           (-> form
-                                     (subvec 0 n)
-                                     str
-                                     count)]
-                {:strlen       len
-                 :v            v
-                 :value-as-str value-as-str
-                 :index        n
-                 :str-index    sv})))
+           (for [n (-> form count range reverse)]
+             (let [v            (-> form (nth n nil))
+                   value-as-str (str v)
+                   len          (-> v str count)
+                   sv           (-> form
+                                    (subvec 0 n)
+                                    str
+                                    count)]
+               {:strlen       len
+                :v            v
+                :value-as-str value-as-str
+                :index        n
+                :str-index    sv})))
 
           {:keys [strlen str-index]}
           (nth data text-decoration-index nil)]
@@ -344,17 +335,9 @@
                             str-index
                             text-decoration-style)})
     {:text-underline-str (poi-text-underline-str
-                           (count form-as-str)
-                           0
-                           text-decoration-style)}))
-
-(defn- css-stylemap->str [m]
-  (reduce-kv (fn [acc k v]
-               (if (and k v)
-                 (str acc (as-str k) ":" (as-str v) ";")
-                 acc))
-             ""
-             m))
+                          (count form-as-str)
+                          0
+                          text-decoration-style)}))
 
 (defn- x->sgr [x k]
   (when x
@@ -366,11 +349,11 @@
           ret)))))
 
 (def underline-style-codes-by-style
-  {"straight" 1 
-   "double"   2 
-   "wavy"    3 
-   "dotted"   4 
-   "dashed"   5})  
+  {"straight" 1
+   "double"   2
+   "wavy"    3
+   "dotted"   4
+   "dashed"   5})
 
 (defn- sgr-text-decoration [m]
   (when-not (:disable-text-decoration? m)
@@ -380,7 +363,7 @@
       (if-let [n (some->> m
                           :text-decoration-style
                           as-str
-                          (get underline-style-codes-by-style))] 
+                          (get underline-style-codes-by-style))]
         (str "4:" n)
         "4")
       (contains? #{"line-through" :strikethrough}
@@ -417,6 +400,7 @@
     ret))
 
 
+;; Move to colors namespace? or you already have them in vector by index?
 ;; Color-related fns  ---------------------------------------------------------
 (def ^:private xterm-colors-by-id
   {0   "#000000"                                            ;; system-black
@@ -475,16 +459,17 @@
 
 (defn- assoc-hex-colors [m]
   (reduce-kv (fn [m color {:keys [sgr sgr-light sgr-dark css-light css-dark css]}]
-               (let [hex (get xterm-colors-by-id sgr nil)]
+               (let [hex
+                     ;; TODO - try with colors/by-index to see if perf boost
+                     (get xterm-colors-by-id sgr nil)]
                  (merge (assoc m
-                               color 
+                               color
                                (merge {:sgr sgr
                                        :css hex}
                                       (when sgr-light {:sgr-light sgr-light})
                                       (when sgr-dark {:sgr-dark sgr-dark})
                                       (when css-light {:css-light css-light})
-                                      (when css-dark {:css-dark css-dark})
-                                      )))))
+                                      (when css-dark {:css-dark css-dark}))))))
              {}
              m))
 
@@ -506,14 +491,11 @@
 
 (declare callout)
 (declare bling)
-(declare bling!)
 (declare print-bling)
 
-(defn- reduce-colors-to-sgr-or-css
+(defn- reduce-colors-to-sgr
   "This is where the actual color value gets pulled out of the color map that is
-   associated with each color (in bling.core/all-color-names). The sgr-or-css-kw
-   will be :sgr or :css, depending on whether execution context is a terminal
-   emulator or browser dev console.
+   associated with each color (in bling.core/all-color-names).
 
    For terminal environments, a light or dark theme can be optionally specified
    via an environmental variable:
@@ -531,67 +513,67 @@
    contrast for users that develop with a dark-themed terminal.
    
    If `LIGHT` OR `DARK` values are detected for the `BLING_MOOD` env var, the
-   value of the `:sgr-or-css-kw` will be changed inside this function, from
+   value of the `:sgr` will be changed inside this function, from
    `:sgr` to `:sgr-light` or `:sgr-dark`"
-  [sgr-or-css-kw {:keys [contrast] :as m}]
-  (let [sgr?
-        (= sgr-or-css-kw :sgr)]
-    (reduce-kv (fn [m k v]
-                 (assoc m k
-                        (if (map? v)
-                          (if (and sgr? (= :color k))
-                            (or (let [kw
-                                      (case contrast
-                                        :low
-                                        (case defs/bling-mood
-                                          "light" :sgr-light
-                                          "dark" :sgr-dark
-                                          :sgr)
-
-                                        :medium
-                                        :sgr
-
-                                        ;; covers :high
-                                        (case defs/bling-mood
-                                          "light" :sgr-dark
-                                          "dark" :sgr-light
-                                          :sgr))]
-                                  (kw v))
-                                (:sgr v))
-                            (if (= :color k)
-                              (let [kw
+  [{:keys [contrast] :as m}]
+  (reduce-kv (fn [m k v]
+               (assoc m k
+                      (if (and (map? v)
+                               (contains? #{:color :background-color} k))
+                        (if (= :color k)
+                          (or (let [kw
                                     (case contrast
                                       :low
                                       (case defs/bling-mood
-                                        "light" :css-light
-                                        "dark" :css-dark
-                                        :css)
+                                        "light" :sgr-light
+                                        "dark" :sgr-dark
+                                        :sgr)
 
                                       :medium
-                                      :css
+                                      :sgr
 
+                                      ;; covers :high
                                       (case defs/bling-mood
-                                        "light" :css-dark
-                                        "dark" :css-light
-                                        :css))]
+                                        "light" :sgr-dark
+                                        "dark" :sgr-light
+                                        :sgr))]
                                 (kw v))
-                              (sgr-or-css-kw v)))
-                          v)))
-               {}
-               m)))
+                              (:sgr v))
+
+                          ;; Branch for background color
+                          ;; TODO - consider supporting something like
+                          ;; [{:red.yellow-bg-soft} "foo"]
+                          ;; or 
+                          ;; [{:red.yellow-bg-hard} "foo"]
+
+                          ;; Would involve selecting another set of soft colors
+                          ;; for light and dark
+
+                          ;; Which one would be the default for
+                          ;; [{:red.yellow-bg} "foo"]
+
+                          ;; maybe the hard one, cos that would be the same for
+                          ;; light and dark, and user may not have a light or
+                          ;; dark mood set.
+
+                          ;; and then maybe you don't need "-hard", just "soft"
+                          (:sgr v))
+                        v)))
+             {}
+             m))
 
 (defn- convert-color [m k v]
   (assoc m
-    k
-    (if (contains? #{:background-color :color} k)
-      (cond
-        (nameable? v)
-        (get (:all color-codes)
-             (as-str v))
+         k
+         (if (contains? #{:background-color :color} k)
+           (cond
+             (nameable? v)
+             (get (:all color-codes)
+                  (as-str v))
 
-        (and (int? v) (<= 0 v 257))
-        {:sgr v})
-      v)))
+             (and (int? v) (<= 0 v 257))
+             {:sgr v})
+           v)))
 
 (defn- et-vec? [x]
   (boolean (and (vector? x)
@@ -649,9 +631,9 @@
                            ;; TODO - perf - use transduction here
                            (some->> mini-strace
                                     (keep-indexed
-                                      (fn [i [f]]
-                                        (when (re-find regex (str f))
-                                          i)))
+                                     (fn [i [f]]
+                                       (when (re-find regex (str f))
+                                         i)))
                                     seq
                                     (take depth)
                                     last)
@@ -678,18 +660,18 @@
        ;; Print a warning if option args are bad
        (callout {:type :warning}
                 (bling
-                  "bling.core/stack-trace-preview\n\n"
-                  "Value of the "
-                  [:bold :error]
-                  " option should be an instance of "
-                  [:bold 'java.lang.Exception.]
-                  "\n\n"
-                  "Value received:\n"
-                  [:bold (util/shortened error 33)]
-                  "\n\n"
-                  "Type of value received:\n"
-                  [:bold (str (type error))]
-                  )))))
+                 "bling.core/stack-trace-preview\n\n"
+                 "Value of the "
+                 [:bold :error]
+                 " option should be an instance of "
+                 [:bold 'java.lang.Exception.]
+                 "\n\n"
+                 "Value received:\n"
+                 [:bold (util/shortened error 33)]
+                 "\n\n"
+                 "Type of value received:\n"
+                 [:bold (str (type error))])))))
+
 
 ;; Race-condition-free version of clojure.core/println,
 ;; Maybe useful to keep around if any weird behavior arises.
@@ -701,9 +683,12 @@
 ;; Shared cljs fns -------------------------------------------------------------
 #?(:cljs
    (do
+
+     ;; TODO Delete this once you convert fireworks to using new pipeline
+
      (deftype
-       ^{:doc
-         "A js object with the the following fields:
+      ^{:doc
+        "A js object with the the following fields:
          `tagged`
          A string with the appropriate tags for styling in browser consoles
 
@@ -718,10 +703,10 @@
          For browser usage, sugar for the above `.apply` call is provided with
          `bling.core/print-bling`. You can use it like this:
          `(print-bling (bling [:bold.blue \"my blue text\"]))"}
-       Enriched
-       [tagged css consoleArray args])))
+      Enriched
+      [tagged css consoleArray args])))
 
-                                                 
+
 ;; PPPPPPPPPPPPPPPPP        OOOOOOOOO     IIIIIIIIII
 ;; P::::::::::::::::P     OO:::::::::OO   I::::::::I
 ;; P::::::PPPPPP:::::P  OO:::::::::::::OO I::::::::I
@@ -738,10 +723,11 @@
 ;; P::::::::P           OO:::::::::::::OO I::::::::I
 ;; P::::::::P             OO:::::::::OO   I::::::::I
 ;; PPPPPPPPPP               OOOOOOOOO     IIIIIIIIII
-                                                 
+
 
 ;; Line and point of interest public fns  -------------------------------------
 (defn- enriched-args [o]
+  ;; TODO - eliminate branching
   #?(:cljs
      (if node?
        (when o [o])
@@ -816,7 +802,7 @@
                                0
                                1))
         mb               (char-repeat mb* "\n")
-        diagram-char     #?(:cljs (fn [s] s) :clj #(bling [:subtle %]))   
+        diagram-char     #?(:cljs (fn [s] s) :clj #(bling [:subtle %]))
         diagram          (cond
                            (and line column file form)
                            [mb
@@ -831,7 +817,7 @@
                            [mb
                             bolded-form "\n"
                             underline-styled
-                            mb]) 
+                            mb])
         ret              (apply bling
                                 (util/concatv header
                                               diagram
@@ -851,9 +837,9 @@
 (defn- gutter-marquee-label
   [{:keys [padding-left
            padding-top
-           margin-left 
-           label 
-           label-string 
+           margin-left
+           label
+           label-string
            border-style]
     :as m}]
   (let [margin-left-str     (char-repeat margin-left defs/gutter-char)
@@ -900,18 +886,18 @@
                      "━━┛")])]
        (mapv (fn [_]
                (bling [bs
-                        (str margin-left-str
-                             defs/gutter-char
-                             (hrz " "))]))
-         (range padding-top)))))))
+                       (str margin-left-str
+                            defs/gutter-char
+                            (hrz " "))]))
+             (range padding-top)))))))
 
 
 (defn- sideline-marquee-label
   [{:keys [padding-left
-           padding-left-str 
-           margin-left 
-           label 
-           label-string 
+           padding-left-str
+           margin-left
+           label
+           label-string
            theme
            border-style
            side-label]}]
@@ -946,7 +932,7 @@
        (for [ln (rest label-lns)]
          (bling margin-left-str
                 [bs (if b? (str "┃" (hrz " ") "┃  ")
-                                  (str "│" (hrz " ") "│  "))]
+                        (str "│" (hrz " ") "│  "))]
                 (bling [:italic.neutral.bold ln])
                 (bling [bs
                         (str (char-repeat (max 0 (- label-length (count ln)))
@@ -959,6 +945,7 @@
                      (char-repeat label-length (if b? "━" "─"))
                      (if b? "━━┛" "──┘"))])])))))
 
+
 (defn- gutter-label-line-zero? [m i]
   (and (= (:theme m) "gutter")
        (= (:current-line-type m) :label)
@@ -968,10 +955,10 @@
 (defn- current-margin-left-str-key
   [m i gutter-label-line-zero?]
   (cond
-    (and (= (:theme m) "rainbow-gutter") 
+    (and (= (:theme m) "rainbow-gutter")
          i
          (odd? i))
-    :margin-left-str-odd 
+    :margin-left-str-odd
 
     gutter-label-line-zero?
     :margin-left-str-zero
@@ -979,18 +966,18 @@
     :else
     :margin-left-str))
 
-(defn- ln 
+(defn- ln
   ([m s]
    (ln m nil s))
   ([m i s]
    (let [gutter-label-line-zero? (gutter-label-line-zero? m i)
          current-margin-left-str (get m
                                       (current-margin-left-str-key
-                                       m 
+                                       m
                                        i
                                        gutter-label-line-zero?))]
      (str current-margin-left-str
-          (bling [(:border-style m) 
+          (bling [(:border-style m)
                   (get m (if gutter-label-line-zero?
                            :border-left-str-zero
                            :border-left-str))])
@@ -1008,7 +995,7 @@
         padding-lines               #(char-repeat (% m) "\n ")
         callout-has-body?           (boolean (:value m))
         s                           (cond
-                                      gutter-label-lines-with-pt? 
+                                      gutter-label-lines-with-pt?
                                       (str (bling [:bold s])
                                            (if callout-has-body?
                                              (str (padding-lines :padding-top))
@@ -1025,11 +1012,11 @@
                                       s)
         lns-coll                    (some-> s string/split-lines)
         ret                         (string/join
-                                     "\n" 
+                                     "\n"
                                      (map-indexed
                                       (partial ln
                                                (assoc m
-                                                      :current-line-type k)) 
+                                                      :current-line-type k))
                                       lns-coll))]
     ret))
 
@@ -1037,28 +1024,28 @@
   [m]
   (let [body-lns (string/split-lines (:value m))]
     (string/join
-      "\n"
-      (util/concatv
-       (repeat (:padding-top m) (ln m ""))
-       (mapv (partial ln m) body-lns)
-       (repeat (:padding-bottom m) (ln m ""))))))
+     "\n"
+     (util/concatv
+      (repeat (:padding-top m) (ln m ""))
+      (mapv (partial ln m) body-lns)
+      (repeat (:padding-bottom m) (ln m ""))))))
 
 (defn- body-lines-no-border
   [{:keys [margin-left-str padding-left-str] :as m}]
   (let [body-lns (string/split-lines (:value m))]
     (string/join
-      "\n"
-      (util/concatv
-       (repeat (:padding-top m) (str margin-left-str padding-left-str))
-       (mapv #(str margin-left-str padding-left-str %) body-lns)
-       (repeat (:padding-bottom m) (str margin-left-str padding-left-str))))))
+     "\n"
+     (util/concatv
+      (repeat (:padding-top m) (str margin-left-str padding-left-str))
+      (mapv #(str margin-left-str padding-left-str %) body-lns)
+      (repeat (:padding-bottom m) (str margin-left-str padding-left-str))))))
 
 (defn- minimal-callout
   [{:keys [label side-label border-style border-block-length value]
     :as   m}]
   (let [no-label?
         (or (nil? label) (string/blank? label))
-        
+
         label-line
         (if no-label?
           (bling [border-style (string/join (repeat border-block-length "═"))])
@@ -1070,7 +1057,7 @@
 
         label-line-length
         (count label-line)
-        
+
         matches
         (re-seq #"\u001b\[([0-9;]*)[mK]" label-line)
 
@@ -1079,21 +1066,20 @@
 
         n
         (- label-line-length n (* 3 (count matches)))
-        
+
         body-lines
-        (body-lines-no-border m)
-        ]
+        (body-lines-no-border m)]
     (str label-line
          "\n"
          body-lines
          (when-not (string/blank? body-lines) "\n")
          (when-not (string/blank? body-lines)
-                   (bling [border-style (string/join (repeat n "─"))])))))
+           (bling [border-style (string/join (repeat n "─"))])))))
 
 (defn- sideline-callout
   [{:keys [theme label side-label label-theme border-style padding-left margin-left-str]
     :as m}]
-  (let [bold?       
+  (let [bold?
         (= theme "sideline-bold")
 
         marquee-label?
@@ -1106,14 +1092,14 @@
           [border-style (char-repeat (max (dec padding-left) 0)
                                      (if bold? "━" "─"))])
 
-        label-line  
+        label-line
         (cond
           ; label-theme is :marquee
           marquee-label?
           (sideline-marquee-label m)
 
 
-          
+
           ; label-theme is :minimal
           :else
           (bling margin-left-str
@@ -1124,17 +1110,20 @@
                         (when side-label [border-style (if bold? "━━━" "───")])
                         (some->> side-label (str " ")))))
 
-        bottom-line 
+        bottom-line
         (bling [border-style
                 (str margin-left-str
                      (if bold? "┗" "└"))])]
     (str
-      label-line
-      "\n"
-      (body-lines-with-border m)
-      "\n"
-      bottom-line)))
-  
+     label-line
+     "\n"
+     (body-lines-with-border m)
+     "\n"
+     bottom-line)))
+
+
+
+
 (defn ansi-callout-str
   [{:keys [label-theme theme value] :as m}]
   (let [sideline-variant?            (contains? #{"sideline" "sideline-bold"} theme)
@@ -1168,6 +1157,349 @@
          (:margin-bottom-str m))))
 
 
+;; -----------------------------------------------------------------------------
+;; Boxed callout start 
+;; -----------------------------------------------------------------------------
+
+(def bdc
+  {:h  {:double     "═"
+        :bold       "━"
+        :thin       "─"
+        :thin-round "─"}
+
+   :v  {:double     "║"
+        :bold       "┃"
+        :thin       "│"
+        :thin-round "│"}
+
+   :tl {:double     "╔"
+        :bold       "┏"
+        :thin       "┌"
+        :thin-round "╭"}
+
+   :tr {:double     "╗"
+        :bold       "┓"
+        :thin       "┐"
+        :thin-round "╮"}
+
+   :bl {:double     "╚"
+        :bold       "┗"
+        :thin       "└"
+        :thin-round "╰"}
+
+   :br {:double     "╝"
+        :bold       "┛"
+        :thin       "┘"
+        :thin-round "╯"}})
+
+(def box-drawing-styles (into #{} (-> bdc :h keys)))
+
+(defn wrapped-string-inner
+  [max-cols
+   {:keys [result col]
+    :as   acc}
+   word]
+  (if (= word "")
+    acc
+    (let [nl?              (= word "\n")
+          space+word       (str (when-not (or nl? (zero? col)) " ") word)
+          space+word-width (adjusted-char-count space+word)
+          exceeds?         (< max-cols (+ col space+word-width))
+          string-to-concat (if exceeds?
+                             (str "\n" word)
+                             (if nl? word space+word))
+          new-col          (if exceeds?
+                             (count word)
+                             (if nl? 0 (+ col space+word-width)))]
+
+      ;; #_(when exceeds? (prn "exceeds-"))
+      ;; #_(? :-
+      ;;      {:print-with prn
+      ;;       :when       ansi-sgr-seq}
+      ;;      {:col              col
+      ;;       :word             word
+      ;;       :space+word       space+word
+      ;;       :space+word-width space+word-width
+      ;;       :ansi-sgr-seq     ansi-sgr-seq
+      ;;       :ansi-sgr-count   ansi-sgr-count
+      ;;       :string-to-concat string-to-concat
+      ;;       :new-col          new-col})
+
+      {:result (str result string-to-concat)
+       :col    new-col})))
+
+
+(defn- wrap-single-word [max-cols s]
+  (->> s
+       seq
+       (partition-all max-cols)
+       (mapv string/join)))
+
+
+(defn- stub-leading-spaces [s]
+  (string/replace s #"^ +" #(util/sjr (count %) "〠")))
+
+
+(defn- with-wrapped-single-words
+  [max-width acc s]
+  (into acc
+        (if (< max-width (adjusted-char-count s))
+          (wrap-single-word max-width s)
+          [s])))
+
+
+(defn wrapped-string
+  "Given a string with line-breaks, returns a string, with additional line
+   breaks insert, such that the width of every line of text is below the
+   `max-cols` threshold."
+  [s {:keys [max-width]}]
+  (->> 
+   (string/split s #"\n")
+   (mapv #(string/split (stub-leading-spaces %) #" "))
+   (mapv #(reduce (partial with-wrapped-single-words max-width) [] %))
+   (mapv #(reduce (partial wrapped-string-inner max-width)
+                  {:result "" :col 0}
+                  %))
+   (mapv #(-> % :result (string/replace #"〠" " ")))
+   (string/join "\n")))
+
+
+(defn wrapped-stringOLD
+  "Given a string with line-breaks, returns a string, with additional line
+   breaks insert, such that the width of every line of text is below the
+   `max-cols` threshold."
+  [s {:keys [max-width]}]
+  ;; (prn s)
+  (-> s
+      (string/replace #"\n" " \n ")
+      (string/split #" ")
+      (->> (reduce (fn [acc s]
+                     (into acc
+                           (if (< max-width (adjusted-char-count s))
+                             (wrap-single-word max-width s)
+                             [s])))
+                   []))
+      (->> (reduce (partial wrapped-string-inner max-width)
+                   {:result "" :col 0}))
+      :result))
+
+
+(defn- colored-border [s colorway]
+  (if colorway
+    (bling [{:color colorway} s])
+    s))
+
+
+(defn- label-profile
+  [{:keys [pd horizontal-border-char colorway label]}]
+  (let [colorize           #(if-not (re-find ansi/sgr-re % )
+                              (bling [{:color colorway} %])
+                              %)
+        label-str          (or (some-> label
+                                       (maybe string?)
+                                       (maybe #(not (string/blank? %)))
+                                       (str " ")
+                                       (->> (str " "))
+                                       colorize)
+                               "")
+        label-char-count   (adjusted-char-count label-str)
+        label-pd-str       (when (and (pos? label-char-count) pd)
+                             (-> pd
+                                 dec
+                                 (util/sjr horizontal-border-char)
+                                 (colored-border colorway)))
+        label-pd-str-count (or (some-> label-pd-str
+                                       adjusted-char-count)
+                               0)]
+    (keyed [label-str
+            label-char-count
+            label-pd-str
+            label-pd-str-count])))
+
+
+(defn- block-border*
+  [{:keys [pd-left
+           pd-right
+           horizontal-border-char
+           colorway
+           cols
+           corner-border-char]
+    :as m}]
+  (fn [lc rc label side-label]
+    (let [{:keys [label-str
+                  label-char-count
+                  label-pd-str
+                  label-pd-str-count]}
+          (label-profile (assoc m :label label :pd pd-left))
+
+          {side-label-str          :label-str
+           side-label-char-count   :label-char-count
+           side-label-pd-str       :label-pd-str
+           side-label-pd-str-count :label-pd-str-count}
+          (label-profile (assoc m :label side-label :pd pd-right))
+
+          middle-border
+          (colored-border
+           (util/sjr (- cols
+                        2
+                        label-pd-str-count
+                        label-char-count
+                        side-label-char-count
+                        side-label-pd-str-count)
+                     horizontal-border-char)
+           colorway)]
+      ;; Assemble the border pieces
+      (str (colored-border (corner-border-char lc) colorway)
+           label-pd-str
+           label-str
+           middle-border
+           side-label-str
+           side-label-pd-str
+           (colored-border (corner-border-char rc) colorway)))))
+
+
+(defn boxed-callout
+  "Creates a callout with a border on all sides"
+  ([s] (boxed-callout s nil))
+  ([s {:keys     [width
+                  max-width
+                  min-width
+                  border-char
+                  vertical-border-char
+                  horizontal-border-char
+                  box-drawing-style
+                  colorway
+                  label
+                  side-label]
+       pd-top    :padding-top
+       pd-bottom :padding-bottom
+       pd-left   :padding-left
+       pd-right  :padding-right
+       pd-block  :padding-block
+       pd-inline :padding-inline
+       :as       m}]
+   (let [box-drawing-style          (if box-drawing-style
+                                      (or (maybe box-drawing-style box-drawing-styles)
+                                          :thin-round)
+                                      (when-not (or (string? border-char)
+                                                    (and (string? vertical-border-char)
+                                                         (string? horizontal-border-char)))
+                                        :thin-round))
+         vertical-border-char       (-> (or (some->> box-drawing-style (-> bdc :v))
+                                            vertical-border-char
+                                            border-char
+                                            bdc)
+                                        (colored-border colorway))
+         vertical-border-char-count (adjusted-char-count vertical-border-char)
+         horizontal-border-char     (or (some->> box-drawing-style (-> bdc :h))
+                                        (let [c (as-str
+                                                 (or horizontal-border-char
+                                                     border-char
+                                                     bdc))]
+                                          (if (< 1 (count c))
+                                            (subs c 0 1)
+                                            c)))
+         pd-block                   (or (maybe pd-block pos-int?) 1)
+         pd-inline                  (or (maybe pd-inline pos-int?) 2)
+         pd-top                     (or (maybe pd-top pos-int?) pd-block)
+         pd-bottom                  (or (maybe pd-bottom pos-int?) pd-block)
+         pd-hrz                     #(min (or (maybe % pos-int?) pd-inline) 10)
+         pd-right                   (pd-hrz pd-right)
+         pd-left                    (pd-hrz pd-left)
+         terminal-width             #?(:cljs
+                                       60
+                                       :clj
+                                       (let [min-width (or (maybe min-width pos-int?)
+                                                           17)
+                                             tw        (some-> (util/get-terminal-width)
+                                                               (maybe pos-int?))
+                                             tw        (cond (< tw min-width)
+                                                             min-width
+                                                             (some-> max-width
+                                                                     (maybe pos-int?) 
+                                                                     (< tw))
+                                                             max-width
+                                                             :else tw)]
+                                         (or tw 80)))
+         cols                       (or width terminal-width)
+         max-inner-cols             (- cols
+                                       pd-left
+                                       pd-right
+                                       (* 2 vertical-border-char-count))
+         pd-left-str                (util/sjr pd-left " ")
+         start                      (str vertical-border-char pd-left-str)
+         start-count                (adjusted-char-count start)
+         pd-ln                      (str vertical-border-char
+                                         (util/sjr (- cols
+                                                      (* 2 vertical-border-char-count))
+                                                   " ")
+                                         vertical-border-char
+                                         "\n")
+         pd-top-ln                  (util/sjr pd-top pd-ln)
+         pd-bottom-ln               (util/sjr pd-bottom pd-ln)
+         corner-border-char         #(or (some->> box-drawing-style (-> bdc %))
+                                         horizontal-border-char)
+         block-border               (block-border* (keyed [pd-left
+                                                           pd-right
+                                                           horizontal-border-char
+                                                           colorway
+                                                           cols
+                                                           corner-border-char]))
+         label                      (as-str label)
+         truncated-label            (some-> label
+                                            (maybe #(< (- cols 4) (count %)))
+                                            (subs 0 (- cols (+ 4 3)))
+                                            (str "..."))
+         label                      (or truncated-label label)
+         side-label                 (as-str side-label)
+         truncated-side-label       (when-not label
+                                      (some-> side-label
+                                              (maybe #(< (- cols 2) (count %)))
+                                              (subs 0 (- cols (+ 2 3)))
+                                              (str "...")))
+         side-label-for-border      (when-not truncated-label
+                                      (when side-label
+                                        (if label
+                                          (when (< 4 (- cols (+ (adjusted-char-count label)
+                                                                (adjusted-char-count side-label)
+                                                                4)))
+                                            side-label)
+                                          truncated-side-label)))
+         top-border                 (colored-border (block-border :tl :tr label side-label-for-border)
+                                                    colorway)
+         bottom-border              (colored-border (block-border :bl :br nil nil)
+                                                    colorway)
+         ;;  lns                    (lines-with-wrapped s max-inner-cols)
+         body-with-maybe-side-label (str (when (and side-label (not side-label-for-border))
+                                           (str side-label "\n\n"))
+                                         s)
+         lns                        (string/split
+                                     (wrapped-string body-with-maybe-side-label
+                                                     {:max-width max-inner-cols})
+                                     #"\n")]
+     (str top-border
+          "\n"
+          pd-top-ln
+          (string/join
+           "\n"
+           (mapv (fn [ln]
+                   (str start
+                        ln
+                        (util/sjr (- cols
+                                     (+ start-count (adjusted-char-count ln))
+                                     vertical-border-char-count)
+                                  " ")
+                        vertical-border-char))
+                 lns))
+          "\n"
+          pd-bottom-ln
+          bottom-border))))
+
+;; -----------------------------------------------------------------------------
+;; Boxed callout end 
+;; -----------------------------------------------------------------------------
+
+
 (def rainbow-colors
   ["red" "orange" "yellow" "green" "black" "white" "blue" "purple" "magenta"])
 
@@ -1182,212 +1514,139 @@
             "system-purple"
             "system-fuchsia"]))
 
+(defn- border-left-str [theme gutter-str]
+  (case theme
+    "sideline"
+    "│"
+    "sideline-bold"
+    "┃"
+    "gutter"
+    gutter-str
+    "rainbow-gutter"
+    gutter-str
+    " "))
+
 (defn callout*
-  [{:keys [theme] :as m}]
-  (let [char                   defs/gutter-char
-        border-style           {:color    (:color m)
-                                :contrast :medium}
-        gutter?                (= "gutter" theme)
-        rainbow?               (= "rainbow-gutter" theme)
-        gutter-str             (if rainbow? 
-                                 (bling [{:color (last rainbow-colors)} char])
-                                 (bling [border-style char]))
-        rainbow-gutter-str     (apply bling
-                                      (for [s (drop-last rainbow-colors)]
-                                        [{:color s} char]))
-        rainbow-gutter-str-odd (apply bling
-                                      (for [s (drop-last rainbow-colors-system)]
-                                        [{:color s} char]))
-        cr                     (fn [k ch] (char-repeat (or (k m) 0) ch))
-        gutter-str-zero        (bling [border-style
-                                       (string/join 
-                                        (cr :margin-left
-                                            defs/gutter-char-lower-seven-eighths))])
-        margin-left-str-zero   gutter-str-zero
-        border-left-str-zero   defs/gutter-char-lower-seven-eighths
-        s                      (ansi-callout-str
-                                (merge
-                                 m
-                                 {:border-style      border-style
-                                  :border-left-str   (case theme
-                                                       "sideline"
-                                                       "│"
-                                                       "sideline-bold"
-                                                       "┃"
-                                                       "gutter"
-                                                       gutter-str
-                                                       "rainbow-gutter"
-                                                       gutter-str
-                                                       " ")
-                                  :padding-left-str  (cr :padding-left " ")
-                                  :margin-left-str   (if rainbow?
-                                                       rainbow-gutter-str
-                                                       (cr
-                                                        :margin-left
-                                                        (case theme
-                                                          "gutter"
-                                                          gutter-str
-                                                          "rainbow-gutter"
-                                                          rainbow-gutter-str
-                                                          " ")))
-                                  :margin-top-str    (cr :margin-top "\n")
-                                  :margin-bottom-str (cr :margin-bottom "\n")}
-                                 
-                                 (when rainbow?
-                                   {:margin-left-str-odd rainbow-gutter-str-odd})
-                                 (when gutter?
-                                   (keyed [margin-left-str-zero
-                                           border-left-str-zero]))))]
-    (if (true? (:data? m))
-      s
-      (some-> s println))))
+  [{:keys [theme]
+    :as   m}]
+  (if (= "boxed" theme)
+    (let [s (boxed-callout (:value m) m)]
+      (if (true? (:data? m))
+        s
+        (some-> s println)))
+    (let [char
+          defs/gutter-char
+
+          border-style
+          {:color    (:color m)
+           :contrast :medium}
+
+          gutter?
+          (= "gutter" theme)
+
+          rainbow?
+          (= "rainbow-gutter" theme)
+
+          gutter-str
+          (if rainbow?
+            (bling [{:color (last rainbow-colors)} char])
+            (bling [border-style char]))
+
+          rainbow-gutter-str
+          (apply bling
+                 (for [s (drop-last rainbow-colors)]
+                   [{:color s} char]))
+
+          rainbow-gutter-str-odd
+          (apply bling
+                 (for [s (drop-last rainbow-colors-system)]
+                   [{:color s} char]))
+
+          cr
+          (fn [k ch] (char-repeat (or (k m) 0) ch))
+
+          gutter-str-zero
+          (bling [border-style
+                  (string/join
+                   (cr :margin-left
+                       defs/gutter-char-lower-seven-eighths))])
+
+          margin-left-str-zero
+          gutter-str-zero
+
+          border-left-str-zero
+          defs/gutter-char-lower-seven-eighths
+
+          margin-left-str
+          (if rainbow?
+            rainbow-gutter-str
+            (cr
+             :margin-left
+             (case theme
+               "gutter"         gutter-str
+               "rainbow-gutter" rainbow-gutter-str
+               " ")))
+
+          s
+          (ansi-callout-str
+           (merge
+            m
+            {:border-style      border-style
+             :border-left-str   (border-left-str theme gutter-str)
+             :padding-left-str  (cr :padding-left " ")
+             :margin-left-str   margin-left-str
+             :margin-top-str    (cr :margin-top "\n")
+             :margin-bottom-str (cr :margin-bottom "\n")}
+
+            (when rainbow?
+              {:margin-left-str-odd rainbow-gutter-str-odd})
+            (when gutter?
+              (keyed [margin-left-str-zero
+                      border-left-str-zero]))))]
+      (if (or (:browser-dev-console? m)
+              (true? (:data? m)))
+        s
+        (some-> s println)))))
 
 #?(:cljs
-   (do 
-     (defn enriched->js-arr [value label padding-top padding-bottom-str]
-       (let [rich-value?  (instance? Enriched value)
-             rich-label?  (instance? Enriched label)
-             tagged       (if rich-value?
-                            (goog.object/get value "tagged")
-                            value)
-             css          (if rich-value?
-                            (goog.object/get value "css")
-                            #js[])
-             label-tagged (some-> (if rich-label?
-                                    (goog.object/get label "tagged")
-                                    label)
-                                  (str "\n"))
-             label-css    (if rich-label?
-                            (goog.object/get label "css")
-                            #js[])
-             arr          (.concat #js[(str label-tagged
-                                            padding-top
-                                            tagged
-                                            padding-bottom-str)]
-                                   (.concat label-css css))]
-         arr))
+   (do
+     (defn ^:public print-to-browser-dev-console [s]
+       (->> s
+            bling.browser/ansi-sgr-string->browser-dev-console-array
+            (.apply js/console.log js/console)))
+
+     (defn- browser-callout-label
+       [{:keys [margin-top label label-theme side-label color]
+         :as m}]
+       (let [border-style {:color    color
+                           :contrast :medium}
+             pipe?        (= label-theme "pipe")]
+         (bling (when (pos? margin-top)
+                  (string/join (repeat margin-top "\n")))
+                (when pipe? [border-style "══"])
+                [:bold (some->> label (str (when pipe? " ")))]
+                (when pipe? " ")
+                (when pipe? [border-style "════"])
+                (some->> side-label (str " ")))))
 
      (defn padding-block [n warning-or-error?]
-       (if (pos-int? n) (char-repeat n "\n") (when warning-or-error? "\n")))))
+       (if (pos-int? n) (char-repeat n "\n") (when warning-or-error? "\n")))
 
-#?(:cljs
-   (defn browser-callout
-         [{:keys [value
-                  side-label
-                  label
-                  label-theme
-                  warning?
-                  error?
-                  padding-bottom
-                  padding-top
-                  margin-top
-                  data?]
-           :as   m}]
-         (let [f                  (cond warning? 
-                                        (.-warn js/console)
-                                        error?
-                                        (.-error js/console)
-                                        :else
-                                        (.-log js/console))
-               warning-or-error?  (or warning? error?)
-               semantic-type?     (or warning-or-error?)
-               padding-bottom-str (padding-block padding-bottom
-                                                 warning-or-error?)
-               padding-top-str    (padding-block padding-top 
-                                                 semantic-type?)
-               #_#_arr                (cond
-                                        (or (instance? Enriched value) 
-                                            (instance? Enriched label))
-                                    ;; Either the label or body is enriched
-                                        (enriched->js-arr value
-                                                          label
-                                                          padding-top-str
-                                                          padding-bottom-str)
-                                        
-                                    ;; Nothing is enriched
-                                    ;; The empty string in the css slot needs to
-                                    ;; be there in order to properly add a
-                                    ;; single newline.
-                                        :else
-                                        #js[(str (if (coll? label)
-                                                   (some-> label
-                                                           (util/shortened 50)
-                                                           (str "\n"))
-                                                   (some-> label 
-                                                           (str "\n")))
-                                                 padding-top-str
-                                                 (str value)
-                                                 padding-bottom-str)
-                                            ""])
-               
-               border-style           
-               {:color    (:color m)
-                :contrast :medium}
+     (defn browser-callout
+       [{:keys [value
+                warning?
+                error?
+                padding-bottom
+                padding-top]
+         :as   m}]
+       (let [warning-or-error?  (or warning? error?)
+             semantic-type?     (or warning-or-error?)
+             padding-bottom-str (padding-block padding-bottom warning-or-error?)
+             padding-top-str    (padding-block padding-top semantic-type?)
+             label              (browser-callout-label m)
+             body               (str padding-top-str value padding-bottom-str)]
+         (print-to-browser-dev-console (str label "\n" body))))))
 
-               ;; TODO - Add a :pipe label theme, which will opt-in to the pipe style below
-               pipe?
-               (= label-theme "pipe")
-
-               label
-               (bling (when (pos? margin-top) 
-                        (string/join (repeat margin-top "\n")) )
-                      (when pipe? [border-style "══"])
-                      [:bold (some->> label (str (when pipe? " ")))]
-                      (when pipe? " ")
-                      (when pipe? [border-style "════"])
-                      (some->> side-label (str " ")))
-
-               args
-               (concat [label "\n" padding-top-str] value [padding-bottom-str])
-
-               {:keys [tagged css]}
-               (reduce (fn [acc arg]
-                         #_(js/console.log arg)
-                         (cond 
-                           (instance? Enriched arg)
-                           (assoc acc
-                                  :tagged
-                                  (conj (:tagged acc) (.-tagged arg))
-                                  :css
-                                  (.concat (:css acc) (.-css arg)))
-
-                           (and (map? arg)
-                                (every? #(contains? arg %)
-                                        [:ns-str
-                                         :quoted-form
-                                         :file-info-str
-                                         :formatted+
-                                         :formatted]))
-                           (assoc acc
-                                  :tagged
-                                  (conj (:tagged acc)
-                                        (-> arg
-                                            :formatted 
-                                            :string))
-                                  :css
-                                  (.concat (:css acc) 
-                                           (-> arg
-                                               :formatted
-                                               :css-styles 
-                                               into-array)))
-                           
-                           :else
-                           {:tagged (conj (:tagged acc) (str arg))
-                            :css    (.concat (:css acc) #js[])}
-                           ))
-                       {:tagged []
-                        :css    #js[]}
-                       args)]
-
-           (.apply f js/console (.concat #js[(string/join tagged)]
-                                         css))
-
-           #_(if (true? data?)
-               "hi"
-               arr
-               (.apply f js/console arr)
-
-               ))))
 
 (defn- default-opt [m k strs default]
   (or (some-> (k m)
@@ -1419,10 +1678,10 @@
     (if blank-string-supplied?
       ;; Blank string is a force-nil situation (in event a :type is provided) 
       nil
-      (or 
+      (or
        ;; default to type if no label supplied, but :type provided
        (when nothing-supplied? default-label-based-on-callout-type)
-       supplied-coll-label-shortened 
+       supplied-coll-label-shortened
        label))))
 
 
@@ -1436,10 +1695,10 @@
     pl))
 
 
-(defn- resolve-padding-top 
+(defn- resolve-padding-top
   [theme f]
   #?(:cljs (f :padding-top 0)
-     :clj  (if (contains? #{"gutter" "rainbow-gutter"} theme)
+     :clj  (if (contains? #{"gutter" "rainbow-gutter" "minimal"} theme)
              (f :padding-top 0)
              (f :padding-top 0))))
 
@@ -1452,7 +1711,8 @@
                                   "sideline-bold"
                                   "gutter"
                                   "rainbow-gutter"
-                                  "minimal"}
+                                  "minimal"
+                                  "boxed"}
                                 "sideline")
     sideline-theme? (contains? #{"sideline" "sideline-bold"} theme)
     label-theme    (or (default-opt m
@@ -1486,15 +1746,15 @@
                      label*)
     side-label      (some-> m
                             :side-label
-                            (maybe string?)) 
+                            (maybe string?))
     border-block-length (let [bbl (:border-block-length m)]
                           (or (when (pos-int? bbl) bbl) 50))
-     ;; TODO maybe see if label is blinged and if not, bold it.
+    ;; TODO maybe see if label is blinged and if not, bold it.
      ;label         (if label-is-blinged? label (bling [:bold label]))
     ]))
 
-                                        
-                                        
+
+
 ;;         CCCCCCCCCCCCC     OOOOOOOOO     
 ;;      CCC::::::::::::C   OO:::::::::OO   
 ;;    CC:::::::::::::::C OO:::::::::::::OO 
@@ -1511,7 +1771,7 @@
 ;;    CC:::::::::::::::C OO:::::::::::::OO 
 ;;      CCC::::::::::::C   OO:::::::::OO   
 ;;         CCCCCCCCCCCCC     OOOOOOOOO     
-                                      
+
 
 ;; TODO - Shoul we create callout-data as sugar for (callout {... data? true ...} ...)
 ;; TODO - visual tests
@@ -1577,30 +1837,27 @@
   ;; TODO finish making this multi-arity
   ;; test in clj and cljs
   ;; make it work with bling.explain/explain-malli
-  
+
 
   ;; TODO colorway can take arbitrary hex?
   ([x & args]
    (if (empty? args)
      (cond
-     ;; The case when user just passes a :label value, so just border and text
+       ;; The case when user just passes a :label value, so just border and text
        (map? x)
        (callout x nil)
 
-     ;; The case when user just passes a string, or an instance of an Enriched (bling) object (cljs)
-       #?(:cljs
-          (or (string? x) (instance? Enriched x))
-          :clj
-          (string? x))
+       ;; The case when user just passes a string
+       (string? x)
        (callout {} x)
 
-     ;; Internal warning from bling about bad args
+       ;; Internal warning from bling about bad args
        :else
        (callout
         {:type        :warning
          :theme       :sideline-bold
          :label-theme :marquee}
-       ;; TODO - this is messy formatiing for data-structures, fix
+        ;; TODO - this is messy formatiing for data-structures, fix
         (point-of-interest
          {:type   :warning
           :header "bling.core/callout"
@@ -1612,7 +1869,7 @@
                        "Nothing will be printed.")})))
 
      (if-not (map? x)
-     ;; Internal warning from bling about bad args
+       ;; Internal warning from bling about bad args
        (callout
         {:type :warning}
         (point-of-interest
@@ -1623,102 +1880,68 @@
                        "followed by any number of values (usually strings).\n\n"
                        "Nothing will be printed.")}))
        (let [opts          x
-            ;;  value         (some-> args (maybe #(not (string/blank? %))))
+             ;;  value         (some-> args (maybe #(not (string/blank? %))))
              callout-opts  (callout-opts* opts)
-             callout-opts+ (merge {:value #?(:cljs args
-                                             :clj (string/join "" args))}
+             callout-opts+ (merge {:value (string/join "" args)}
                                   opts
                                   callout-opts)]
          #?(:cljs
             (if node?                                                           ;; TODO <- move to enriched or data
               (callout* callout-opts+)
-              (browser-callout callout-opts+))
+              (do 
+                (-> (callout* (assoc callout-opts+ :browser-dev-console? true))
+                    browser/print-to-browser-dev-console)
+                #_(browser-callout callout-opts+)))
 
             :clj
-            (callout* callout-opts+)))) 
-     
-     ))
-  #_([opts value]
-   (if-not (map? opts)
-     ;; Internal warning from bling about bad args
-     (callout
-       {:type :warning}
-       (point-of-interest
-         {:type   :warning
-          :header "bling.core/callout"
-          :form   (cons 'callout (list opts value))
-          :body   (str "bling-core/callout expects a map of options,\n"
-                       "followed by any number of values (usually strings).\n\n"
-                       "Nothing will be printed.")}))
-     (let [value         (some-> value (maybe #(not (string/blank? %))))
-           callout-opts  (callout-opts* opts)
-           callout-opts+  (merge {:value value}
-                                opts
-                                callout-opts)]
-       #?(:cljs
-          (if node?                                                             ;; TODO <- move to enriched or data
-            (callout* callout-opts+)
-            (browser-callout callout-opts+))
-
-          :clj
-          (callout* callout-opts+))))))
+            (callout* callout-opts+)))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Enriched text public fns and helpers  
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Enriched text public fns and helpers  --------------------------------------
 
 
 (defn- ^:private tagged-str
-  "Expects an EnrichedText record.
-   In Clojure, returns string wrapped with appropriate sgr codes for rich
-   printing. In ClojureScript, returns a string wrapped in style escape
-   chars (%c)."
+  "Expects an EnrichedText record. Returns string wrapped with appropriate ANSI
+   SGR codes for styling."
   [o]
-  (let [f #(str (->> %
-                     :style
-                     (reduce-colors-to-sgr-or-css :sgr)
-                     m->sgr)
-                (:value %)
-                "\033[0;m")]
-
-    #?(:cljs
-       (if node? (f o) (str "%c" (:value o) "%c"))
-       :clj
-       (f o))))
+  (str (->> o
+            :style
+            reduce-colors-to-sgr
+            m->sgr)
+       (:value o)
+       "\033[0;m"))
 
 
-(defn- tag->map [acc s]
-  (let [kvs (case s
-              "bold"             [[:font-weight "bold"]]
-              "italic"           [[:font-style "italic"]]
-              "underline"        [[:text-decoration "underline"]]
-              "solid-underline"  [[:text-decoration "underline"]]
-              "double-underline" [[:text-decoration-line "underline"]
-                                  [:text-decoration-style "double"]]
-              "wavy-underline"   [[:text-decoration-line "underline"]
-                                  [:text-decoration-style "wavy"]]
-              "dotted-underline" [[:text-decoration-line "underline"]
-                                  [:text-decoration-style "dotted"]]
-              "dashed-underline" [[:text-decoration-line "underline"]
-                                  [:text-decoration-style "dashed"]]
-              "strikethrough"    [[:text-decoration "line-through"]]
-              (let [cs (:all color-codes)
-                    m  (get cs s nil)]
-                (if m
-                  [[:color m]]
-                  (when-let [nm (string/replace s #"-bg$" "")]
-                    (when-let [m (get cs nm nil)]
-                      [[:background-color m]])))))]
-    (if kvs
-      (reduce (fn [acc [k m]] (assoc acc k m)) acc kvs)
-      acc)))
+(defn- tag->map
+  ([acc s]
+   (tag->map false acc s))
+  ([use-color-string? acc s]
+   (let [kvs (case s
+               "bold"             [[:font-weight "bold"]]
+               "italic"           [[:font-style "italic"]]
+               "underline"        [[:text-decoration "underline"]]
+               "solid-underline"  [[:text-decoration "underline"]]
+               "double-underline" [[:text-decoration-line "underline"]
+                                   [:text-decoration-style "double"]]
+               "wavy-underline"   [[:text-decoration-line "underline"]
+                                   [:text-decoration-style "wavy"]]
+               "dotted-underline" [[:text-decoration-line "underline"]
+                                   [:text-decoration-style "dotted"]]
+               "dashed-underline" [[:text-decoration-line "underline"]
+                                   [:text-decoration-style "dashed"]]
+               "strikethrough"    [[:text-decoration "line-through"]]
+               (let [cs (:all color-codes)
+                     m  (get cs s nil)]
+                 (if m
+                   [[:color (if use-color-string? s m)]]
+                   (when-let [nm (string/replace s #"-bg$" "")]
+                     (when-let [m (get cs nm nil)]
+                       [[:background-color (if use-color-string? nm m)]])))))]
+     (if kvs
+       (reduce (fn [acc [k m]] (assoc acc k m)) acc kvs)
+       acc))))
 
 
 (defrecord EnrichedText [value style])
@@ -1756,167 +1979,231 @@
                         :value \"hi\"}"
   [[style v]]
   (let [[style v] #?(:cljs
-                     (if node? 
-                       (href-console style v)
-                       (href-browser-dev-console style v))
+                     (let [f (if node? href-console href-browser-dev-console)]
+                       (f style v))
                      :clj
                      (href-console style v))]
     (->EnrichedText
      (str v)
      (let [m (cond
+               ;; The style is provided as a map e.g.
+               ;; (bling [{:font-weight      :bold
+               ;;          :font-style       :italic
+               ;;          :color            :red
+               ;;          :background-color :yellow-bg
+               ;;          :text-decoration  :wavy-underline}
+               ;;         "Hello"])
                (map? style)
+               ;; TODO - can this be more performant?
                (reduce-kv convert-color {} style)
 
-               (or (keyword? style)
-                   (string? style))
+               ;; The style is provided as a tokenized kw e.g. 
+               ;; (bling [:bold.red.wavy-underline "Hello"])
+               (keyword? style)
                (-> style
                    name
-                   (string/split (if (keyword? style)
-                                   #"\."
-                                   #" "))
+                   (string/split #"\.")
                    (->> (reduce tag->map {}))))]
        (if (and defs/no-color? (map? m))
          (dissoc m :color :background-color)
          m)))))
 
 
-(defn- reorder-text-decoration-shorthand [style]
-  (if-let [td (or (get style :text-decoration)
-                  (get style "text-decoration"))]
-    (->> (reduce-kv (fn [acc k v]
-                      (conj acc k v))
-                    [:text-decoration td]
-                    (dissoc style :text-decoration))
-         (apply array-map)) 
-    style))
-
-
-(defn- updated-css [css-styles x]
-  (if-let [style (some-> x
-                         (maybe et-vec?)
-                         enriched-text
-                         :style)]
-    (let [style  (->> (select-keys style browser-dev-console-props)
-                      (reduce-colors-to-sgr-or-css :css)
-                      (reorder-text-decoration-shorthand))
-          ks     (keys style)
-          resets (reduce (fn [acc k]
-                           (assoc acc k "initial"))
-                         {}
-                         ks)]
-
-      ;; (prn {:style* style*
-      ;;       :style  style
-      ;;       ;; :ks     ks
-      ;;       ;; :resets ks
-      ;;       })
-
-      (conj css-styles
-            (css-stylemap->str style)
-            (css-stylemap->str resets)))
-    css-styles))
-
-
 (defn- enriched-data-inner
-  [[coll css] x]
+  [coll x]
   (let [s (cond (et-vec? x)
                 (tagged-str (enriched-text x))
                 (not (coll? x))
                 (as-str x))]
-    [(conj coll s)
-     (updated-css css x)]))
+    (conj coll s)))
 
 
-(defn bling-data* [args]
-  (let [[coll css] (reduce enriched-data-inner
-                           [[] []]
-                           args)
+;; Hiccup w nested styles, supports :p elements ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn- tags->maps [coll]
+  (walk/postwalk
+   (fn [x]
+     (if-let [k (some-> x
+                        (maybe vector?)
+                        (nth 0 nil)
+                        (maybe keyword?))]
+       (if (= [:br] x)
+         "\n"
+         (into [(-> k
+                    name
+                    (string/split #"\.")
+                    (->> (reduce (partial tag->map true) {})))]
+               (rest x)))
+       x))
+   coll))
+
+
+(defn- get-style-map [x]
+  (some-> x
+          (maybe vector?)
+          (nth 0 nil)
+          (maybe map?)))
+
+
+(defn- wrapped-val? [x]
+  (boolean (some-> x
+                   (maybe vector?)
+                   (maybe #(= 2 (count %)))
+                   (nth 0 nil)
+                   (maybe map?))))
+
+
+(defn- nest-styles [coll]
+  (walk/prewalk
+   (fn [x]
+     (if-let [m (get-style-map x)]
+       ;; If it is a vector with multiple things
+       (mapv (fn [v]
+               (if-let [m2 (get-style-map v)]
+                 (into [(merge m m2)] (rest v))
+                 v))
+             x)
+       x))
+   coll))
+
+
+(defn- wrap-naked-strings [coll]
+  (walk/postwalk
+   (fn [x]
+     (if-let [m (get-style-map x)]
+       (if (and (< 2 (count x))
+                (some #(not (coll? %)) x))
+         (mapv #(if (not (coll? %))
+                  [m %]
+                  %)
+               (rest x))
+         x)
+       x))
+   coll))
+
+
+(defn- rollup [acc coll]
+  (reduce
+   (fn [acc x]
+     (cond
+       (and (vector? x)
+            (every? wrapped-val? x))
+       (apply conj acc x)
+
+       (wrapped-val? x)
+       (conj acc x)
+
+       (vector? x)
+       (rollup acc x)
+
+       (not (coll? x))
+       (conj acc x)
+
+       :else
+       acc))
+   acc
+   coll))
+
+
+(defn- p-tag-match* [x]
+  (some-> x
+          (maybe vector?)
+          (nth 0 nil)
+          (maybe keyword?)
+          name
+          (->> (re-find #"^p(?:\.(\S+))?"))))
+
+
+(defn- p-tag* [x]
+  (when-let [tag
+             (p-tag-match* x)]
+    (or (some-> tag second keyword)
+        :normal)))
+
+
+(defn- padded-paragraphs
+  "Normalizes any :p vectors, adding 2 newlines to end of vector, unless the
+   :p vector is the last arg.
+   
+   Example:
+
+   (padded-paragraphs 
+    [[:p.bold 
+      \"foo\"
+      [:red \"bar\"]]
+     \"baz\"])
+   =>
+   [[:bold 
+     \"foo\"
+     [:red \"bar\"]
+     \"\n\n\"]
+    \"baz\"]"
+  [args]
+  (let [last-index (dec (count args))]
+    (into []
+          (map-indexed (fn [i x]
+                         (if-let [tag (p-tag* x)]
+                           (into [tag]
+                                 (concat (rest x)
+                                         (when-not (= i last-index)
+                                           ["\n" "\n"])))
+                           x))
+                       args))))
+
+
+(defn- nested->flat
+  "Hydrates args that are :p elements and flattens nested bling hiccup vectors"
+  [args]
+  (-> args
+      padded-paragraphs
+      tags->maps
+      nest-styles
+      wrap-naked-strings
+      (->> (rollup []))
+      ;; Maybe unwrap vals here if {:font-style :normal}, for perf
+      ))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn- contains-nested? [args]
+  (some #(when (vector? %)
+           (or (some-> (nth % 0 nil) (= :p))
+               (some vector? %)))
+        args))
+
+(defn- bling-data* [args]
+  (let [args   (if (contains-nested? args)
+                 (nested->flat (into [] args))
+                 args)
+        coll   (reduce enriched-data-inner [] args)
         tagged (string/join coll)]
 
-    #_#?(:cljs
-       (js/console.log css)
-       :clj
-       (println css))
-    
-    {:console-array (into-array (util/concatv [tagged] css))
-     :tagged        tagged
-     :css           css
-     :args          args}))
-
-
-(defn ^:public bling-data [coll]
-  #?(:cljs
-     (if node?
-       (-> coll bling-data* :tagged)
-       (bling-data* coll))
-     :clj
-     (-> coll bling-data* :tagged)))
-
-
-(defn ^:public bling-data-css [coll]
-  (-> coll bling-data* :css))
+    {:tagged tagged
+     :args   args}))
 
 
 (defn ^:public bling
-  "In a terminal emulator context, returns a string tagged with SGR codes to
-   style the text as desired.
-   
-   In a browser context, returns an object, which is an instance of
-   `bling.core/Enriched`, a js object with the the following fields:
-
-   `tagged`
-   A string with the appropriate tags for styling in browser consoles
-  
-   `css`
-   An array of styles that sync with the tagged string.
-
-   `args`
-   A ClojureScript vector of the original args.
-
-   `consoleArray`
-   An array by `Array.unshift`ing the tagged string onto the css array.
-   This is the format that is needed for printing in a browser console, e.g.
-   `(.apply js/console.log js/console (goog.object/get o \"consoleArray\"))`.
-
-   For browser usage, sugar for the above `.apply` call is provided with
-   `bling.core/print-bling`. You can use it like this:
-   `(print-bling (bling [:bold.blue \"my blue text\"]))`"
-
+  "Giving any number of strings or hiccup-like vectors, returns a string tagged
+   with ANSI SGR codes to style the text as desired."
   [& coll]
+  #_(!? :js (-> coll bling-data* :tagged))
+  (-> coll bling-data* :tagged))
 
-  (let [coll coll #_(hiccup->coll-of-strs-and-hiccup)
-        f    #(:tagged (bling-data* coll))]
+(defn ^:public print-bling
+  "In JVM Clojure, cljs(Node), and bb, `print-bling` is sugar for:
+   (println (bling [:bold.blue \"my blue text\"]))
+
+   In cljs (browser dev consoles), `print-bling` is sugar for the the following:
+   `(->> (bling [:bold.blue \"my blue text\"])
+         bling.browser/ansi-sgr-string->browser-dev-console-array
+         (.apply js/console.log js/console))`
+
+  Example:
+  `(print-bling [:bold.blue \"my blue text\"])"
+  [& args]
+  (let [bling-str (apply bling args)]
     #?(:cljs
        (if node?
-         (f)
-         (let [{:keys [css tagged console-array args]} (bling-data* coll)]
-              ;;  (js/console.log "tagged:" tagged)
-              ;;  (js/console.log "css:" css)
-              ;;  (js/console.log "console-array:" console-array)
-              ;;  (.apply js/console.log js/console js-arr)
-              (Enriched. tagged
-                         (into-array css)
-                         console-array
-                         args)))
-       :clj (f))))
-
-#?(:cljs
-   (defn ^:public print-bling
-     "For browser usage, sugar for the the following:
-      `(.apply js/console.log js/console (goog.object/get o \"consoleArray\"))`
-
-      Example:
-      `(print-bling (bling [:bold.blue \"my blue text\"]))"
-     [& args]
-     (if node?
-       (println (apply bling args))
-       (let [o (apply bling args)]
-         (.apply js/console.log
-                 js/console 
-                 (goog.object/get o "consoleArray")))))
-
-   :clj
-   (defn ^:public print-bling
-     "Equivalent to (println (apply bling args))"
-     [& args]
-     (println (apply bling args))))
+         (println bling-str)
+         (print-to-browser-dev-console bling-str))
+       :clj
+       (println bling-str))))

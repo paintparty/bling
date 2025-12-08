@@ -3,6 +3,11 @@
            :extra-deps       {io.github.paintparty/bling   
                               {:local/root "."}
 
+                              io.github.paintparty/fireworks  
+                              ;; {:mvn/version "0.17.0"}
+                              ;; For local dev / testing only
+                              {:local/root "./../fireworks"}
+
                               io.github.cognitect-labs/test-runner
                               {:git/tag "v0.5.1"
                                :git/sha "dfb30dd"}}
