@@ -8,12 +8,13 @@
             [bling.defs :as defs]
             [bling.macros :refer [let-map keyed]]
             [bling.util :as util :refer [maybe]]
-            [fireworks.core :refer [? !? ?> !?> pprint]]
 
             #?(:cljs [bling.js-env :refer [node?]])
             ;; TODO - eliminate goog.object req
             #?(:cljs [goog.object])
-            ))
+            
+            [bling.browser :as browser]))
+
 
 (declare xterm-colors-by-id)
 
@@ -1193,45 +1194,6 @@
 
 (def box-drawing-styles (into #{} (-> bdc :h keys)))
 
-(defn string->wrapped-string-coll
-  "Expects cols to be an int representing the max number of cols available per
-   line. Expects s to be a string. Returns a vector of strings."
-  [cols s]
-  (loop [ln         nil
-         lns        []
-         [wd & wds] (string/split s #"\s+")]
-    (cond
-      (nil? wd)
-      (if ln
-        (conj lns ln)
-        lns)
-
-      (nil? ln)
-      (recur wd lns wds)
-
-      (<= (+ (count ln) 1 (count wd)) cols)
-      (recur (str ln " " wd) lns wds)
-
-      :else
-      (recur wd (conj lns ln) wds))))
-
-
-(defn lines-with-wrapped
-  "Given a string with line-breaks, returns a collection of strings, each string
-   representing a line.
-   
-   `max-cols` is the max width, per line. If a line exceeds the value of
-   `max-cols`, it will be wrapped into additional lines."
-  [s max-cols]
-  (reduce (fn [acc ln]
-            (into acc
-                  (if (< max-cols (count ln))
-                    (string->wrapped-string-coll max-cols ln)
-                    [ln])))
-          []
-          (string/split s #"\n")))
-
-
 (defn wrapped-string-inner
   [max-cols
    {:keys [result col]
@@ -1250,21 +1212,22 @@
                              (count word)
                              (if nl? 0 (+ col space+word-width)))]
 
-      #_(when exceeds? (prn "exceeds-"))
-      #_(? :-
-           {:print-with prn
-            :when       ansi-sgr-seq}
-           {:col              col
-            :word             word
-            :space+word       space+word
-            :space+word-width space+word-width
-            :ansi-sgr-seq     ansi-sgr-seq
-            :ansi-sgr-count   ansi-sgr-count
-            :string-to-concat string-to-concat
-            :new-col          new-col})
+      ;; #_(when exceeds? (prn "exceeds-"))
+      ;; #_(? :-
+      ;;      {:print-with prn
+      ;;       :when       ansi-sgr-seq}
+      ;;      {:col              col
+      ;;       :word             word
+      ;;       :space+word       space+word
+      ;;       :space+word-width space+word-width
+      ;;       :ansi-sgr-seq     ansi-sgr-seq
+      ;;       :ansi-sgr-count   ansi-sgr-count
+      ;;       :string-to-concat string-to-concat
+      ;;       :new-col          new-col})
 
       {:result (str result string-to-concat)
        :col    new-col})))
+
 
 (defn- wrap-single-word [max-cols s]
   (->> s
@@ -1272,7 +1235,36 @@
        (partition-all max-cols)
        (mapv string/join)))
 
+
+(defn- stub-leading-spaces [s]
+  (string/replace s #"^ +" #(util/sjr (count %) "〠")))
+
+
+(defn- with-wrapped-single-words
+  [max-width acc s]
+  (into acc
+        (if (< max-width (adjusted-char-count s))
+          (wrap-single-word max-width s)
+          [s])))
+
+
 (defn wrapped-string
+  "Given a string with line-breaks, returns a string, with additional line
+   breaks insert, such that the width of every line of text is below the
+   `max-cols` threshold."
+  [s {:keys [max-width]}]
+  (->> 
+   (string/split s #"\n")
+   (mapv #(string/split (stub-leading-spaces %) #" "))
+   (mapv #(reduce (partial with-wrapped-single-words max-width) [] %))
+   (mapv #(reduce (partial wrapped-string-inner max-width)
+                  {:result "" :col 0}
+                  %))
+   (mapv #(-> % :result (string/replace #"〠" " ")))
+   (string/join "\n")))
+
+
+(defn wrapped-stringOLD
   "Given a string with line-breaks, returns a string, with additional line
    breaks insert, such that the width of every line of text is below the
    `max-cols` threshold."
@@ -1291,27 +1283,31 @@
                    {:result "" :col 0}))
       :result))
 
-(defn- colored-border [s border-color]
-  (if border-color
-    (bling [{:color border-color} s])
+
+(defn- colored-border [s colorway]
+  (if colorway
+    (bling [{:color colorway} s])
     s))
 
+
 (defn- label-profile
-  [{:keys [pd
-           horizontal-border-char
-           border-color
-           label]}]
-  (let [label-str          (or (some-> label
+  [{:keys [pd horizontal-border-char colorway label]}]
+  (let [colorize           #(if-not (re-find ansi/sgr-re % )
+                              (bling [{:color colorway} %])
+                              %)
+        label-str          (or (some-> label
                                        (maybe string?)
+                                       (maybe #(not (string/blank? %)))
                                        (str " ")
-                                       (->> (str " ")))
+                                       (->> (str " "))
+                                       colorize)
                                "")
         label-char-count   (adjusted-char-count label-str)
         label-pd-str       (when (and (pos? label-char-count) pd)
                              (-> pd
                                  dec
                                  (util/sjr horizontal-border-char)
-                                 (colored-border border-color)))
+                                 (colored-border colorway)))
         label-pd-str-count (or (some-> label-pd-str
                                        adjusted-char-count)
                                0)]
@@ -1320,11 +1316,12 @@
             label-pd-str
             label-pd-str-count])))
 
+
 (defn- block-border*
   [{:keys [pd-left
            pd-right
            horizontal-border-char
-           border-color
+           colorway
            cols
            corner-border-char]
     :as m}]
@@ -1350,26 +1347,28 @@
                         side-label-char-count
                         side-label-pd-str-count)
                      horizontal-border-char)
-           border-color)]
+           colorway)]
       ;; Assemble the border pieces
-      (str (colored-border (corner-border-char lc) border-color)
+      (str (colored-border (corner-border-char lc) colorway)
            label-pd-str
            label-str
            middle-border
            side-label-str
            side-label-pd-str
-           (colored-border (corner-border-char rc) border-color)))))
+           (colored-border (corner-border-char rc) colorway)))))
 
 
 (defn boxed-callout
   "Creates a callout with a border on all sides"
   ([s] (boxed-callout s nil))
-  ([s {:keys     [cols
+  ([s {:keys     [width
+                  max-width
+                  min-width
                   border-char
                   vertical-border-char
                   horizontal-border-char
                   box-drawing-style
-                  border-color
+                  colorway
                   label
                   side-label]
        pd-top    :padding-top
@@ -1377,19 +1376,20 @@
        pd-left   :padding-left
        pd-right  :padding-right
        pd-block  :padding-block
-       pd-inline :padding-inline}]
+       pd-inline :padding-inline
+       :as       m}]
    (let [box-drawing-style          (if box-drawing-style
                                       (or (maybe box-drawing-style box-drawing-styles)
-                                          :thin)
+                                          :thin-round)
                                       (when-not (or (string? border-char)
                                                     (and (string? vertical-border-char)
                                                          (string? horizontal-border-char)))
-                                        :thin))
+                                        :thin-round))
          vertical-border-char       (-> (or (some->> box-drawing-style (-> bdc :v))
                                             vertical-border-char
                                             border-char
                                             bdc)
-                                        (colored-border border-color))
+                                        (colored-border colorway))
          vertical-border-char-count (adjusted-char-count vertical-border-char)
          horizontal-border-char     (or (some->> box-drawing-style (-> bdc :h))
                                         (let [c (as-str
@@ -1406,7 +1406,22 @@
          pd-hrz                     #(min (or (maybe % pos-int?) pd-inline) 10)
          pd-right                   (pd-hrz pd-right)
          pd-left                    (pd-hrz pd-left)
-         cols                       (or cols 80)
+         terminal-width             #?(:cljs
+                                       60
+                                       :clj
+                                       (let [min-width (or (maybe min-width pos-int?)
+                                                           17)
+                                             tw        (some-> (util/get-terminal-width)
+                                                               (maybe pos-int?))
+                                             tw        (cond (< tw min-width)
+                                                             min-width
+                                                             (some-> max-width
+                                                                     (maybe pos-int?) 
+                                                                     (< tw))
+                                                             max-width
+                                                             :else tw)]
+                                         (or tw 80)))
+         cols                       (or width terminal-width)
          max-inner-cols             (- cols
                                        pd-left
                                        pd-right
@@ -1427,7 +1442,7 @@
          block-border               (block-border* (keyed [pd-left
                                                            pd-right
                                                            horizontal-border-char
-                                                           border-color
+                                                           colorway
                                                            cols
                                                            corner-border-char]))
          label                      (as-str label)
@@ -1451,9 +1466,9 @@
                                             side-label)
                                           truncated-side-label)))
          top-border                 (colored-border (block-border :tl :tr label side-label-for-border)
-                                                    border-color)
+                                                    colorway)
          bottom-border              (colored-border (block-border :bl :br nil nil)
-                                                    border-color)
+                                                    colorway)
          ;;  lns                    (lines-with-wrapped s max-inner-cols)
          body-with-maybe-side-label (str (when (and side-label (not side-label-for-border))
                                            (str side-label "\n\n"))
@@ -1588,7 +1603,8 @@
             (when gutter?
               (keyed [margin-left-str-zero
                       border-left-str-zero]))))]
-      (if (true? (:data? m))
+      (if (or (:browser-dev-console? m)
+              (true? (:data? m)))
         s
         (some-> s println)))))
 
@@ -1628,12 +1644,8 @@
              padding-bottom-str (padding-block padding-bottom warning-or-error?)
              padding-top-str    (padding-block padding-top semantic-type?)
              label              (browser-callout-label m)
-             body               (str label 
-                                     "\n"
-                                     padding-top-str
-                                     value 
-                                     padding-bottom-str)]
-         (print-to-browser-dev-console body)))))
+             body               (str padding-top-str value padding-bottom-str)]
+         (print-to-browser-dev-console (str label "\n" body))))))
 
 
 (defn- default-opt [m k strs default]
@@ -1686,7 +1698,7 @@
 (defn- resolve-padding-top
   [theme f]
   #?(:cljs (f :padding-top 0)
-     :clj  (if (contains? #{"gutter" "rainbow-gutter"} theme)
+     :clj  (if (contains? #{"gutter" "rainbow-gutter" "minimal"} theme)
              (f :padding-top 0)
              (f :padding-top 0))))
 
@@ -1876,7 +1888,10 @@
          #?(:cljs
             (if node?                                                           ;; TODO <- move to enriched or data
               (callout* callout-opts+)
-              (browser-callout callout-opts+))
+              (do 
+                (-> (callout* (assoc callout-opts+ :browser-dev-console? true))
+                    browser/print-to-browser-dev-console)
+                #_(browser-callout callout-opts+)))
 
             :clj
             (callout* callout-opts+)))))))

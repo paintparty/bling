@@ -570,7 +570,7 @@
                     ["\n\n"
                      (bling [:italic "Source:"])
                      "\n\n"
-                     (bling (? indentation-str) file-info-str)
+                     (bling indentation-str file-info-str)
                      "\n\n\n"
                      (bling [:italic "Value:"])
                      "\n\n"
