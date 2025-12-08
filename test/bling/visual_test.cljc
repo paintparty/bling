@@ -118,9 +118,10 @@
          "What the hell\n"
          (hifi d))
 
-(println)
-(println)
-(callout {:colorway      :positive
+;; (println)
+;; (println)
+
+#_(callout {:colorway      :positive
           :theme         :boxed
           :label         (bling [:bold.green "Success!"])
           :side-label    "myns.app.core:11:42"
