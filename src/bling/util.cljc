@@ -1,5 +1,6 @@
 (ns bling.util
-  (:require [clojure.string :as string]))
+  (:require [clojure.string :as string]
+            #?(:clj [clojure.java.shell :as shell])))
 
 (defn maybe [x pred]
   (when (if (set? pred)
@@ -50,3 +51,40 @@
   "Concatenate `xs` and return the result as a vector."
   [& xs]
   (into [] cat xs))
+
+(defn get-terminal-width []
+  #?(:js
+     80
+    ;; TODO - Test this
+    ;;  (when (exists? js/process) 
+    ;;    (let [env            (some-> js/process .-env)
+    ;;          env            (when-not (nil? env) env)
+    ;;          stdout         (some-> js/process .-stdout)
+    ;;          stdout         (when-not (nil? stdout) stdout)
+    ;;          stderr         (some-> js/process .-stderr)
+    ;;          stderr         (when-not (nil? stderr) stderr)
+    ;;          stdout-columns (.-columns stdout)
+    ;;          stderr-columns (.-columns stderr)
+    ;;          env-columns    (.-columns env)
+    ;;          fallback       80
+    ;;          ret            (cond (pos-int? stdout-columns)
+    ;;                               stdout-columns
+    ;;                               (pos-int? stderr-columns)
+    ;;                               env-columns
+    ;;                               (js/parseInt env-columns 10)
+    ;;                               :else
+    ;;                               fallback)]
+    ;;      (if (pos-int? ret) ret fallback)))
+
+     :clj
+     (try
+       (let [{:keys [out exit]} (shell/sh "sh" "-c" "stty size </dev/tty")]
+         (if (zero? exit)
+           (let [[_ cols] (-> out
+                              clojure.string/trim
+                              (clojure.string/split #" "))]
+             (Integer/parseInt cols))
+           80)) ; fallback
+       (catch Exception e
+         80) ; fallback for error
+       )))
