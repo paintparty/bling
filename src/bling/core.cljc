@@ -351,7 +351,7 @@
 (def underline-style-codes-by-style
   {"straight" 1
    "double"   2
-   "wavy"    3
+   "wavy"     3
    "dotted"   4
    "dashed"   5})
 
@@ -1264,26 +1264,6 @@
    (string/join "\n")))
 
 
-(defn wrapped-stringOLD
-  "Given a string with line-breaks, returns a string, with additional line
-   breaks insert, such that the width of every line of text is below the
-   `max-cols` threshold."
-  [s {:keys [max-width]}]
-  ;; (prn s)
-  (-> s
-      (string/replace #"\n" " \n ")
-      (string/split #" ")
-      (->> (reduce (fn [acc s]
-                     (into acc
-                           (if (< max-width (adjusted-char-count s))
-                             (wrap-single-word max-width s)
-                             [s])))
-                   []))
-      (->> (reduce (partial wrapped-string-inner max-width)
-                   {:result "" :col 0}))
-      :result))
-
-
 (defn- colored-border [s colorway]
   (if colorway
     (bling [{:color colorway} s])
@@ -1323,82 +1303,131 @@
            horizontal-border-char
            colorway
            cols
-           corner-border-char]
-    :as m}]
-  (fn [lc rc label side-label]
-    (let [{:keys [label-str
-                  label-char-count
-                  label-pd-str
-                  label-pd-str-count]}
-          (label-profile (assoc m :label label :pd pd-left))
+           corner-border-char
+           lc                    
+           rc                    
+           label                 
+           side-label-for-border
+           shadow-level]
+    :as   m}]
+  (let [side-label
+        side-label-for-border
 
-          {side-label-str          :label-str
-           side-label-char-count   :label-char-count
-           side-label-pd-str       :label-pd-str
-           side-label-pd-str-count :label-pd-str-count}
-          (label-profile (assoc m :label side-label :pd pd-right))
+        {:keys [label-str
+                label-char-count
+                label-pd-str
+                label-pd-str-count]}
+        (label-profile (assoc m :label label :pd pd-left))
 
-          middle-border
-          (colored-border
-           (util/sjr (- cols
-                        2
-                        label-pd-str-count
-                        label-char-count
-                        side-label-char-count
-                        side-label-pd-str-count)
-                     horizontal-border-char)
-           colorway)]
-      ;; Assemble the border pieces
-      (str (colored-border (corner-border-char lc) colorway)
-           label-pd-str
-           label-str
-           middle-border
-           side-label-str
-           side-label-pd-str
-           (colored-border (corner-border-char rc) colorway)))))
+        {side-label-str          :label-str
+         side-label-char-count   :label-char-count
+         side-label-pd-str       :label-pd-str
+         side-label-pd-str-count :label-pd-str-count}
+        (label-profile (assoc m :label side-label :pd pd-right))
+
+        middle-border
+        (colored-border
+         (str (util/sjr (- cols
+                           (if (some-> shadow-level zero?)
+                             3
+                             (- 2 (or shadow-level 0)))
+                           label-pd-str-count
+                           label-char-count
+                           side-label-char-count
+                           side-label-pd-str-count)
+                        horizontal-border-char)
+              (when (some-> shadow-level zero?) "┬"))
+         colorway)]
+    ;; Assemble the border pieces
+    (str (colored-border (corner-border-char lc) colorway)
+         label-pd-str
+         label-str
+         middle-border
+         side-label-str
+         side-label-pd-str
+         (colored-border (corner-border-char rc) colorway))))
+
+(defn- resolve-terminal-width
+  [min-width max-width]
+  #?(:cljs
+     ;; TODO - make this dynamic for node
+     60
+     :clj
+     (let [min-width (or (maybe min-width pos-int?)
+                         17)
+           w         (some-> (util/get-terminal-width)
+                             (maybe pos-int?))
+           w         (cond (< w min-width)
+                           min-width
+                           (some-> max-width
+                                   (maybe pos-int?) 
+                                   (< w))
+                           max-width
+                           :else w)]
+       (or w 80))))
+
+
+(defn- border-chars
+  [{:keys [border-char
+           vertical-border-char
+           horizontal-border-char
+           box-drawing-style
+           colorway]
+    :as   m}]
+  (let [box-drawing-style          
+        (if box-drawing-style
+          (or (maybe box-drawing-style box-drawing-styles)
+              :thin-round)
+          (when-not (or (string? border-char)
+                        (and (string? vertical-border-char)
+                             (string? horizontal-border-char)))
+            :thin-round))
+
+        vertical-border-char       
+        (-> (or (some->> box-drawing-style (-> bdc :v))
+                vertical-border-char
+                border-char
+                bdc)
+            (colored-border colorway))
+
+        vertical-border-char-count 
+        (adjusted-char-count vertical-border-char)
+
+        horizontal-border-char     
+        (or (some->> box-drawing-style (-> bdc :h))
+            (let [c (as-str
+                     (or horizontal-border-char
+                         border-char
+                         bdc))]
+              (if (< 1 (count c)) (subs c 0 1) c)))]
+    (keyed [box-drawing-style          
+            vertical-border-char       
+            vertical-border-char-count 
+            horizontal-border-char])))
 
 
 (defn boxed-callout
   "Creates a callout with a border on all sides"
   ([s] (boxed-callout s nil))
-  ([s {:keys     [width
-                  max-width
-                  min-width
-                  border-char
-                  vertical-border-char
-                  horizontal-border-char
-                  box-drawing-style
-                  colorway
-                  label
-                  side-label]
-       pd-top    :padding-top
-       pd-bottom :padding-bottom
-       pd-left   :padding-left
-       pd-right  :padding-right
-       pd-block  :padding-block
-       pd-inline :padding-inline
-       :as       m}]
-   (let [box-drawing-style          (if box-drawing-style
-                                      (or (maybe box-drawing-style box-drawing-styles)
-                                          :thin-round)
-                                      (when-not (or (string? border-char)
-                                                    (and (string? vertical-border-char)
-                                                         (string? horizontal-border-char)))
-                                        :thin-round))
-         vertical-border-char       (-> (or (some->> box-drawing-style (-> bdc :v))
-                                            vertical-border-char
-                                            border-char
-                                            bdc)
-                                        (colored-border colorway))
-         vertical-border-char-count (adjusted-char-count vertical-border-char)
-         horizontal-border-char     (or (some->> box-drawing-style (-> bdc :h))
-                                        (let [c (as-str
-                                                 (or horizontal-border-char
-                                                     border-char
-                                                     bdc))]
-                                          (if (< 1 (count c))
-                                            (subs c 0 1)
-                                            c)))
+  ([s 
+    {:keys     [width
+                max-width
+                min-width
+                colorway
+                label
+                side-label]
+     pd-top    :padding-top
+     pd-bottom :padding-bottom
+     pd-left   :padding-left
+     pd-right  :padding-right
+     pd-block  :padding-block
+     pd-inline :padding-inline
+     :as       m}]
+   (let [{:keys [box-drawing-style          
+                 vertical-border-char       
+                 vertical-border-char-count 
+                 horizontal-border-char]} 
+         (border-chars m)
          pd-block                   (or (maybe pd-block pos-int?) 1)
          pd-inline                  (or (maybe pd-inline pos-int?) 2)
          pd-top                     (or (maybe pd-top pos-int?) pd-block)
@@ -1406,21 +1435,7 @@
          pd-hrz                     #(min (or (maybe % pos-int?) pd-inline) 10)
          pd-right                   (pd-hrz pd-right)
          pd-left                    (pd-hrz pd-left)
-         terminal-width             #?(:cljs
-                                       60
-                                       :clj
-                                       (let [min-width (or (maybe min-width pos-int?)
-                                                           17)
-                                             tw        (some-> (util/get-terminal-width)
-                                                               (maybe pos-int?))
-                                             tw        (cond (< tw min-width)
-                                                             min-width
-                                                             (some-> max-width
-                                                                     (maybe pos-int?) 
-                                                                     (< tw))
-                                                             max-width
-                                                             :else tw)]
-                                         (or tw 80)))
+         terminal-width             (resolve-terminal-width min-width max-width)
          cols                       (or width terminal-width)
          max-inner-cols             (- cols
                                        pd-left
@@ -1439,12 +1454,6 @@
          pd-bottom-ln               (util/sjr pd-bottom pd-ln)
          corner-border-char         #(or (some->> box-drawing-style (-> bdc %))
                                          horizontal-border-char)
-         block-border               (block-border* (keyed [pd-left
-                                                           pd-right
-                                                           horizontal-border-char
-                                                           colorway
-                                                           cols
-                                                           corner-border-char]))
          label                      (as-str label)
          truncated-label            (some-> label
                                             (maybe #(< (- cols 4) (count %)))
@@ -1465,35 +1474,55 @@
                                                                 4)))
                                             side-label)
                                           truncated-side-label)))
-         top-border                 (colored-border (block-border :tl :tr label side-label-for-border)
-                                                    colorway)
-         bottom-border              (colored-border (block-border :bl :br nil nil)
-                                                    colorway)
-         ;;  lns                    (lines-with-wrapped s max-inner-cols)
-         body-with-maybe-side-label (str (when (and side-label (not side-label-for-border))
+         block-border-opts          (keyed [pd-left
+                                            pd-right
+                                            horizontal-border-char
+                                            colorway
+                                            cols
+                                            corner-border-char])
+         top-border                 (colored-border
+                                     (block-border* 
+                                      (merge block-border-opts
+                                             {:lc                    :tl
+                                              :rc                    :tr
+                                              :label                 label
+                                              :side-label-for-border side-label-for-border}))
+                                     colorway)
+         bottom-border              (colored-border 
+                                     (block-border* 
+                                      (merge block-border-opts
+                                             {:lc :bl
+                                              :rc :br}))
+                                     colorway)
+
+         body                       (str (when (and side-label 
+                                                    (not side-label-for-border))
                                            (str side-label "\n\n"))
                                          s)
          lns                        (string/split
-                                     (wrapped-string body-with-maybe-side-label
+                                     (wrapped-string body
                                                      {:max-width max-inner-cols})
-                                     #"\n")]
-     (str top-border
-          "\n"
-          pd-top-ln
-          (string/join
-           "\n"
-           (mapv (fn [ln]
-                   (str start
-                        ln
-                        (util/sjr (- cols
-                                     (+ start-count (adjusted-char-count ln))
-                                     vertical-border-char-count)
-                                  " ")
-                        vertical-border-char))
-                 lns))
-          "\n"
-          pd-bottom-ln
-          bottom-border))))
+                                     #"\n")
+         ret 
+         (str top-border
+              "\n"
+              pd-top-ln
+              (string/join
+               "\n"
+               (mapv (fn [ln]
+                       (str start
+                            ln
+                            (util/sjr (- cols
+                                         (+ start-count 
+                                            (adjusted-char-count ln))
+                                         vertical-border-char-count)
+                                      " ")
+                            vertical-border-char))
+                     lns))
+              "\n"
+              pd-bottom-ln
+              bottom-border)]
+     ret)))
 
 ;; -----------------------------------------------------------------------------
 ;; Boxed callout end 

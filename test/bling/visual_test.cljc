@@ -123,11 +123,11 @@
 
 #_(callout {:colorway      :positive
           :theme         :boxed
-          :label         (bling [:bold.green "Success!"])
+          :label         "Success!"
           :side-label    "myns.app.core:11:42"
           :padding-left  3
           :padding-right 5
-          :width         60}
+          :width         50}
          (bling "This is a callout with a " [:bold ":theme" ] " of " [:bold ":boxed"] "\n\n"
                 "A second line of text, which will automatically get wrapped, based on the width and padding of the box.\n\n"
                 "A third line of text."))
