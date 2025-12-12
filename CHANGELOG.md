@@ -14,11 +14,23 @@ For a list of breaking changes, check [here](#breaking-changes)
 
 #### Removed
 
+## 0.9.1
+
+2025-12-12
+
+#### Fixed 
+- Bumped Fireworks dep to 0.18.0. Fixed logic within `fireworks.macros/get-detected-color-level` causing `NullPointerException` on Github actions build. [#49](https://github.com/paintparty/bling/issues/49)
+
+
+<br>
+<br>
+
+
 ## 0.9.0
 
 <p><sub>Many thanks to <a href="https://www.clojuriststogether.org/">Clojurists Together</a> for generously supporting this release!</sub></p>
 
-2025-07-23
+2025-12-09
 
 #### Added
 - Enhanced hiccup support for paragraphs and nested styles.[#15](https://github.com/paintparty/bling/issues/15)
@@ -31,28 +43,6 @@ For a list of breaking changes, check [here](#breaking-changes)
 
 #### Fixed 
 - `?sgr` debugging utility works better and preserves original styling.
-
-<br>
-<br>
-
-## 0.8.7
-
-<p><sub>Many thanks to <a href="https://www.clojuriststogether.org/">Clojurists Together</a> for generously supporting this release!</sub></p>
-
-2025-07-13
-
-#### Fixed
-- Default margin-block spacing around `point-of-interest` diagrams.
-
-#### Changed
-- Updates example custom callout in readme documentation.
-
-
-<br>
-<br>
-
-
-
 
 <br>
 <br>
