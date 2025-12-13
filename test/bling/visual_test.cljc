@@ -89,13 +89,13 @@
         [:p "If you want do any experimentation use " [:bold "bling.visual-test"] "."]))
 
 ;; (callout {:type :warning}
-;;          "What the hell")
+;;          "Hello World")
 
 ;; (callout {:type :warning :theme :minimal}
-;;          "What the hell")
+;;          "Hello World")
 
 ;; (callout {:type :warning :theme :gutter}
-;;          "What the hell")
+;;          "Hello World")
 
 
 (def d
@@ -115,7 +115,7 @@
           :theme :boxed
           :width 60
           }
-         "What the hell\n"
+         "Hello World\n"
          (hifi d))
 
 ;; (println)
@@ -800,7 +800,7 @@
   #_(bling-basics)
   #_(examples-warnings-for-bad-arg-to-callout))
 
-(visual-test-suite)
+#_(visual-test-suite)
 
 #_(sample/explain-malli-examples)
 

@@ -7,13 +7,10 @@
             [bling.browser]
             [bling.defs :as defs]
             [bling.macros :refer [let-map keyed]]
-            [bling.util :as util :refer [maybe]]
-
+            [bling.util :as util :refer [maybe->]]
             #?(:cljs [bling.js-env :refer [node?]])
             ;; TODO - eliminate goog.object req
-            #?(:cljs [goog.object])
-            
-            [bling.browser :as browser]))
+            #?(:cljs [goog.object])))
 
 
 (declare xterm-colors-by-id)
@@ -580,7 +577,7 @@
                 (= 2 (count x))
                 (-> x
                     (nth 0)
-                    (maybe #(or (keyword? %)
+                    (maybe-> #(or (keyword? %)
                                 (map? %)))))))
 
 
@@ -595,7 +592,7 @@
       (some-> (when (map? x)
                 (or (get x :colorway nil)
                     (get x "colorway" nil)))
-              (maybe nameable?)
+              (maybe-> nameable?)
               name))))
 
 
@@ -611,11 +608,11 @@
    `depth` defaults to 7."
   [{:keys [error regex depth header]}]
   #?(:clj
-     (if-let [strace (some->> (maybe error #(instance? Exception %))
+     (if-let [strace (some->> (maybe-> error #(instance? Exception %))
                               .getStackTrace
                               seq)]
        (let [strace-len  (count strace)
-             depth       (or (maybe depth pos-int?) 7)
+             depth       (or (maybe-> depth pos-int?) 7)
 
              ;; Get a mini-strace, limited to the number of frames that will be
              ;; displayed based on `depth`
@@ -648,7 +645,7 @@
              trace       (some->> trace* (interpose "\n") (into with-header))
              num-dropped (when trace
                            (let [n (- (or strace-len 0) (or len 0))]
-                             (some->> (maybe n pos-int?)
+                             (some->> (maybe-> n pos-int?)
                                       (str "\n...+"))))
 
              ;; Conj num-dropped annotation to mini-strace
@@ -777,13 +774,13 @@
            text-decoration-color
            type]
     :as   opts}]
-  (let [type             (some-> type as-str (maybe #{"warning" "error"}))
+  (let [type             (some-> type as-str (maybe-> #{"warning" "error"}))
         file-info        (ns-info-str opts)
         gutter           (some-> line str count spaces)
         underline-color  (or (some->> type (get semantics-by-semantic-type))
                              (some-> text-decoration-color
                                      as-str
-                                     (maybe all-color-names))
+                                     (maybe-> all-color-names))
                              "neutral")
         form-as-str      (util/shortened form 33)
         underline-str    (-> opts
@@ -797,7 +794,7 @@
                           underline-str]
         header           (enriched-args header)
         body             (enriched-args body)
-        mb*              (or (some-> margin-block (maybe pos-int?))
+        mb*              (or (some-> margin-block (maybe-> pos-int?))
                              (if (some-> margin-block zero?)
                                0
                                1))
@@ -1276,8 +1273,8 @@
                               (bling [{:color colorway} %])
                               %)
         label-str          (or (some-> label
-                                       (maybe string?)
-                                       (maybe #(not (string/blank? %)))
+                                       (maybe-> string?)
+                                       (maybe-> #(not (string/blank? %)))
                                        (str " ")
                                        (->> (str " "))
                                        colorize)
@@ -1353,14 +1350,14 @@
      ;; TODO - make this dynamic for node
      60
      :clj
-     (let [min-width (or (maybe min-width pos-int?)
+     (let [min-width (or (maybe-> min-width pos-int?)
                          17)
            w         (some-> (util/get-terminal-width)
-                             (maybe pos-int?))
+                             (maybe-> pos-int?))
            w         (cond (< w min-width)
                            min-width
                            (some-> max-width
-                                   (maybe pos-int?) 
+                                   (maybe-> pos-int?) 
                                    (< w))
                            max-width
                            :else w)]
@@ -1376,7 +1373,7 @@
     :as   m}]
   (let [box-drawing-style          
         (if box-drawing-style
-          (or (maybe box-drawing-style box-drawing-styles)
+          (or (maybe-> box-drawing-style box-drawing-styles)
               :thin-round)
           (when-not (or (string? border-char)
                         (and (string? vertical-border-char)
@@ -1428,11 +1425,11 @@
                  vertical-border-char-count 
                  horizontal-border-char]} 
          (border-chars m)
-         pd-block                   (or (maybe pd-block pos-int?) 1)
-         pd-inline                  (or (maybe pd-inline pos-int?) 2)
-         pd-top                     (or (maybe pd-top pos-int?) pd-block)
-         pd-bottom                  (or (maybe pd-bottom pos-int?) pd-block)
-         pd-hrz                     #(min (or (maybe % pos-int?) pd-inline) 10)
+         pd-block                   (or (maybe-> pd-block pos-int?) 1)
+         pd-inline                  (or (maybe-> pd-inline pos-int?) 2)
+         pd-top                     (or (maybe-> pd-top pos-int?) pd-block)
+         pd-bottom                  (or (maybe-> pd-bottom pos-int?) pd-block)
+         pd-hrz                     #(min (or (maybe-> % pos-int?) pd-inline) 10)
          pd-right                   (pd-hrz pd-right)
          pd-left                    (pd-hrz pd-left)
          terminal-width             (resolve-terminal-width min-width max-width)
@@ -1456,14 +1453,14 @@
                                          horizontal-border-char)
          label                      (as-str label)
          truncated-label            (some-> label
-                                            (maybe #(< (- cols 4) (count %)))
+                                            (maybe-> #(< (- cols 4) (count %)))
                                             (subs 0 (- cols (+ 4 3)))
                                             (str "..."))
          label                      (or truncated-label label)
          side-label                 (as-str side-label)
          truncated-side-label       (when-not label
                                       (some-> side-label
-                                              (maybe #(< (- cols 2) (count %)))
+                                              (maybe-> #(< (- cols 2) (count %)))
                                               (subs 0 (- cols (+ 2 3)))
                                               (str "...")))
          side-label-for-border      (when-not truncated-label
@@ -1677,23 +1674,24 @@
          (print-to-browser-dev-console (str label "\n" body))))))
 
 
-(defn- default-opt [m k strs default]
+(defn- default-opt [m k set-of-strs default]
   (or (some-> (k m)
               as-str
-              (maybe strs))
+              (maybe-> set-of-strs))
       default))
 
 
 (defn- resolve-label
   [{:keys [label label-str] :as m}
    type-as-str]
-  (let [blank-string-supplied?              (and (string? label) (string/blank? label))
+  (let [blank-string-supplied?              (and (string? label) 
+                                                 (string/blank? label))
         nothing-supplied?                   (nil? label)
         supplied-label                      label
         supplied-label-str                  label-str
         supplied-coll-label-shortened       (some-> m
                                                     :label
-                                                    (maybe coll?)
+                                                    (maybe-> coll?)
                                                     (util/shortened 33))
         default-label-based-on-callout-type (some-> type-as-str
                                                     string/upper-case)]
@@ -1720,7 +1718,7 @@
 
 (defn- resolve-padding-left [m theme]
   (let [default (if (= theme "minimal") 0 2)
-        pl      (or (maybe (:padding-left m) pos-int?) default)]
+        pl      (or (maybe-> (:padding-left m) pos-int?) default)]
     pl))
 
 
@@ -1756,7 +1754,7 @@
     margin-bottom  (sp :margin-bottom 0)
     margin-left    (sp :margin-left 0)
     padding-left   (resolve-padding-left m theme)
-    type           (some-> (:type m) as-str (maybe #{"warning" "error" "info"}))
+    type           (some-> (:type m) as-str (maybe-> #{"warning" "error" "info"}))
     colorway       (or (get semantics-by-semantic-type type)
                        (some-> (:colorway m) as-str))
     semantic-type  (or (get semantics-by-semantic-type type)
@@ -1764,7 +1762,7 @@
     warning?       (= type "warning")
     error?         (= type "error")
     color          (or (get semantics-by-semantic-type colorway)
-                       (maybe colorway all-color-names)
+                       (maybe-> colorway all-color-names)
                        "neutral")
     user-label     (:label m)
     label*         (resolve-label m type)
@@ -1775,7 +1773,7 @@
                      label*)
     side-label      (some-> m
                             :side-label
-                            (maybe string?))
+                            (maybe-> string?))
     border-block-length (let [bbl (:border-block-length m)]
                           (or (when (pos-int? bbl) bbl) 50))
     ;; TODO maybe see if label is blinged and if not, bold it.
@@ -1909,7 +1907,7 @@
                        "followed by any number of values (usually strings).\n\n"
                        "Nothing will be printed.")}))
        (let [opts          x
-             ;;  value         (some-> args (maybe #(not (string/blank? %))))
+             ;;  value         (some-> args (maybe-> #(not (string/blank? %))))
              callout-opts  (callout-opts* opts)
              callout-opts+ (merge {:value (string/join "" args)}
                                   opts
@@ -2053,9 +2051,9 @@
   (walk/postwalk
    (fn [x]
      (if-let [k (some-> x
-                        (maybe vector?)
+                        (maybe-> vector?)
                         (nth 0 nil)
-                        (maybe keyword?))]
+                        (maybe-> keyword?))]
        (if (= [:br] x)
          "\n"
          (into [(-> k
@@ -2069,17 +2067,17 @@
 
 (defn- get-style-map [x]
   (some-> x
-          (maybe vector?)
+          (maybe-> vector?)
           (nth 0 nil)
-          (maybe map?)))
+          (maybe-> map?)))
 
 
 (defn- wrapped-val? [x]
   (boolean (some-> x
-                   (maybe vector?)
-                   (maybe #(= 2 (count %)))
+                   (maybe-> vector?)
+                   (maybe-> #(= 2 (count %)))
                    (nth 0 nil)
-                   (maybe map?))))
+                   (maybe-> map?))))
 
 
 (defn- nest-styles [coll]
@@ -2136,9 +2134,9 @@
 
 (defn- p-tag-match* [x]
   (some-> x
-          (maybe vector?)
+          (maybe-> vector?)
           (nth 0 nil)
-          (maybe keyword?)
+          (maybe-> keyword?)
           name
           (->> (re-find #"^p(?:\.(\S+))?"))))
 

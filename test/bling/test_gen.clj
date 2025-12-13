@@ -2,7 +2,6 @@
   (:require
    [fireworks.core :refer [? !? ?> !?> pprint]] ;; <-just for debugging
    [bling.core :as bling :refer [bling boxed-callout]]
-   [bling.util :as util :refer [maybe]]
    [bling.sample :as sample :refer [callout+]]
    [clojure.string :as string]))
 

@@ -2,7 +2,7 @@
   (:require
    [bling.macros :refer [keyed start-dbg! stop-dbg! nth-not-found ?]]
    [fireworks.pp]
-   [bling.util :as util :refer [sjr maybe]]
+   [bling.util :as util :refer [sjr maybe->]]
    [bling.defs :as defs]
    [clojure.string :as string]
    [bling.fonts.ansi-shadow :refer [ansi-shadow]]
@@ -758,7 +758,7 @@
 
 (defn- split-css-gradient-str [s]
   (some-> s
-          (maybe string?)
+          (maybe-> string?)
           (string/split #" ")))
 
 (def shift-min 0)
@@ -776,7 +776,7 @@
 
 (defn- valid-gradient-pairs?*
   [vc]
-  (boolean (some->> (maybe vc vector?)
+  (boolean (some->> (maybe-> vc vector?)
                     (into #{})
                     (contains? gradient-pairs-as-keywords-set))))
 
@@ -837,7 +837,7 @@
           gradient-shift*           gradient-shift
           gradient-direction*       gradient-direction
           gradient-colors           (some-> gradient-colors
-                                            (maybe valid-gradient-pairs?*))
+                                            (maybe-> valid-gradient-pairs?*))
           gradient-desired?         (not no-gradient?)
           valid-gradient-pairs?     (boolean (if no-gradient?
                                                true

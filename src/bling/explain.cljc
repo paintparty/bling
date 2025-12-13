@@ -4,7 +4,7 @@
             [clojure.walk :as walk]
             [bling.core :refer [bling]]
             [bling.hifi :refer [hifi]]
-            [bling.util :as util :refer [maybe]]
+            [bling.util :as util :refer [maybe->]]
             [bling.macros :refer [keyed]]
             [malli.core :as m]))
 
@@ -150,9 +150,9 @@
 
 (defn- schema-error-message [schema]
   (some-> schema
-          (maybe vector?)
+          (maybe-> vector?)
           second
-          (maybe map?)
+          (maybe-> map?)
           :error/message))
 
 (defn- enum-schema? [schema]
@@ -240,10 +240,10 @@
 
 (defn- fn-schema-fn [schema]
   (some-> schema
-          (maybe vector?)
-          (maybe #(= 2 (count %)))
-          (maybe #(= :fn (first %)))
-          (maybe #(fn? (second %)))
+          (maybe-> vector?)
+          (maybe-> #(= 2 (count %)))
+          (maybe-> #(= :fn (first %)))
+          (maybe-> #(fn? (second %)))
           second))
 
 (defn get-satisfaction 
