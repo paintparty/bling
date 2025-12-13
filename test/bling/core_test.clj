@@ -26,7 +26,7 @@
  all-colors
  (is
   (=
-   (-> (into [] (sample/all-the-colors*)) escape-sgr string/join)
+   (-> (vec (sample/all-the-colors*)) escape-sgr string/join)
    "[\"〠38;5;231;1;48;5;196〠 red 〠0;〠     〠38;5;196;1〠red〠0;〠      〠38;5;196〠red〠0;〠      〠38;5;196;9〠red〠0;〠      〠38;5;196;4〠red〠0;〠      〠3;38;5;196〠red〠0;〠     \" \"〠38;5;231;1;48;5;208〠 orange 〠0;〠  〠38;5;208;1〠orange〠0;〠   〠38;5;208〠orange〠0;〠   〠38;5;208;9〠orange〠0;〠   〠38;5;208;4〠orange〠0;〠   〠3;38;5;208〠orange〠0;〠  \" \"〠38;5;231;1;48;5;178〠 yellow 〠0;〠  〠38;5;178;1〠yellow〠0;〠   〠38;5;178〠yellow〠0;〠   〠38;5;178;9〠yellow〠0;〠   〠38;5;178;4〠yellow〠0;〠   〠3;38;5;178〠yellow〠0;〠  \" \"〠38;5;231;1;48;5;106〠 olive 〠0;〠   〠38;5;106;1〠olive〠0;〠    〠38;5;106〠olive〠0;〠    〠38;5;106;9〠olive〠0;〠    〠38;5;106;4〠olive〠0;〠    〠3;38;5;106〠olive〠0;〠   \" \"〠38;5;231;1;48;5;40〠 green 〠0;〠   〠38;5;40;1〠green〠0;〠    〠38;5;40〠green〠0;〠    〠38;5;40;9〠green〠0;〠    〠38;5;40;4〠green〠0;〠    〠3;38;5;40〠green〠0;〠   \" \"〠38;5;231;1;48;5;39〠 blue 〠0;〠    〠38;5;39;1〠blue〠0;〠     〠38;5;39〠blue〠0;〠     〠38;5;39;9〠blue〠0;〠     〠38;5;39;4〠blue〠0;〠     〠3;38;5;39〠blue〠0;〠    \" \"〠38;5;231;1;48;5;141〠 purple 〠0;〠  〠38;5;141;1〠purple〠0;〠   〠38;5;141〠purple〠0;〠   〠38;5;141;9〠purple〠0;〠   〠38;5;141;4〠purple〠0;〠   〠3;38;5;141〠purple〠0;〠  \" \"〠38;5;231;1;48;5;201〠 magenta 〠0;〠 〠38;5;201;1〠magenta〠0;〠  〠38;5;201〠magenta〠0;〠  〠38;5;201;9〠magenta〠0;〠  〠38;5;201;4〠magenta〠0;〠  〠3;38;5;201〠magenta〠0;〠 \" \"〠38;5;231;1;48;5;247〠 gray 〠0;〠    〠38;5;247;1〠gray〠0;〠     〠38;5;247〠gray〠0;〠     〠38;5;247;9〠gray〠0;〠     〠38;5;247;4〠gray〠0;〠     〠3;38;5;247〠gray〠0;〠    \" \"〠38;5;231;1;48;5;16〠 black 〠0;〠   〠38;5;16;1〠black〠0;〠    〠38;5;16〠black〠0;〠    〠38;5;16;9〠black〠0;〠    〠38;5;16;4〠black〠0;〠    〠3;38;5;16〠black〠0;〠   \" \"〠38;5;231;1;48;5;231〠 white 〠0;〠   〠38;5;231;1〠white〠0;〠    〠38;5;231〠white〠0;〠    〠38;5;231;9〠white〠0;〠    〠38;5;231;4〠white〠0;〠    〠3;38;5;231〠white〠0;〠   \"]")))
 
 
@@ -35,7 +35,7 @@
  (is
   (=
    (->
-    (into [] (flatten (sample/bling-color-contrast)))
+    (vec (flatten (sample/bling-color-contrast)))
     escape-sgr
     string/join)
    "[\"〠38;5;196;1〠red, contrast :low〠0;〠\" \"〠38;5;196;1〠red, contrast :medium〠0;〠\" \"〠38;5;196;1〠red, contrast :high〠0;〠\" \"〠38;5;208;1〠orange, contrast :low〠0;〠\" \"〠38;5;208;1〠orange, contrast :medium〠0;〠\" \"〠38;5;208;1〠orange, contrast :high〠0;〠\" \"〠38;5;178;1〠yellow, contrast :low〠0;〠\" \"〠38;5;178;1〠yellow, contrast :medium〠0;〠\" \"〠38;5;178;1〠yellow, contrast :high〠0;〠\" \"〠38;5;106;1〠olive, contrast :low〠0;〠\" \"〠38;5;106;1〠olive, contrast :medium〠0;〠\" \"〠38;5;106;1〠olive, contrast :high〠0;〠\" \"〠38;5;40;1〠green, contrast :low〠0;〠\" \"〠38;5;40;1〠green, contrast :medium〠0;〠\" \"〠38;5;40;1〠green, contrast :high〠0;〠\" \"〠38;5;39;1〠blue, contrast :low〠0;〠\" \"〠38;5;39;1〠blue, contrast :medium〠0;〠\" \"〠38;5;39;1〠blue, contrast :high〠0;〠\" \"〠38;5;141;1〠purple, contrast :low〠0;〠\" \"〠38;5;141;1〠purple, contrast :medium〠0;〠\" \"〠38;5;141;1〠purple, contrast :high〠0;〠\" \"〠38;5;201;1〠magenta, contrast :low〠0;〠\" \"〠38;5;201;1〠magenta, contrast :medium〠0;〠\" \"〠38;5;201;1〠magenta, contrast :high〠0;〠\" \"〠38;5;247;1〠gray, contrast :low〠0;〠\" \"〠38;5;247;1〠gray, contrast :medium〠0;〠\" \"〠38;5;247;1〠gray, contrast :high〠0;〠\"]")))

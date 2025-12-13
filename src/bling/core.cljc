@@ -307,7 +307,7 @@
            (coll? form)
            (< (count (as-str form)) form-limit))
     (let [form
-          (into [] form)
+          (vec form)
 
           data
           (reverse
@@ -2167,15 +2167,15 @@
     \"baz\"]"
   [args]
   (let [last-index (dec (count args))]
-    (into []
-          (map-indexed (fn [i x]
-                         (if-let [tag (p-tag* x)]
-                           (into [tag]
-                                 (concat (rest x)
-                                         (when-not (= i last-index)
-                                           ["\n" "\n"])))
-                           x))
-                       args))))
+    (vec
+     (map-indexed (fn [i x]
+                    (if-let [tag (p-tag* x)]
+                      (into [tag]
+                            (concat (rest x)
+                                    (when-not (= i last-index)
+                                      ["\n" "\n"])))
+                      x))
+                  args))))
 
 
 (defn- nested->flat
@@ -2199,7 +2199,7 @@
 
 (defn- bling-data* [args]
   (let [args   (if (contains-nested? args)
-                 (nested->flat (into [] args))
+                 (nested->flat (vec args))
                  args)
         coll   (reduce enriched-data-inner [] args)
         tagged (string/join coll)]

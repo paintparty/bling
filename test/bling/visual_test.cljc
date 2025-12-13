@@ -41,6 +41,8 @@
 
 #_(? (count (re-seq ansi-sgr-re (bling [:red "Hi"]))))
 
+#_(print-hifi {:a 1 :b 3})
+
 ;; (?sgr (bling [:red.wavy-underline "Hi"] " there " [:blue.yellow-bg "GOLD"]))
 ;; (?sgr (bling [:bold.gray "Hi"] " there " [:bold.purple "GOLD"]))
 ;; (println (bling.sample/all-the-colors))

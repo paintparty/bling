@@ -94,7 +94,7 @@
 
 (defn- problem-path [missing-key? problem v]
   (cond missing-key?
-        (->> problem :in drop-last (into []))
+        (->> problem :in drop-last vec)
         (target-key? problem v)
         (conj (:in problem) :fireworks.highlight/map-key)
         :else
@@ -120,12 +120,12 @@
                                          (contains? omit-section-labels label))
                                   nil
                                   label))]
-    (into []
-          (remove nil?
-                  [(when section-break? section-break)
-                   (when label (bling [label-style label]))
-                   (when label section-header-break)
-                   v]))))
+    (vec
+     (remove nil?
+             [(when section-break? section-break)
+              (when label (bling [label-style label]))
+              (when label section-header-break)
+              v]))))
 
 
 (defn- explain-data* [malli-ex-data]
@@ -313,15 +313,15 @@
                          (when (seq trimmed) trimmed)))
         v            (or narrowed-map v)]
     (hifi v
-          {:find                (into []
-                                      (remove nil? 
-                                              [{:path  pth
-                                                :class (if (coll? (get-in v pth))
-                                                         :highlight-error
-                                                         :highlight-error-underlined)}
-                                               (when narrowed-map
-                                                 {:pred  #(= % (first pth))
-                                                  :class :info-error})]))
+          {:find                (vec
+                                 (remove nil? 
+                                         [{:path  pth
+                                           :class (if (coll? (get-in v pth))
+                                                    :highlight-error
+                                                    :highlight-error-underlined)}
+                                          (when narrowed-map
+                                            {:pred  #(= % (first pth))
+                                             :class :info-error})]))
            :margin-inline-start indentation})) )
 
 (defn explain-malli
@@ -465,24 +465,24 @@
 
                (section highlighted-problem-section-label
                         ;; TODO - use fn highlighted-problem-section
-                        (let [pth         (problem-path missing-key? problem v)
+                        (let [pth          (problem-path missing-key? problem v)
                               narrowed-map (when (and select-keys-in-problem-path?
                                                       (seq pth)
                                                       (not-any? coll? pth)
                                                       (map? v))
                                              (let [trimmed (select-keys v pth)]
                                                (when (seq trimmed) trimmed)))
-                              v           (or narrowed-map v)]
+                              v            (or narrowed-map v)]
                           (hifi v
-                                {:find                (into []
-                                                            (remove nil? 
-                                                                    [{:path  pth
-                                                                      :class (if (coll? (get-in v pth))
-                                                                               :highlight-error
-                                                                               :highlight-error-underlined)}
-                                                                     (when narrowed-map
-                                                                       {:pred  #(= % (first pth))
-                                                                        :class :info-error})]))
+                                {:find                (vec
+                                                       (remove nil? 
+                                                               [{:path  pth
+                                                                 :class (if (coll? (get-in v pth))
+                                                                          :highlight-error
+                                                                          :highlight-error-underlined)}
+                                                                (when narrowed-map
+                                                                  {:pred  #(= % (first pth))
+                                                                   :class :info-error})]))
                                  :margin-inline-start indentation}))
                         (assoc section-opts
                                :section-break?

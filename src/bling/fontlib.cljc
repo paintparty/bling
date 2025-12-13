@@ -7592,7 +7592,7 @@ $$@@
              first
              (remove nil?)
              (concat (:missing m))
-             (into []))]
+             vec)]
      (keyed [chars-array-map missing-chars])))
 
 (defn- font-metrics [coll]
@@ -7640,7 +7640,7 @@ $$@@
 (defn- replacement-char-vec 
   [{:keys [width height]}
    {s :character}]
-  (into []
+  (vec
         (let [s        (missing-char-str width s)
               band-str (sjr width " ")]
           (if (odd? height)

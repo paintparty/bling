@@ -123,10 +123,10 @@
 
 
 (deftest+ ^:pre-gen all-colors
-  (into [] (sample/all-the-colors*)))
+  (vec (sample/all-the-colors*)))
 
 (deftest+ ^:pre-gen color-contrast
-  (into [] (flatten (sample/bling-color-contrast))))
+  (vec (flatten (sample/bling-color-contrast))))
 
 (deftest+ underline-styles
   (bling [:underline "underline"]
