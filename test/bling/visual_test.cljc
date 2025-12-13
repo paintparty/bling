@@ -37,7 +37,22 @@
   ;;  [taoensso.tufte :as tufte :refer [p profile]]
    ))
 
+
 ;; (tufte/add-handler! :my-console-handler (tufte/handler:console))
+
+;; (print-bling [:bold (str "Line 1" "\n" "Line 2")])
+
+;; (callout {:type :error} 
+;;          (bling [:bold (str "Line 1" "\n" "Line 2")]))
+
+(callout {:theme :minimal} 
+         (bling [:bold (str "Line 1" "\n" "Line 2")]))
+
+;; (callout {:theme :sideline-bold} 
+;;          (bling [:bold (str "Line 1" "\n" "Line 2")]))
+
+;; (callout {:theme :gutter} 
+;;          (bling [:bold (str "Line 1" "\n" "Line 2")]))
 
 #_(? (count (re-seq ansi-sgr-re (bling [:red "Hi"]))))
 

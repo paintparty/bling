@@ -17,6 +17,9 @@
 (def sgr-reset
   "(?:0;?m|m)")
 
+(def escaped-sgr-reset
+  (str esc "m"))
+
 (def sgr-font-style
   "3;?m")
 
@@ -33,6 +36,10 @@
   (str "(?:[0-9]|;|" sgr-text-decoration-base ")*m"))
 
 (def sgr-re (re-pattern (str esc sgr-freeform)))
+
+(def sgr-reset-re (re-pattern escaped-sgr-reset))
+
+(def sgr-wrapped-re (re-pattern (str "^(" esc sgr-freeform ")[^(?:" escaped-sgr-reset ")]+" esc sgr-reset "$")))
 
 (def sgr-unstyled-spaces-re (re-pattern (str esc "m +" esc "0m")))
 

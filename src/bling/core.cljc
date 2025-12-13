@@ -981,6 +981,15 @@
           (:padding-left-str m)
           s))))
 
+
+(defn- restore-ansi-sgr-over-lines [s]
+  (let [lns (string/split s #"\n")
+        lns (if-let [[_ ansi-sgr-tag]
+                     (re-find ansi/sgr-wrapped-re s)]
+              (mapv #(str ansi-sgr-tag % "\033[m") lns)
+              lns)]
+    lns))
+
 (defn- lns [m k]
   (let [s                           (some-> m k)
         label-lines?                (= k :label)
@@ -1007,7 +1016,7 @@
 
                                       :else
                                       s)
-        lns-coll                    (some-> s string/split-lines)
+        lns-coll                    (restore-ansi-sgr-over-lines s)
         ret                         (string/join
                                      "\n"
                                      (map-indexed
@@ -1017,9 +1026,10 @@
                                       lns-coll))]
     ret))
 
+
 (defn- body-lines-with-border
   [m]
-  (let [body-lns (string/split-lines (:value m))]
+  (let [body-lns (restore-ansi-sgr-over-lines (:value m))]
     (string/join
      "\n"
      (util/concatv
@@ -1040,6 +1050,7 @@
 (defn- minimal-callout
   [{:keys [label side-label border-style border-block-length value]
     :as   m}]
+  
   (let [no-label?
         (or (nil? label) (string/blank? label))
 
@@ -1496,10 +1507,11 @@
                                                     (not side-label-for-border))
                                            (str side-label "\n\n"))
                                          s)
-         lns                        (string/split
-                                     (wrapped-string body
-                                                     {:max-width max-inner-cols})
-                                     #"\n")
+         wrapped                    (wrapped-string body
+                                                    {:max-width max-inner-cols})
+
+         lns                        (restore-ansi-sgr-over-lines wrapped)
+
          ret 
          (str top-border
               "\n"
