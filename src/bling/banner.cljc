@@ -1049,58 +1049,217 @@
 ;; TODO add :bands option for returning colorized vectors of character bands
 ;; - then expose compose as a public fn
 
+(def banner-options-schema
+  [:map
+   [:font
+    {:optional true
+     :default  'bling.fonts.ansi-shadow/ansi-shadow
+     :desc     ["Must be one of the fonts that ships with Bling:"
+                "`bling.fonts.ansi-shadow/ansi-shadow`,"
+                "`bling.fonts.big-money.big-money/big-money`,"
+                "`bling.fonts.big/big`, `bling.fonts.miniwi/miniwi`,"
+                "`bling.fonts.drippy/drippy,` or"
+                "`bling.fonts.isometric-1/isometric-1`."]}
+    :map]
+   
+   [:text
+    {:required true
+     :desc     ["The text to set in the banner."]}
+    :string]
+   
+   [:font-weight
+    {:optional true
+     :desc     ["If set to `:bold`, each subchar in figlet characters will"
+                "be bolded. Only applies when a gradient is set."]}
+    [:enum :bold "bold"]]
+   
+   [:gradient-colors
+    {:optional true
+     :desc     ["Sets the beginning and end colors of the gradient."
+                "Expects a vector of 2 keywords."]}
+    [:enum
+     [:green :blue]
+     ["green" "blue"]
+     [:red :magenta]
+     ["red" "magenta"]
+     [:yellow :purple] 
+     ["yellow" "purple"] 
+     [:orange :purple] 
+     ["orange" "purple"] 
+     [:cool :warm]
+     ["cool" "warm"]]]
+   
+   [:gradient-direction
+    {:optional true
+     :desc     ["Direction of the gradient."]}
+    [:enum :to-top "to-top" :to-bottom "to-bottom" :to-right "to-right" :to-left "to-left"]]
+   
+   [:gradient-shift
+    {:optional true
+     :default  0
+     :desc     ["If gradient is `[:warm :cool]` pair, this will shift the hue."]}
+    [:int {:min 0 :max 5}]]
+   
+   [:contrast
+    {:optional true
+     :default  :medium
+     :desc     ["If gradient is set, this will force an overall lighter or"
+                "darker tone. If the user has a `BLING_MOOD` env var set,"
+                "it will default to `:high` in order to optimize contrast"
+                "for the users terminal theme (light or dark)"]}
+    :keyword]
+   
+   [:margin-top
+    {:optional true
+     :default  1
+     :desc     ["Amount of margin (in newlines) at top, outside banner."]}
+    :int]
+   
+   [:margin-bottom
+    {:optional true
+     :default  0
+     :desc     ["Amount of margin (in newlines) at bottom, outside banner."]}
+    :int]
+   
+   [:margin-left
+    {:optional true
+     :default  0
+     :desc     ["Amount of margin (in blank character spaces) at left,"
+                "outside banner."]}
+    :int]
+   
+   [:margin-right
+    {:optional true
+     :default  0
+     :desc     ["Amount of margin (in blank character spaces) at right,"
+                "outside banner."]}
+    :int]]
+  )
+
+
+
 (defn banner
   "Returns a multi-line Figlet (ascii art) string with the provided `:text`
    option.
    
-
-   Intended to render a \"single line\" banner.
+   Intended to render a single line banner.
 
 
    Can be optionally colorized with the `:gradient` option, using a small set of
    pre-defined gradients:
 
-   ```(banner {:text \"Hello\" :gradient-colors [:green :blue]})```
-   
-
-   Valid `:gradient-color` values: 
-
-   `[:green :blue]`, 
-   `[:red :magenta]`, 
-   `[:yellow :purple]`, 
-   `[:orange :purple]`, 
-   `[:cool :warm]`
-
-
-
-   Valid `:gradient-direction` values: 
-
-   `:to-top`, 
-   `:to-bottom`, 
-   `:to-right`, 
-   `:to-left`
-
-
+   ```Clojure
+   (banner {:text \"Hello\" :gradient-colors [:green :blue]})
+   (banner {:text \"Hello\" :gradient-colors [:red :magenta]}) 
+   (banner {:text \"Hello\" :gradient-colors [:yellow :purple]}) 
+   (banner {:text \"Hello\" :gradient-colors [:orange :purple]}) 
+   (banner {:text \"Hello\" :gradient-colors [:cool :warm]})
+   ```
 
    Can be colorized solid with `bling.core/bling`:
 
-   ```(bling [:red (banner {:text \"Hello\"})])```
+   ```Clojure
+   (bling [:red (banner {:text \"Hello\"})])
+   ```
 
    
-| Key                   | Pred       | Description   |
-| :---------------      | -----------| ------------- |
-| `:font`               | `map?`     | Must be one of the fonts that ships with Bling: `bling.fonts.ansi-shadow/ansi-shadow`,  `bling.fonts.big-money.big-money/big-money` , `bling.fonts.big/big`, `bling.fonts.miniwi/miniwi`, `bling.fonts.drippy/drippy,` or `bling.fonts.isometric-1/isometric-1`. Defaults to `bling.fonts.ansi-shadow/ansi-shadow`. |
-| `:text`               | `string?`  | The text to set in the banner.
-| `:font-weight`        | `keyword?` | If set to `:bold`, each subchar in figlet characters will be bolded. Only applies when a gradient is set.
-| `:gradient-colors`    | `vector?`  | Expects a vector of 2 keywords. Only the following color pairs are valid: `[:green :blue]`, `[:red :magenta]`, `[:yellow :purple]`, `[:orange :purple]`, `[:cool :warm]`.  Only applies to terminal emulator printing|
-| `:gradient-direction` | `keyword?` | Expects a keyword. Must be one of: `:to-top`, `:to-bottom`, `:to-right`, and `:to-left`.  Only applies to terminal emulator printing|
-| `:gradient-shift`     | `int?`     | If gradient is `[:warm :cool]` pair, this will shift the hue. `0-5`. Defaults to `0`.|
-| `:contrast`           | `keyword?` | If gradient is set, this will force an overall lighter or darker tone. Defaults to `:medium`. If the user has a `BLING_MOOD` env var set, it will default to `:high` in order to optimize contrast for the users terminal theme (light or dark) |
-| `:margin-top`         | `int?`     | Amount of margin (in newlines) at top, outside banner. <br>Defaults to `1`. Only applies to terminal emulator printing. |
-| `:margin-bottom`      | `int?`     | Amount of margin (in newlines) at bottom, outside banner. <br>Defaults to `0`. Only applies to terminal emulator printing. |
-| `:margin-left`        | `int?`     | Amount of margin (in blank character spaces) at left, outside banner. <br>Defaults to `0`. Only applies to terminal emulator printing. |
-| `:margin-right`       | `int?`     | Amount of margin (in blank character spaces) at right, outside banner. <br>Defaults to `0`. Only applies to terminal emulator printing. |"
+   All the options (malli schemas):
 
+   ```Clojure
+   [:font
+    {:optional true
+     :default  bling.fonts.ansi-shadow/ansi-shadow
+     :desc     [\"Must be one of the fonts that ships with Bling:\"
+                \"`bling.fonts.ansi-shadow/ansi-shadow`,\"
+                \"`bling.fonts.big-money.big-money/big-money`,\"
+                \"`bling.fonts.big/big`, `bling.fonts.miniwi/miniwi`,\"
+                \"`bling.fonts.drippy/drippy,` or\"
+                \"`bling.fonts.isometric-1/isometric-1`.\"]}
+    :map]
+
+   [:text
+    {:required true
+     :desc     [\"The text to set in the banner.\"]}
+    :string]
+
+   [:font-weight
+    {:optional true
+     :desc     [\"If set to `:bold`, each subchar in figlet characters will\"
+                \"be bolded. Only applies when a gradient is set.\"]}
+    [:enum :bold \"bold\"]]
+
+   [:gradient-colors
+    {:optional true
+     :desc     [\"Sets the beginning and end colors of the gradient.\"
+                \"Expects a vector of 2 keywords.\"]}
+    [:enum
+     [:green :blue]
+     [\"green\" \"blue\"]
+     [:red :magenta]
+     [\"red\" \"magenta\"]
+     [:yellow :purple]
+     [\"yellow\" \"purple\"]
+     [:orange :purple]
+     [\"orange\" \"purple\"]
+     [:cool :warm]
+     [\"cool\" \"warm\"]]]
+
+   [:gradient-direction
+    {:optional true
+     :desc     [\"Direction of the gradient.\"]}
+    [:enum
+     :to-top
+     \"to-top\"
+     :to-bottom
+     \"to-bottom\"
+     :to-right
+     \"to-right\"
+     :to-left
+     \"to-left\"]]
+
+   [:gradient-shift
+    {:optional true
+     :default  0
+     :desc     [\"If gradient is `[:warm :cool]` pair, this will shift the hue.\"]}
+    [:int {:min 0 :max 5}]]
+
+   [:contrast
+    {:optional true
+     :default  :medium
+     :desc     [\"If gradient is set, this will force an overall lighter or\"
+                \"darker tone. If the user has a `BLING_MOOD` env var set,\"
+                \"it will default to `:high` in order to optimize contrast\"
+                \"for the users terminal theme (light or dark)\"]}
+    :keyword]
+
+   [:margin-top
+    {:optional true
+     :default  1
+     :desc     [\"Amount of margin (in newlines) at top, outside banner.\"]}
+    :int]
+
+   [:margin-bottom
+    {:optional true
+     :default  0
+     :desc     [\"Amount of margin (in newlines) at bottom, outside banner.\"]}
+    :int]
+
+   [:margin-left
+    {:optional true
+     :default  0
+     :desc     [\"Amount of margin (in blank character spaces) at left,\"
+                \"outside banner.\"]}
+    :int]
+
+   [:margin-right
+    {:optional true
+     :default  0
+     :desc     [\"Amount of margin (in blank character spaces) at right,\"
+                \"outside banner.\"]}
+    :int]
+
+   ```
+  "
   [m]
   #?(:cljs
      (if node?

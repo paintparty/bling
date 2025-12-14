@@ -73,3 +73,27 @@
              (.apply js/console.log js/console)))
       :clj
       (println (hifi-impl x opts)))))
+
+
+(defn format-malli-options-schema-for-docstring 
+  "Experimental utility for repl usage, intended for turning existing malli 
+   schemas for options maps into codeblocks that live in a docstring."
+  [docstring vc]
+  (str docstring
+       "\n\n"
+       "   All the options:"
+       "\n\n   ```Clojure\n"
+       (->> vc
+            rest
+            (reduce (fn [s opt-vc]
+                      (str s
+                           (string/replace
+                            (hifi opt-vc
+                                  {:theme               "Universal Neutral"
+                                   :truncate?           false
+                                   :margin-inline-start 3})
+                            #"\""
+                            "\\\\\"")
+                           "\n\n"))
+              ""))
+       "   ```"))

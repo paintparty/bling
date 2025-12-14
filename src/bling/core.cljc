@@ -2,6 +2,7 @@
 
 (ns bling.core
   (:require [clojure.string :as string]
+            [fireworks.core :refer [? !? ?> !?>]]
             [clojure.walk :as walk]
             [bling.ansi :as ansi :refer [adjusted-char-count]]
             [bling.browser]
@@ -288,24 +289,27 @@
 
 
 (defn- poi-text-underline-str [n str-index text-decoration-style]
+  ;; "╱╲" <- pretty good look too
   (str (string/join (repeat str-index " "))
        (string/join (repeat n
-                            (case text-decoration-style
+                            (case (some-> text-decoration-style
+                                          as-str)
                               "wavy" "^"
                               "dashed" "-"
                               "dotted" "•"
+                              "underline" "─"
                               "double" "═"
                               "^")))))
 
 (def form-limit 33)
 
 (defn poi-text-underline
-  [{:keys [form form-as-str text-decoration-index text-decoration-style] :as m}]
+  [{:keys [form form-as-str text-decoration-index text-decoration-style]}]
   (if (and text-decoration-index
-           (or (pos? text-decoration-index)
-               (zero? text-decoration-index))
-           (coll? form)
-           (< (count (as-str form)) form-limit))
+          (or (pos? text-decoration-index)
+              (zero? text-decoration-index))
+          (coll? form)
+          (< (count (as-str form)) form-limit))
     (let [form
           (vec form)
 
@@ -330,7 +334,7 @@
       {:text-underline-str (poi-text-underline-str
                             strlen
                             str-index
-                            text-decoration-style)})
+                            (? text-decoration-style))})
     {:text-underline-str (poi-text-underline-str
                           (count form-as-str)
                           0
@@ -723,53 +727,175 @@
 
 
 ;; Line and point of interest public fns  -------------------------------------
-(defn- enriched-args [o]
-  ;; TODO - eliminate branching
-  #?(:cljs
-     (if node?
-       (when o [o])
-       (if (instance? Enriched o)
-         (goog.object/get o "args")
-         (when o [o])))
-     :clj
-     (when o [o])))
+
+(def point-of-interest-options-schema
+  [:map
+   [:form
+    {:required true
+     :desc     ["The form to draw attention to. Will be cast to string and"
+                "truncated at 33 chars"]}
+    :any]
+   
+   [:file
+    {:optional true
+     :desc     ["File or namespace"]}
+    :string]
+   
+   [:line
+    {:optional true
+     :desc     ["Line number"]}
+    :int]
+   
+   [:column
+    {:optional true
+     :desc     ["Column number"]}
+    :int]
+   
+   [:margin-block
+    {:optional true
+     :default  1
+     :desc     ["Controls the number of blank lines above and below the diagram."]}
+    :int]
+   
+   [:type
+    {:optional true
+     :desc     ["Automatically sets the `:text-decoration-color`."]}
+    [:enum :error "error" :warning "warning"]]
+   
+   [:text-decoration-color
+    {:optional true
+     :default  :neutral
+     :desc     ["Controls the color of the underline."]}
+    [:enum :error "error" :warning "warning" :neutral "neutral" :magenta "magenta" :green "green" :negative "negative"]]
+   
+   [:text-decoration-style
+    {:optional true
+     :desc     ["Controls the color of the underline."]}
+    [:enum :wavy "wavy" :solid "solid" :dashed "dashed" :dotted "dotted" :double "double"]]
+   
+   [:text-decoration-index
+    {:optional true
+     :desc     ["If the value of `:form` is a collection, this is the index of"
+                "the item to apply text-decoration (underline)."]}
+    :pos-int]])
 
 
 (defn ^:public point-of-interest
-  "A namespace info diagram which identifies a specific form. This provides the
-   namespace, column, and line number, and a bolded, potentially truncated,
-   representation of the specific form of interest. This form representation is
-   accented with a squiggly underline.
+  "Example:
+
+   ```Clojure
+   (point-of-interest {:form                  '(+ 1 true) ; <- required
+                       :line                  42
+                       :column                11
+                       :file                  \"myfile.core\"
+                       :text-decoration-style :wavy  ; :underline :solid :dashed :dotted :double
+                       :type                  :error ; :warning 
+                       ;; :margin-block          0       ; <- default is one
+                       ;; :text-decoration-index 2       ; <- If form is collection, this will focus underline
+                       ;; :text-decoration-color :yellow ; <- and bling palette color
+                       })
+   ```
+   
+   `point-of-interest` creates namespace info diagram which identifies a
+   specific form. This provides the namespace, column, and line number, and a
+   bolded, potentially truncated, representation of the specific form of
+   interest. This form representation is accented with a squiggly underline.
    
    The `:line`, `:column`, `:form`, and `:file` options must all be present in
    order for the namespece info diagram to be rendered. If the `:form` option is
    supplied, but any of the others are omitted, only the form will be rendered
-   (with a squiggly underline and no stacktrace diagram).
+   (with an underline and no line-info diagram).
    
    By default, the diagram is created with a leading and trailing newlines.
    This can be set to zero, or increased, with the `:margin-block` option.
    
-| Key                      | Pred                                              | Description                                                  |
-| :--------                | -----------------                                 | ------------------------------------------------------------ |
-| `:file`                  | `string?`                                         | File or namespace                                            |
-| `:line`                  | `integer?`                                        | Line number                                                  |
-| `:column`                | `integer?`                                        | Column number                                                |
-| `:form`                  | `any?`                                            | The form to draw attention to. Will be cast to string and truncated at 33 chars |
-| `:header`                | `any?`                                            | Typically, a string. If multi-line, string should be composed with newlines as desired. In a browser context, can be an instance of `bling.core/Enriched` (produced by using `bling.core/enriched`)|
-| `:body`                  | `any?`                                            | Typically, a string. If multi-line, string should be composed with newlines as desired. In a browser context, can be an instance of `bling.core/Enriched` (produced by using `bling.core/enriched`)|
-| `:margin-block`          | `int?`                                            | Controls the number of blank lines above and below the diagram.<br/>Defaults to `1`.|
-| `:type`                  | #{`:error` `:warning`}                            | Automatically sets the `:text-decoration-color`. |
-| `:text-decoration-color` | #{`keyword?` `string?`}                           | Controls the color of the underline. Should be one of: `:error` `:warning`, or `:neutral`.<br>Can also be any one of the pallete colors such as  `:magenta`, `:green`,  `:negative`, `:neutral`, etc. Defaults to `:neutral` |
-| `:text-decoration-style` | #{`:wavy` `:solid` `:dashed` `:dotted` `:double`} | Controls the color of the underline. |
-| `:text-decoration-index` | `pos-int?` | If the value of `:form` is a collection, this is the index of the item to apply text-decoration (underline). |
-"
+   All the options:
 
+   ```Clojure
+   [:form
+    {:required true
+     :desc     [\"The form to draw attention to. Will be cast to string and\"
+                \"truncated at 33 chars\"]}
+    :any]
+
+   [:file
+    {:optional true
+     :desc     [\"File or namespace\"]}
+    :string]
+
+   [:line
+    {:optional true
+     :desc     [\"Line number\"]}
+    :int]
+
+   [:column
+    {:optional true
+     :desc     [\"Column number\"]}
+    :int]
+
+   [:margin-block
+    {:optional true
+     :default  1
+     :desc     [\"Controls the number of blank lines above and below the diagram.\"]}
+    :int]
+
+   [:type
+    {:optional true
+     :desc     [\"Automatically sets the `:text-decoration-color`.\"]}
+    [:enum
+     :error
+     \"error\"
+     :warning
+     \"warning\"]]
+
+   [:text-decoration-color
+    {:optional true
+     :default  :neutral
+     :desc     [\"Controls the color of the underline.\"]}
+    [:enum
+     :error
+     \"error\"
+     :warning
+     \"warning\"
+     :neutral
+     \"neutral\"
+     :magenta
+     \"magenta\"
+     :green
+     \"green\"
+     :negative
+     \"negative\"]]
+
+   [:text-decoration-style
+    {:optional true
+     :desc     [\"Controls the color of the underline.\"]}
+    [:enum
+     :wavy
+     \"wavy\"
+     :solid
+     \"solid\"
+     :dashed
+     \"dashed\"
+     :dotted
+     \"dotted\"
+     :double
+     \"double\"]]
+
+   [:text-decoration-index
+    {:optional true
+     :desc     [\"If the value of `:form` is a collection, this is the index of\"
+                \"the item to apply text-decoration (underline).\"]}
+    :pos-int]
+   ```"
+
+  ;; TODO - change text-decoration-color to underline-color?
+  ;; TODO - Add option for doing underline in sgr?
   [{:keys [line
            file
            column
            form
-           header
-           body
+           header ; <- deprecated / undocumented
+           body   ; <- deprecated / undocumented
            margin-block
            text-decoration-color
            type]
@@ -792,8 +918,8 @@
                            :color       underline-color
                            :contrast    :medium}
                           underline-str]
-        header           (enriched-args header)
-        body             (enriched-args body)
+        header           (str header)
+        body             (str body)
         mb*              (or (some-> margin-block (maybe-> pos-int?))
                              (if (some-> margin-block zero?)
                                0
@@ -821,11 +947,7 @@
                                               body))]
     ret))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Enriched text public fns and helpers  --------------------------------------
 
 (declare ln)
@@ -1815,27 +1937,103 @@
 ;; TODO - Shoul we create callout-data as sugar for (callout {... data? true ...} ...)
 ;; TODO - visual tests
 
+(def callout-options-map-schema
+  [:map
+   [:type
+    {:optional true
+     :desc     ["Will set the label text (unless provided via `:label`). Will also set the `:colorway`, and override any provided `:colorway` value."]}
+    [:enum :error "error" :warning "warning" :info "info"]]
+   
+   [:colorway
+    {:optional true
+     :desc     ["The color of the sideline border, or gutter, depending on the value of `:theme`."]}
+    [:enum :error "error" :warning "warning" :info "info" :positive "positive" :subtle "subtle" :magenta "magenta" :green "green" :negative "negative" :neutral "neutral"]]
+   
+   [:theme
+    {:optional true
+     :default  :sideline
+     :desc     ["Theme of callout."]}
+    [:enum :sideline "sideline" :sideline-bold "sideline-bold" :minimal "minimal" :gutter "gutter"]]
+   
+   [:label
+    {:optional true
+     :desc     ["Labels the callout. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string)."
+                "In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively."]}
+    :any]
+   
+   [:side-label
+    {:optional true
+     :desc     ["Side label to the the callout label. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string)."
+                "In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively."]}
+    :any]
+   
+   [:label-theme
+    {:optional true
+     :default  :minimal
+     :desc     ["Theme of label."]}
+    [:enum :marquee "marquee" :minimal "minimal"]]
+   
+   [:padding-top
+    {:optional true
+     :default  0
+     :desc     ["Amount of padding (in newlines) at top, inside callout."]}
+    :int]
+   
+   [:padding-bottom
+    {:optional true
+     :default  0
+     :desc     ["Amount of padding (in newlines) at bottom, inside callout."]}
+    :int]
+   
+   [:padding-left
+    {:optional true
+     :default  2
+     :desc     ["Amount of padding (in blank character spaces) at left, inside callout."]}
+    :int]
+   
+   [:margin-top
+    {:optional true
+     :default  1
+     :desc     ["Amount of margin (in newlines) at top, outside callout."
+                "Only applies to terminal emulator printing."]}
+    :int]
+   
+   [:margin-bottom
+    {:optional true
+     :default  0
+     :desc     ["Amount of margin (in newlines) at bottom, outside callout."
+                "Only applies to terminal emulator printing."]}
+    :int]
+   
+   [:margin-left
+    {:optional true
+     :default  0
+     :desc     ["Amount of margin (in blank character spaces) at left, outside callout."]}
+    :int]
+   
+   [:border-block-length
+    {:optional true
+     :default  50
+     :desc     ["The width of the top and bottom border, only applies to the `:minimal` callout theme."]}
+    :int]
+   
+   [:data?
+    {:optional true
+     :desc     ["Returns a data representation of result instead of printing it."]}
+    :boolean]])
 
 (defn ^:public callout
   "Prints a message to the console with a block-based coloring motif controlled
    by the `:type` option. Returns nil.
     
    If the `:data?` option is set to `true`, it does not print anything, and
-   returns a data representation of the formatting and styling, which is will be
-   different depending on whether the context is a terminal emulator or a
-   browser dev console.
+   returns a data representation of the formatting and styling.
    
-   In terminal emulator consoles, this will print a colored bounding border in
-   the inline start position. The color of the border is determined by the value
-   of the `:type` option, or the `:colorway` option. The characteristics of this
-   border are controlled by the `:theme` option.
+   Callout prints a colored bounding border in the inline start position.
+   The color of the border is determined by the value of the `:type` option, or
+   the `:colorway` option. The characteristics of this border are controlled by
+   the `:theme` option.
     
-   In browser consoles, a border is not used, as the background and foreground
-   text of the message block is automatically colored by the browser dev tools
-   logging mechanism based on the type of logging function that is used. However,
-   this automatic styling only applies to the callout `:type` options of `:error`
-   and `:warn`.
-        
    For callouts of the type `:error`, `:warning`, or `:info`, a label is
    printed in the block start postion. If a :type option is set, the label
    string will default to an uppercased version of that string, e.g.
@@ -1846,94 +2044,103 @@
         
    The amount of vertical padding (in number of lines) within the bounds of the
    message body can be controlled the `padding-top` and `padding-bottom` options.
-   The amount of space (in number of lines) above and below the message block can
-   be controlled the `margin-top` and `margin-bottom` options. Margins are only
-   applicable to callouts formatted for the terminal emulator.
+   The amount of space (in number of lines) above and below the message block
+   can be controlled the `margin-top` and `margin-bottom` options. Margins are
+   only applicable to callouts formatted for the terminal emulator.
    
-   If two arguments are provided, the first should be a map with the follwoing
+   If two arguments are provided, the first should be a map with the following
    optional keys:
 
-| Key                    | Pred                    | Description                                                  |
-| :--------------------- | ----------------------- | ------------------------------------------------------------ |
-| `:type`                | `keyword?` or `string?` | Should be one of: `:error`,  `:warning` , or `:info`. <br>Will set the label text (unless provided via `:label`). Will also set the `:colorway`, and override any provided `:colorway` value. |
-| `:colorway`            | `keyword?` or `string?` | The color of the sideline border, or gutter, depending on the value of `:theme`.<br />Should be one of: `:error`,  `:warning` , `:info` , `:positive`, or `:subtle`. <br>Can also be any one of the pallete colors such as  `:magenta`, `:green`,  `:negative`, `:neutral`, etc. |
-| `:theme`               | `keyword?` or `string?` | Theme of callout. Can be one of `:sideline`, `:sideline-bold`, `:minimal`, or `:gutter`. Defaults to `:sideline`. |
-| `:label`               | `any?`                  | Labels the callout. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string). <br>In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively. |
-| `:side-label`          | `any?`                  | Side label to the the callout label. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string). <br>In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively. |
-| `:label-theme`         | `keyword?` or `string?` | Theme of label. Can be one of `:marquee` or `:minimal`. Defaults to `:minimal`. |
-| `:padding-top`         | `int?`                  | Amount of padding (in newlines) at top, inside callout.<br/>Defaults to `0`. |
-| `:padding-bottom`      | `int?`                  | Amount of padding (in newlines) at bottom, inside callout.<br>Defaults to `0`. In browser console, defaults to `1` in the case of callouts of type `:warning` or `:error`.|
-| `:padding-left`        | `int?`                  | Amount of padding (in blank character spaces) at left, inside callout.<br>In console emulator, defaults to `2`. In browser console, defaults to `0`.|
-| `:margin-top`          | `int?`                  | Amount of margin (in newlines) at top, outside callout.<br>Defaults to `1`. Only applies to terminal emulator printing. |
-| `:margin-bottom`       | `int?`                  | Amount of margin (in newlines) at bottom, outside callout.<br>Defaults to `0`. Only applies to terminal emulator printing. |
-| `:margin-left`         | `int?`                  | Amount of margin (in blank character spaces) at left, outside callout.<br>Defaults to `0`. Only applies to terminal emulator printing. |
-| `:border-block-length` | `int?`                  | The width of the top and bottom border, only applies to the `:minimal` callout theme.<br>Defaults to `50`. Only applies to terminal emulator printing. |
-| `:data?`               | `boolean?`              | Returns a data representation of result instead of printing it. |
+   Possible opts:
+   
+   ```Clojure
+   [:label-theme
+    {:optional true
+     :default  :minimal
+     :desc     \"Theme of label\".
+    [:enum :marquee \"marquee\" :minimal \"minimal\"]
+
+   [:border-block-length
+    {:optional true
+     :default  50
+     :desc     [\"The width of the top and bottom border, only applies to the `:minimal` callout theme.\"]}
+    :int]
+   ```
+
+| Key                    | Pred                      | Description                                                  |
+| :--------------------- | -----------------------   | ------------------------------------------------------------ |
+| `:type`                | `keyword?`<br>`string?`   | Should be one of: `:error`,  `:warning` , or `:info`. <br>Will set the label text (unless provided via `:label`). Will also set the `:colorway`, and override any provided `:colorway` value. |
+| `:colorway`            | `keyword?` or `string?`   | The color of the sideline border, or gutter, depending on the value of `:theme`.<br />Should be one of: `:error`,  `:warning` , `:info` , `:positive`, or `:subtle`. <br>Can also be any one of the pallete colors such as  `:magenta`, `:green`,  `:negative`, `:neutral`, etc. |
+| `:theme`               | `keyword?` or `string?`   | Theme of callout. Can be one of `:sideline`, `:sideline-bold`, `:minimal`, or `:gutter`. Defaults to `:sideline`. |
+| `:label`               | `any?`                    | Labels the callout. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string). <br>In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively. |
+| `:side-label`          | `any?`                    | Side label to the the callout label. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string). <br>In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively. |
+| `:label-theme`         | `keyword?` or `string?`   | Theme of label. Can be one of `:marquee` or `:minimal`. Defaults to `:minimal`. |
+| `:padding-top`         | `int?`                    | Amount of padding (in newlines) at top, inside callout.<br/>Defaults to `0`. |
+| `:padding-bottom`      | `int?`                    | Amount of padding (in newlines) at bottom, inside callout.<br>Defaults to `0`. In browser console, defaults to `1` in the case of callouts of type `:warning` or `:error`.|
+| `:padding-left`        | `int?`                    | Amount of padding (in blank character spaces) at left, inside callout.<br>In console emulator, defaults to `2`. In browser console, defaults to `0`.|
+| `:margin-top`          | `int?`                    | Amount of margin (in newlines) at top, outside callout.<br>Defaults to `1`. Only applies to terminal emulator printing. |
+| `:margin-bottom`       | `int?`                    | Amount of margin (in newlines) at bottom, outside callout.<br>Defaults to `0`. Only applies to terminal emulator printing. |
+| `:margin-left`         | `int?`                    | Amount of margin (in blank character spaces) at left, outside callout.<br>Defaults to `0`. Only applies to terminal emulator printing. |
+| `:border-block-length` | `int?`                    | The width of the top and bottom border, only applies to the `:minimal` callout theme.<br>Defaults to `50`. Only applies to terminal emulator printing. |
+| `:data?`               | `boolean?`                | Returns a data representation of result instead of printing it. |
 "
 
-
-
-  ;; TODO finish making this multi-arity
-  ;; test in clj and cljs
-  ;; make it work with bling.explain/explain-malli
-
-
   ;; TODO colorway can take arbitrary hex?
-  ([x & args]
-   (if (empty? args)
-     (cond
+  [x & args]
+  (if (empty? args)
+    (cond
        ;; The case when user just passes a :label value, so just border and text
-       (map? x)
-       (callout x nil)
+      (map? x)
+      (callout x nil)
 
        ;; The case when user just passes a string
-       (string? x)
-       (callout {} x)
+      (string? x)
+      (callout {} x)
 
        ;; Internal warning from bling about bad args
-       :else
-       (callout
-        {:type        :warning
-         :theme       :sideline-bold
-         :label-theme :marquee}
+      :else
+      (callout
+       {:type        :warning
+        :theme       :sideline-bold
+        :label-theme :marquee}
         ;; TODO - this is messy formatiing for data-structures, fix
-        (point-of-interest
-         {:type   :warning
-          :header "bling.core/callout"
-          :form   (cons 'callout (list x))
-          :body   (str "bling-core/callout, if called with a single argument,\n"
-                       "expects either:\n"
-                       "- a map of options\n"
-                       "- a string\n\n"
-                       "Nothing will be printed.")})))
+       (point-of-interest
+        {:type   :warning
+         :header "bling.core/callout"
+         :form   (cons 'callout (list x))
+         :body   (str "bling-core/callout, if called with a single argument,\n"
+                      "expects either:\n"
+                      "- a map of options\n"
+                      "- a string\n\n"
+                      "Nothing will be printed.")})))
 
-     (if-not (map? x)
+    (if-not (map? x)
        ;; Internal warning from bling about bad args
-       (callout
-        {:type :warning}
-        (point-of-interest
-         {:type   :warning
-          :header "bling.core/callout"
-          :form   (cons 'callout (cons x args))
-          :body   (str "bling-core/callout expects a map of options,\n"
-                       "followed by any number of values (usually strings).\n\n"
-                       "Nothing will be printed.")}))
-       (let [opts          x
+      (callout
+       {:type :warning}
+       (point-of-interest
+        {:type   :warning
+         :header "bling.core/callout"
+         :form   (cons 'callout (cons x args))
+         :body   (str "bling-core/callout expects a map of options,\n"
+                      "followed by any number of values (usually strings).\n\n"
+                      "Nothing will be printed.")}))
+      (let [opts          x
              ;;  value         (some-> args (maybe-> #(not (string/blank? %))))
-             callout-opts  (callout-opts* opts)
-             callout-opts+ (merge {:value (string/join "" args)}
-                                  opts
-                                  callout-opts)]
-         #?(:cljs
-            (if node?                                                           ;; TODO <- move to enriched or data
-              (callout* callout-opts+)
-              (do 
-                (-> (callout* (assoc callout-opts+ :browser-dev-console? true))
-                    browser/print-to-browser-dev-console)
-                #_(browser-callout callout-opts+)))
+            callout-opts  (callout-opts* opts)
+            callout-opts+ (merge {:value (string/join "" args)}
+                                 opts
+                                 callout-opts)]
+        #?(:cljs
+           (if node?                                                           ;; TODO <- move to enriched or data
+             (callout* callout-opts+)
+             (do 
+               (-> (callout* (assoc callout-opts+ :browser-dev-console? true))
+                   browser/print-to-browser-dev-console)
+               #_(browser-callout callout-opts+)))
 
-            :clj
-            (callout* callout-opts+)))))))
+           :clj
+           (callout* callout-opts+))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

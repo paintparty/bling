@@ -1,3 +1,5 @@
+
+
 ;; Namespace for visual testing and sandbox dev during development
 
 (ns bling.visual-test
@@ -45,7 +47,40 @@
 ;; (callout {:type :error} 
 ;;          (bling [:bold (str "Line 1" "\n" "Line 2")]))
 
-(callout {:theme :minimal} 
+   (println (point-of-interest {:form                  '(+ 1 true) ; <- required
+                                :line                  42
+                                :column                11
+                                :file                  "myfile.core"
+                                :text-decoration-style :wavy  ; :underline :solid :dashed :dotted :double
+                                :type                  :error ; :warning 
+                                ;; :margin-block          0       ; <- default is one
+                                ;; :text-decoration-index 2       ; <- If form is collection, this will focus underline
+                                ;; :text-decoration-color :yellow ; <- and bling palette color
+                                }))
+
+#_(println (bling.banner/banner {:text "FUDGE" :font ansi-shadow}))
+
+#_(print
+ (bling.hifi/format-malli-options-schema-for-docstring
+  "My docs"
+  [:map
+    [:font
+     {:optional true
+      :default  'bling.fonts.ansi-shadow/ansi-shadow
+      :desc     ["Must be one of the fonts that ships with Bling:"
+                 "`bling.fonts.ansi-shadow/ansi-shadow`,"
+                 "`bling.fonts.big-money.big-money/big-money`,"
+                 "`bling.fonts.big/big`, `bling.fonts.miniwi/miniwi`,"
+                 "`bling.fonts.drippy/drippy,` or"
+                 "`bling.fonts.isometric-1/isometric-1`."]}
+     :map]
+    
+    [:text
+     {:optional true
+      :desc     ["The text to set in the banner."]}
+     :string]]))
+
+(callout #_{:theme :minimal} 
          (bling [:bold (str "Line 1" "\n" "Line 2")]))
 
 ;; (callout {:theme :sideline-bold} 
