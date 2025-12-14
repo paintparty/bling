@@ -44,10 +44,36 @@
 
 ;; (print-bling [:bold (str "Line 1" "\n" "Line 2")])
 
-;; (callout {:type :error} 
-;;          (bling [:bold (str "Line 1" "\n" "Line 2")]))
+#_(callout {:type                   :info
+          ;; :colorway            :purple          ; <- any bling palette color, overrides :type
+          ;; :label                  "My label"              ; overrides label assigned by :theme
+          :side-label             "My side label"  ; must have a :label if you want a :side-label        
+          :theme                  :sideline        ; :sideline :sideline-bold :minimal :gutter
+          :label-theme            :minimal         ; :minimal :marquee
+          ;; :padding-top            0                 
+          ;; :padding-left           2                 
+          ;; :padding-bottom         0                 
+          ;; :padding-right          0                 
+          ;; :margin-top             1                 
+          ;; :margin-botom           0                 
+          ;; :margin-left            0                 
+          ;; :data?                  true             ; <- just returns string, no printing
+          
+          :border-block-length 80               ; <- Only applies to :minimal theme + no label
+          
+          ;; --- The options below exclusive to :theme of :boxed ---------------
+          ;; :box-drawing-style      :thin-round      ; :thin :bold :double
+          ;; :border-char            "*"
+          ;; :vertical-border-char   "**"
+          ;; :width                  40
+          ;; :max-width              100
+          ;; :min-width              40
+          ;; :padding-block          1
+          ;; :padding-inline         2
+          }
+         (bling [:bold (str "Line 1" "\n" "Line 2")]))
 
-   (println (point-of-interest {:form                  '(+ 1 true) ; <- required
+#_(println (point-of-interest {:form                  '(+ 1 true) ; <- required
                                 :line                  42
                                 :column                11
                                 :file                  "myfile.core"
@@ -55,7 +81,7 @@
                                 :type                  :error ; :warning 
                                 ;; :margin-block          0       ; <- default is one
                                 ;; :text-decoration-index 2       ; <- If form is collection, this will focus underline
-                                ;; :text-decoration-color :yellow ; <- and bling palette color
+                                ;; :text-decoration-color :yellow ; <- any bling palette color
                                 }))
 
 #_(println (bling.banner/banner {:text "FUDGE" :font ansi-shadow}))

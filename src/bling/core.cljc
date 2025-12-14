@@ -6,6 +6,7 @@
             [clojure.walk :as walk]
             [bling.ansi :as ansi :refer [adjusted-char-count]]
             [bling.browser]
+            [bling.hifi]
             [bling.defs :as defs]
             [bling.macros :refer [let-map keyed]]
             [bling.util :as util :refer [maybe->]]
@@ -1564,7 +1565,7 @@
          pd-bottom                  (or (maybe-> pd-bottom pos-int?) pd-block)
          pd-hrz                     #(min (or (maybe-> % pos-int?) pd-inline) 10)
          pd-right                   (pd-hrz pd-right)
-         pd-left                    (pd-hrz pd-left)
+         pd-left                    (pd-hrz (? pd-left))
          terminal-width             (resolve-terminal-width min-width max-width)
          cols                       (or width terminal-width)
          max-inner-cols             (- cols
@@ -1851,9 +1852,11 @@
 
 
 (defn- resolve-padding-left [m theme]
-  (let [default (if (= theme "minimal") 0 2)
-        pl      (or (maybe-> (:padding-left m) pos-int?) default)]
-    pl))
+  (if (= theme "boxed")
+    (:padding-left m)
+    (let [default (if (= theme "minimal") 0 2)
+          pl      (or (maybe-> (:padding-left m) pos-int?) default)]
+      pl)))
 
 
 (defn- resolve-padding-top
@@ -1953,7 +1956,7 @@
     {:optional true
      :default  :sideline
      :desc     ["Theme of callout."]}
-    [:enum :sideline "sideline" :sideline-bold "sideline-bold" :minimal "minimal" :gutter "gutter"]]
+    [:enum :sideline "sideline" :sideline-bold "sideline-bold" :minimal "minimal" :gutter "gutter" :boxed "boxed"]]
    
    [:label
     {:optional true
@@ -2020,11 +2023,119 @@
    [:data?
     {:optional true
      :desc     ["Returns a data representation of result instead of printing it."]}
-    :boolean]])
+    :boolean]
+   
+   [:box-drawing-style
+    {:optional true
+     :theme    :boxed
+     :desc     ["The style of box-drawing character used."]}
+    [:enum :thin-round "thin-round" :thin "thin" :bold "bold" :double "double"]]
+   
+   [:border-char
+    {:optional true
+     :theme    :boxed
+     :desc     ["A char that will override the default box-drawing"
+                "character."]}
+    :string]
+   
+   [:vertical-border-char
+    {:optional true
+     :theme    :boxed
+     :desc     ["A char that will override the default box-drawing"
+                "character, for the vertical borders."]}
+    :string]
+   
+   [:width
+    {:optional true
+     :theme    :boxed
+     :desc     ["Width of the box in number of chars, aka columns in"
+                "terminal. If not set, will be the width of the terminal."
+                "If terminal width cannot be detected, will fallback to"
+                "80."]}
+    :pos-int]
+   
+   [:max-width
+    {:optional true
+     :theme    :boxed
+     :desc     ["Max width of box in number of chars, aka columns in"
+                "terminal. Overridden by the `:width` value, if set."]}
+    :pos-int]
+   
+   [:min-width
+    {:optional true
+     :theme    :boxed
+     :desc     ["Min width of box in number of chars, aka columns in"
+                "terminal. Overridden by the `:width` value, if set."]}
+    :pos-int]
+   
+   [:padding-right
+    {:optional true
+     :default  2
+     :theme    :boxed
+     :desc     ["Amount of padding (in blank character spaces) at right,"
+                "inside callout."
+                "In console emulator, defaults to `2`. In browser console,"
+                "defaults to `0`."]}
+    :int]
+   
+   [:padding-block
+    {:optional true
+     :default  1
+     :theme    :boxed
+     :desc     ["Amount of padding (in blank character spaces) at top and"
+                "bottom, inside callout."
+                "In console emulator, defaults to `1`. In browser console,"
+                "defaults to `0`."]}
+    :int]
+   
+   [:padding-inline
+    {:optional true
+     :default  2
+     :theme    :boxed
+     :desc     ["Amount of padding (in blank character spaces) at left"
+                "and right, inside callout."
+                "In console emulator, defaults to `2`. In browser console,"
+                "defaults to `0`."]}
+    :int]
+   ])
+
 
 (defn ^:public callout
-  "Prints a message to the console with a block-based coloring motif controlled
-   by the `:type` option. Returns nil.
+  "Example:
+   
+  ```Clojure
+  (callout {:type                   :error
+            ;; :colorway            :purple          ; <- any bling palette color, overrides :type
+            ;; :label                  \"My label\"              ; overrides label assigned by :theme
+            :side-label             \"My side label\"  ; must have a :label if you want a :side-label        
+            :theme                  :sideline        ; :sideline :sideline-bold :minimal :gutter
+            :label-theme            :minimal         ; :minimal :marquee
+            ;; :padding-top            0                 
+            ;; :padding-left           2                 
+            ;; :padding-bottom         0                 
+            ;; :padding-right          0                 
+            ;; :margin-top             1                 
+            ;; :margin-botom           0                 
+            ;; :margin-left            0                 
+            ;; :data?                  true             ; <- just returns string, no printing
+            
+            :border-block-length 80               ; <- Only applies to :minimal theme + no label
+            
+            ;; --- The options below exclusive to :theme of :boxed ---------------
+            ;; :box-drawing-style      :thin-round      ; :thin :bold :double
+            ;; :border-char            \"*\"
+            ;; :vertical-border-char   \"**\"
+            ;; :width                  40
+            ;; :max-width              100
+            ;; :min-width              40
+            ;; :padding-block          1
+            ;; :padding-inline         2
+            }
+          (bling [:bold (str \"Line 1\" \"\\n\" \"Line 2\")])
+   ```
+
+   Prints a message to the console with a block-based coloring motif.
+   Returns nil.
     
    If the `:data?` option is set to `true`, it does not print anything, and
    returns a data representation of the formatting and styling.
@@ -2045,65 +2156,154 @@
    The amount of vertical padding (in number of lines) within the bounds of the
    message body can be controlled the `padding-top` and `padding-bottom` options.
    The amount of space (in number of lines) above and below the message block
-   can be controlled the `margin-top` and `margin-bottom` options. Margins are
-   only applicable to callouts formatted for the terminal emulator.
+   can be controlled the `margin-top` and `margin-bottom` options.
    
-   If two arguments are provided, the first should be a map with the following
-   optional keys:
+   If two arguments are provided, the first should be a map of valid options.
 
-   Possible opts:
-   
+   All the options:
+
    ```Clojure
+   [:type
+    {:optional true
+     :desc     [\"Will set the label text (unless provided via `:label`). Will also set the `:colorway`, and override any provided `:colorway` value.\"]}
+    [:enum
+     :error
+     \"error\"
+     :warning
+     \"warning\"
+     :info
+     \"info\"]]
+
+   [:colorway
+    {:optional true
+     :desc     [\"The color of the sideline border, or gutter, depending on the value of `:theme`.\"]}
+    [:enum
+     :error
+     \"error\"
+     :warning
+     \"warning\"
+     :info
+     \"info\"
+     :positive
+     \"positive\"
+     :subtle
+     \"subtle\"
+     :magenta
+     \"magenta\"
+     :green
+     \"green\"
+     :negative
+     \"negative\"
+     :neutral
+     \"neutral\"]]
+
+   [:theme
+    {:optional true
+     :default  :sideline
+     :desc     [\"Theme of callout.\"]}
+    [:enum
+     :sideline
+     \"sideline\"
+     :sideline-bold
+     \"sideline-bold\"
+     :minimal
+     \"minimal\"
+     :gutter
+     \"gutter\"
+     :boxed
+     \"boxed\"]]
+
+   [:label
+    {:optional true
+     :desc     [\"Labels the callout. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string).\"
+                \"In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively.\"]}
+    :any]
+
+   [:side-label
+    {:optional true
+     :desc     [\"Side label to the the callout label. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string).\"
+                \"In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively.\"]}
+    :any]
+
    [:label-theme
     {:optional true
      :default  :minimal
-     :desc     \"Theme of label\".
-    [:enum :marquee \"marquee\" :minimal \"minimal\"]
+     :desc     [\"Theme of label.\"]}
+    [:enum
+     :marquee
+     \"marquee\"
+     :minimal
+     \"minimal\"]]
+
+   [:padding-top
+    {:optional true
+     :default  0
+     :desc     [\"Amount of padding (in newlines) at top, inside callout.\"]}
+    :int]
+
+   [:padding-bottom
+    {:optional true
+     :default  0
+     :desc     [\"Amount of padding (in newlines) at bottom, inside callout.\"]}
+    :int]
+
+   [:padding-left
+    {:optional true
+     :default  2
+     :desc     [\"Amount of padding (in blank character spaces) at left, inside callout.\"]}
+    :int]
+
+   [:margin-top
+    {:optional true
+     :default  1
+     :desc     [\"Amount of margin (in newlines) at top, outside callout.\"
+                \"Only applies to terminal emulator printing.\"]}
+    :int]
+
+   [:margin-bottom
+    {:optional true
+     :default  0
+     :desc     [\"Amount of margin (in newlines) at bottom, outside callout.\"
+                \"Only applies to terminal emulator printing.\"]}
+    :int]
+
+   [:margin-left
+    {:optional true
+     :default  0
+     :desc     [\"Amount of margin (in blank character spaces) at left, outside callout.\"]}
+    :int]
 
    [:border-block-length
     {:optional true
      :default  50
      :desc     [\"The width of the top and bottom border, only applies to the `:minimal` callout theme.\"]}
     :int]
-   ```
 
-| Key                    | Pred                      | Description                                                  |
-| :--------------------- | -----------------------   | ------------------------------------------------------------ |
-| `:type`                | `keyword?`<br>`string?`   | Should be one of: `:error`,  `:warning` , or `:info`. <br>Will set the label text (unless provided via `:label`). Will also set the `:colorway`, and override any provided `:colorway` value. |
-| `:colorway`            | `keyword?` or `string?`   | The color of the sideline border, or gutter, depending on the value of `:theme`.<br />Should be one of: `:error`,  `:warning` , `:info` , `:positive`, or `:subtle`. <br>Can also be any one of the pallete colors such as  `:magenta`, `:green`,  `:negative`, `:neutral`, etc. |
-| `:theme`               | `keyword?` or `string?`   | Theme of callout. Can be one of `:sideline`, `:sideline-bold`, `:minimal`, or `:gutter`. Defaults to `:sideline`. |
-| `:label`               | `any?`                    | Labels the callout. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string). <br>In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively. |
-| `:side-label`          | `any?`                    | Side label to the the callout label. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string). <br>In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively. |
-| `:label-theme`         | `keyword?` or `string?`   | Theme of label. Can be one of `:marquee` or `:minimal`. Defaults to `:minimal`. |
-| `:padding-top`         | `int?`                    | Amount of padding (in newlines) at top, inside callout.<br/>Defaults to `0`. |
-| `:padding-bottom`      | `int?`                    | Amount of padding (in newlines) at bottom, inside callout.<br>Defaults to `0`. In browser console, defaults to `1` in the case of callouts of type `:warning` or `:error`.|
-| `:padding-left`        | `int?`                    | Amount of padding (in blank character spaces) at left, inside callout.<br>In console emulator, defaults to `2`. In browser console, defaults to `0`.|
-| `:margin-top`          | `int?`                    | Amount of margin (in newlines) at top, outside callout.<br>Defaults to `1`. Only applies to terminal emulator printing. |
-| `:margin-bottom`       | `int?`                    | Amount of margin (in newlines) at bottom, outside callout.<br>Defaults to `0`. Only applies to terminal emulator printing. |
-| `:margin-left`         | `int?`                    | Amount of margin (in blank character spaces) at left, outside callout.<br>Defaults to `0`. Only applies to terminal emulator printing. |
-| `:border-block-length` | `int?`                    | The width of the top and bottom border, only applies to the `:minimal` callout theme.<br>Defaults to `50`. Only applies to terminal emulator printing. |
-| `:data?`               | `boolean?`                | Returns a data representation of result instead of printing it. |
+   [:data?
+    {:optional true
+     :desc     [\"Returns a data representation of result instead of printing it.\"]}
+    :boolean]
 "
 
   ;; TODO colorway can take arbitrary hex?
   [x & args]
   (if (empty? args)
     (cond
-       ;; The case when user just passes a :label value, so just border and text
+      ;; The case when user just passes a :label value, so just border and text
       (map? x)
       (callout x nil)
 
-       ;; The case when user just passes a string
+      ;; The case when user just passes a string
       (string? x)
       (callout {} x)
 
-       ;; Internal warning from bling about bad args
+      ;; Internal warning from bling about bad args
       :else
       (callout
        {:type        :warning
         :theme       :sideline-bold
         :label-theme :marquee}
-        ;; TODO - this is messy formatiing for data-structures, fix
+       ;; TODO - this is messy formatiing for data-structures, fix
        (point-of-interest
         {:type   :warning
          :header "bling.core/callout"
@@ -2115,7 +2315,7 @@
                       "Nothing will be printed.")})))
 
     (if-not (map? x)
-       ;; Internal warning from bling about bad args
+      ;; Internal warning from bling about bad args
       (callout
        {:type :warning}
        (point-of-interest
@@ -2126,7 +2326,7 @@
                       "followed by any number of values (usually strings).\n\n"
                       "Nothing will be printed.")}))
       (let [opts          x
-             ;;  value         (some-> args (maybe-> #(not (string/blank? %))))
+            ;;  value         (some-> args (maybe-> #(not (string/blank? %))))
             callout-opts  (callout-opts* opts)
             callout-opts+ (merge {:value (string/join "" args)}
                                  opts
