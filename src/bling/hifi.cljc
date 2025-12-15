@@ -1,10 +1,12 @@
 (ns bling.hifi
   (:require [fireworks.core]
+            [fireworks.core :refer [? !? ?> !?>]]
             [clojure.string :as string]
             [bling.ansi]
             #?(:cljs [bling.browser :as browser])
             #?(:cljs [bling.js-env :refer [node?]])
-            ))
+            
+            [clojure.walk :as walk]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Hi-Fidelity printing 
@@ -74,8 +76,7 @@
       :clj
       (println (hifi-impl x opts)))))
 
-
-(defn format-malli-options-schema-for-docstring 
+#_(defn format-malli-options-schema-for-docstring 
   "Experimental utility for repl usage, intended for turning existing malli 
    schemas for options maps into codeblocks that live in a docstring."
   [docstring vc]
@@ -97,3 +98,77 @@
                            "\n\n"))
               ""))
        "   ```"))
+
+(defn docstring-quoted [x]
+  (cond (string? x)
+        (symbol (str "\\\"" x "\\\""))
+        (coll? x)
+        (walk/postwalk 
+         (fn [x] 
+           (let [ret (if (string? x)
+                       (symbol (str "\\\"" x "\\\""))
+                       x)]
+             ret))
+         x)
+        :else
+        x))
+
+(defn- format-pred [pred]
+  (cond (keyword? pred)
+        (-> pred name (str "?") symbol) 
+        (and (vector? pred) (= (first pred) :enum))
+        #_(str "#(malli.core/validate " pred " %)")
+        (->> pred
+             rest
+             (mapv docstring-quoted)
+             (into #{})
+             str)
+        :else
+        pred))
+
+(defn- md-code [s]
+  (str "`" s "`"))
+
+(defn- subline [s]
+  (str "    - " s))
+
+(defn- sublines [{:keys [optional desc default]} pred]
+  (remove nil?
+          [(subline (md-code (format-pred pred)))
+           (subline (if (= optional true) "Optional." "Required."))
+           (when default
+             (subline (str "Defaults to " default ".")))
+           (subline (if (vector? desc) (string/join " " desc) desc))]))
+
+(defn- join-lines
+  ([coll]
+   (join-lines "\n" coll))
+  ([sep coll]
+   (string/join sep coll)))
+
+(defn format-malli-options-schema-for-docstring 
+  "Experimental utility for repl usage, intended for turning existing malli 
+   schemas for options maps into codeblocks that live in a docstring."
+  [{:keys [desc examples options docsgen] :as m}]
+  (str (join-lines "\n\n" desc)
+       "\n\n"
+       (let [{:keys [desc samples]}
+             (->> examples
+                  (filter #(-> % :id (= :gradients)))
+                  first)]
+         (str desc
+              "\n\n"
+              (string/join "\n" (mapv #(str "`" % "`") samples))
+              ))
+       "\n\n"
+       "All the options:"
+       "\n\n"
+       (->> options
+            rest
+            (reduce (fn [s [option m pred]]
+                      (str s 
+                           "* " (md-code option)
+                           "\n"
+                           (string/join "\n" (sublines m pred))
+                           "\n"))
+                    ""))))

@@ -39,6 +39,7 @@
   ;;  [taoensso.tufte :as tufte :refer [p profile]]
    ))
 
+;; (bling.banner/banner {:font miniwi :text "hi"})
 
 ;; (tufte/add-handler! :my-console-handler (tufte/handler:console))
 
