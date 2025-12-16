@@ -17,6 +17,8 @@
                    :task       (exec 'quickdoc.api/quickdoc)
                    :exec-args  {:git/branch   "0.10.0v2"
                                 :github/repo  "https://github.com/paintparty/bling"
-                                :source-paths ["src/bling/core.cljc"
+                                :source-paths [
+                                              ;;  "src/bling/core.cljc"
                                                "src/bling/banner.cljc"
-                                               "src/bling/explain.cljc"]}}}}
+                                              ;;  "src/bling/explain.cljc"
+                                               ]}}}}

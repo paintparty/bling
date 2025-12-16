@@ -23,7 +23,7 @@
 (def ^:private BEL "\u0007")
 (def ^:private SEP ";")
 
-(defn hyperlink [text url]
+(defn- hyperlink [text url]
   #?(:cljs
      url
      :clj
@@ -302,9 +302,9 @@
                               "double" "═"
                               "^")))))
 
-(def form-limit 33)
+(def ^:private form-limit 33)
 
-(defn poi-text-underline
+(defn- poi-text-underline
   [{:keys [form form-as-str text-decoration-index text-decoration-style]}]
   (if (and text-decoration-index
           (or (pos? text-decoration-index)
@@ -350,7 +350,7 @@
               ret (str n ";2;" r ";" g ";" b)]
           ret)))))
 
-(def underline-style-codes-by-style
+(def ^:private underline-style-codes-by-style
   {"straight" 1
    "double"   2
    "wavy"     3
@@ -602,111 +602,12 @@
 
 
 
-;; Formatting exceptions -------------------------------------------------------
-
-;; Stack trace preview intended for JVM clojure (no clojurescript)
-;; TODO - put this through the paces and decided whether or not to expose in the
-;; public API.
-(defn stack-trace-preview
-  "Creates a user-friendly stack-trace preview, limited to the frames which
-   contain a match with the supplied regex, up to the `depth` value, if supplied.
-   `depth` defaults to 7."
-  [{:keys [error regex depth header]}]
-  #?(:clj
-     (if-let [strace (some->> (maybe-> error #(instance? Exception %))
-                              .getStackTrace
-                              seq)]
-       (let [strace-len  (count strace)
-             depth       (or (maybe-> depth pos-int?) 7)
-
-             ;; Get a mini-strace, limited to the number of frames that will be
-             ;; displayed based on `depth`
-             mini-strace (->> strace
-                              (take depth)
-                              (mapv StackTraceElement->vec))
-
-             ;; If regex is legit, get a list of indexes that match the regex
-             ;; passed in by user. Regex will match on ns or filename where
-             ;; user's their program lives. Then get the last index of a match
-             ;; (within the mini-strace). If regex is not legit, use the depth.
-             last-index  (if (= java.util.regex.Pattern (type regex))
-                           ;; TODO - perf - use transduction here
-                           (some->> mini-strace
-                                    (keep-indexed
-                                     (fn [i [f]]
-                                       (when (re-find regex (str f))
-                                         i)))
-                                    seq
-                                    (take depth)
-                                    last)
-                           (dec depth))
-
-             ;; Get all the frames up to the last index
-             trace*      (when last-index
-                           (->> mini-strace (take (inc last-index))))
-             len         (when trace* (count trace*))
-             with-header [(or header
-                              (bling [:italic "Stacktrace preview:"])) "\n"]
-             trace       (some->> trace* (interpose "\n") (into with-header))
-             num-dropped (when trace
-                           (let [n (- (or strace-len 0) (or len 0))]
-                             (some->> (maybe-> n pos-int?)
-                                      (str "\n...+"))))
-
-             ;; Conj num-dropped annotation to mini-strace
-             trace       (some-> trace (conj num-dropped))]
-
-         ;; Create and return multiline string
-         (apply str trace))
-
-       ;; Print a warning if option args are bad
-       (callout {:type :warning}
-                (bling
-                 "bling.core/stack-trace-preview\n\n"
-                 "Value of the "
-                 [:bold :error]
-                 " option should be an instance of "
-                 [:bold 'java.lang.Exception.]
-                 "\n\n"
-                 "Value received:\n"
-                 [:bold (util/shortened error 33)]
-                 "\n\n"
-                 "Type of value received:\n"
-                 [:bold (str (type error))])))))
-
-
 ;; Race-condition-free version of clojure.core/println,
 ;; Maybe useful to keep around if any weird behavior arises.
 #?(:clj
    (defn- safe-println [& more]
      (.write *out* (str (clojure.string/join " " more) "\n"))))
 
-
-;; Shared cljs fns -------------------------------------------------------------
-#?(:cljs
-   (do
-
-     ;; TODO Delete this once you convert fireworks to using new pipeline
-
-     (deftype
-      ^{:doc
-        "A js object with the the following fields:
-         `tagged`
-         A string with the appropriate tags for styling in browser consoles
-
-         `css`
-         An array of styles that sync with the tagged string.
-
-         `consoleArray`
-         An array by `Array.unshift`ing the tagged string onto the css array.
-         This is the format that is needed for printing in a browser console, e.g.
-         `(.apply js/console.log js/console (goog.object/get o \"consoleArray\"))`.
-
-         For browser usage, sugar for the above `.apply` call is provided with
-         `bling.core/print-bling`. You can use it like this:
-         `(print-bling (bling [:bold.blue \"my blue text\"]))"}
-      Enriched
-      [tagged css consoleArray args])))
 
 
 ;; PPPPPPPPPPPPPPPPP        OOOOOOOOO     IIIIIIIIII
@@ -729,7 +630,7 @@
 
 ;; Line and point of interest public fns  -------------------------------------
 
-(def point-of-interest-options-schema
+(def ^{:no-doc true} point-of-interest-options-schema
   [:map
    [:form
     {:required true
@@ -1255,7 +1156,7 @@
 
 
 
-(defn ansi-callout-str
+(defn- ansi-callout-str
   [{:keys [label-theme theme value] :as m}]
   (let [sideline-variant?            (contains? #{"sideline" "sideline-bold"} theme)
         minimal-variant?             (= "minimal" theme)
@@ -1292,7 +1193,7 @@
 ;; Boxed callout start 
 ;; -----------------------------------------------------------------------------
 
-(def bdc
+(def ^:private bdc
   {:h  {:double     "═"
         :bold       "━"
         :thin       "─"
@@ -1323,9 +1224,9 @@
         :thin       "┘"
         :thin-round "╯"}})
 
-(def box-drawing-styles (into #{} (-> bdc :h keys)))
+(def ^:private box-drawing-styles (into #{} (-> bdc :h keys)))
 
-(defn wrapped-string-inner
+(defn- wrapped-string-inner
   [max-cols
    {:keys [result col]
     :as   acc}
@@ -1379,9 +1280,9 @@
           [s])))
 
 
-(defn wrapped-string
+(defn- wrapped-string
   "Given a string with line-breaks, returns a string, with additional line
-   breaks insert, such that the width of every line of text is below the
+   breaks inserted, such that the width of every line of text is below the
    `max-cols` threshold."
   [s {:keys [max-width]}]
   (->> 
@@ -1497,7 +1398,6 @@
                            :else w)]
        (or w 80))))
 
-
 (defn- border-chars
   [{:keys [border-char
            vertical-border-char
@@ -1537,7 +1437,7 @@
             horizontal-border-char])))
 
 
-(defn boxed-callout
+(defn- boxed-callout
   "Creates a callout with a border on all sides"
   ([s] (boxed-callout s nil))
   ([s 
@@ -1660,11 +1560,10 @@
 ;; Boxed callout end 
 ;; -----------------------------------------------------------------------------
 
-
-(def rainbow-colors
+(def ^:private rainbow-colors
   ["red" "orange" "yellow" "green" "black" "white" "blue" "purple" "magenta"])
 
-(def rainbow-colors-system
+(def ^:private rainbow-colors-system
   (reverse ["system-maroon"
             "system-yellow"
             "system-olive"
@@ -1687,7 +1586,7 @@
     gutter-str
     " "))
 
-(defn callout*
+(defn- callout*
   [{:keys [theme]
     :as   m}]
   (if (= "boxed" theme)
@@ -1774,39 +1673,7 @@
      (defn ^:public print-to-browser-dev-console [s]
        (->> s
             bling.browser/ansi-sgr-string->browser-dev-console-array
-            (.apply js/console.log js/console)))
-
-     (defn- browser-callout-label
-       [{:keys [margin-top label label-theme side-label color]
-         :as m}]
-       (let [border-style {:color    color
-                           :contrast :medium}
-             pipe?        (= label-theme "pipe")]
-         (bling (when (pos? margin-top)
-                  (string/join (repeat margin-top "\n")))
-                (when pipe? [border-style "══"])
-                [:bold (some->> label (str (when pipe? " ")))]
-                (when pipe? " ")
-                (when pipe? [border-style "════"])
-                (some->> side-label (str " ")))))
-
-     (defn padding-block [n warning-or-error?]
-       (if (pos-int? n) (char-repeat n "\n") (when warning-or-error? "\n")))
-
-     (defn browser-callout
-       [{:keys [value
-                warning?
-                error?
-                padding-bottom
-                padding-top]
-         :as   m}]
-       (let [warning-or-error?  (or warning? error?)
-             semantic-type?     (or warning-or-error?)
-             padding-bottom-str (padding-block padding-bottom warning-or-error?)
-             padding-top-str    (padding-block padding-top semantic-type?)
-             label              (browser-callout-label m)
-             body               (str padding-top-str value padding-bottom-str)]
-         (print-to-browser-dev-console (str label "\n" body))))))
+            (.apply js/console.log js/console)))))
 
 
 (defn- default-opt [m k set-of-strs default]
@@ -1940,7 +1807,7 @@
 ;; TODO - Shoul we create callout-data as sugar for (callout {... data? true ...} ...)
 ;; TODO - visual tests
 
-(def callout-options-map-schema
+(def ^{:no-doc true} callout-options-map-schema
   [:map
    [:type
     {:optional true
@@ -2390,7 +2257,7 @@
        acc))))
 
 
-(defrecord EnrichedText [value style])
+(defrecord ^:private EnrichedText [value style])
 
 
 #?(:cljs
@@ -2403,7 +2270,7 @@
        [style v])))
 
 
-(defn href-console [style v]
+(defn- href-console [style v]
   (let [href  (when (map? style) (:href style))
         v     (if href (hyperlink v href) v)
         style (if href
@@ -2639,9 +2506,7 @@
    (println (bling [:bold.blue \"my blue text\"]))
 
    In cljs (browser dev consoles), `print-bling` is sugar for the the following:
-   `(->> (bling [:bold.blue \"my blue text\"])
-         bling.browser/ansi-sgr-string->browser-dev-console-array
-         (.apply js/console.log js/console))`
+   `(print-to-browser-dev-console (bling [:bold.blue \"my blue text\"]))`
 
   Example:
   `(print-bling [:bold.blue \"my blue text\"])"

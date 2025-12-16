@@ -98,3 +98,10 @@
        (catch Exception e
          80) ; fallback for error
        )))
+
+(defn join-lines
+  ([coll]
+   (join-lines "\n" coll))
+  ([sep coll]
+   (string/join sep coll)))
+

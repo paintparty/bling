@@ -1,7 +1,7 @@
 (ns bling.test-gen
   (:require
    [fireworks.core :refer [? !? ?> !?> pprint]] ;; <-just for debugging
-   [bling.core :as bling :refer [bling boxed-callout]]
+   [bling.core :as bling :refer [bling callout]]
    [bling.sample :as sample :refer [callout+]]
    [clojure.string :as string]))
 
@@ -106,7 +106,7 @@
   []
   (spit (str "./test/bling/core_test" ".clj") 
         (str 
-         (boxed-callout comment-box-text {:padding-inline 3})
+         (callout {:theme :boxed :padding-inline 3} comment-box-text)
          "\n\n"
          (with-out-str 
            (pprint '(ns bling.core-test

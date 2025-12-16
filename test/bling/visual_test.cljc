@@ -13,7 +13,6 @@
                                  callout
                                  point-of-interest
                                  bling-colors*
-                                 boxed-callout
                                  ]]
    [fireworks.core :refer [? !? ?> !?>]]
    [bling.sample :as sample]

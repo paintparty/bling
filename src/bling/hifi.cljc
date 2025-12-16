@@ -1,11 +1,11 @@
 (ns bling.hifi
   (:require [fireworks.core]
-            [fireworks.core :refer [? !? ?> !?>]]
+            ;; [fireworks.core :refer [? !? ?> !?>]]
             [clojure.string :as string]
             [bling.ansi]
+            [bling.util :refer [join-lines]]
             #?(:cljs [bling.browser :as browser])
             #?(:cljs [bling.js-env :refer [node?]])
-            
             [clojure.walk :as walk]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -18,13 +18,11 @@
   [s max-width]
   (->> (string/split s #"\n")
       (mapv #(let [sgr-count (bling.ansi/sgr-count %)]
-              ;;  (println)
-              ;;  (prn %)
-              ;;  (println [(count %) sgr-count (- (count %) sgr-count)])
                (if (> (- (count %) sgr-count) max-width)
                  (str (subs % 0 (- max-width 3)) "...")
                  %)))
-      (string/join "\n")))
+      join-lines))
+
 
 (defn- hifi-impl [x user-opts]
   (let [ret  
@@ -76,99 +74,4 @@
       :clj
       (println (hifi-impl x opts)))))
 
-#_(defn format-malli-options-schema-for-docstring 
-  "Experimental utility for repl usage, intended for turning existing malli 
-   schemas for options maps into codeblocks that live in a docstring."
-  [docstring vc]
-  (str docstring
-       "\n\n"
-       "   All the options:"
-       "\n\n   ```Clojure\n"
-       (->> vc
-            rest
-            (reduce (fn [s opt-vc]
-                      (str s
-                           (string/replace
-                            (hifi opt-vc
-                                  {:theme               "Universal Neutral"
-                                   :truncate?           false
-                                   :margin-inline-start 3})
-                            #"\""
-                            "\\\\\"")
-                           "\n\n"))
-              ""))
-       "   ```"))
 
-(defn docstring-quoted [x]
-  (cond (string? x)
-        (symbol (str "\\\"" x "\\\""))
-        (coll? x)
-        (walk/postwalk 
-         (fn [x] 
-           (let [ret (if (string? x)
-                       (symbol (str "\\\"" x "\\\""))
-                       x)]
-             ret))
-         x)
-        :else
-        x))
-
-(defn- format-pred [pred]
-  (cond (keyword? pred)
-        (-> pred name (str "?") symbol) 
-        (and (vector? pred) (= (first pred) :enum))
-        #_(str "#(malli.core/validate " pred " %)")
-        (->> pred
-             rest
-             (mapv docstring-quoted)
-             (into #{})
-             str)
-        :else
-        pred))
-
-(defn- md-code [s]
-  (str "`" s "`"))
-
-(defn- subline [s]
-  (str "    - " s))
-
-(defn- sublines [{:keys [optional desc default]} pred]
-  (remove nil?
-          [(subline (md-code (format-pred pred)))
-           (subline (if (= optional true) "Optional." "Required."))
-           (when default
-             (subline (str "Defaults to " default ".")))
-           (subline (if (vector? desc) (string/join " " desc) desc))]))
-
-(defn- join-lines
-  ([coll]
-   (join-lines "\n" coll))
-  ([sep coll]
-   (string/join sep coll)))
-
-(defn format-malli-options-schema-for-docstring 
-  "Experimental utility for repl usage, intended for turning existing malli 
-   schemas for options maps into codeblocks that live in a docstring."
-  [{:keys [desc examples options docsgen] :as m}]
-  (str (join-lines "\n\n" desc)
-       "\n\n"
-       (let [{:keys [desc samples]}
-             (->> examples
-                  (filter #(-> % :id (= :gradients)))
-                  first)]
-         (str desc
-              "\n\n"
-              (string/join "\n" (mapv #(str "`" % "`") samples))
-              ))
-       "\n\n"
-       "All the options:"
-       "\n\n"
-       (->> options
-            rest
-            (reduce (fn [s [option m pred]]
-                      (str s 
-                           "* " (md-code option)
-                           "\n"
-                           (string/join "\n" (sublines m pred))
-                           "\n"))
-                    ""))))
