@@ -1136,9 +1136,10 @@
                 "outside banner."]}
     :int]])
 
-(println (bling.docsgen/format-malli-options-schema-for-docstring
-          {:desc     ["Returns a multi-line Figlet (ascii art) string with the provided `:text` option."
-                      "Intended to render a single line banner."]
+#_(println (bling.docsgen/format-malli-options-schema-for-docstring
+          {
+           :desc     ["Returns a multi-line Figlet (ascii art) string with the provided `:text` option."
+                      "Intended to render a \"single line\" banner."]
            :examples '[{:id      :gradients
                         :label   "Gradient examples"
                         :desc    "Can be optionally colorized with the `:gradient` option, using a set of pre-defined gradients:"
@@ -1157,6 +1158,7 @@
                         :desc    "Can be colorized solid with `bling.core/bling`"
                         :samples [(bling [:red (banner {:text "Hello"})])]}]
            :options  [:map
+                      {:desc "All the options you need"}
                       [:font
                        {:optional true
                         :default  'bling.fonts.ansi-shadow/ansi-shadow
@@ -1247,82 +1249,103 @@
            :docsgen  '[:desc
                        [:examples :gradients]
                        [:examples :solid]
-                       :options]}))
+                       :options]
+           }))
 
 (defn banner
-  "Returns a multi-line Figlet (ascii art) string with the provided `:text` option.
+  "Returns a Figlet (ascii art) banner with the provided `:text` option.
 
-Intended to render a single line banner.
+   Intended to render a \"single line\" banner, or multiple lines of constituent
+   characters.
 
-Can be optionally colorized with the `:gradient` option, using a set of pre-defined gradients:
+   Can be optionally colorized with the `:gradient` option, using a set of
+   pre-defined gradients:
 
-```clojure
-(banner {:text \"Hello\", :gradient-colors [:green :blue]})
-(banner {:text \"Hello\", :gradient-colors [:red :magenta]})
-(banner {:text \"Hello\", :gradient-colors [:yellow :purple]})
-(banner {:text \"Hello\", :gradient-colors [:orange :purple]})
-(banner {:text \"Hello\", :gradient-colors [:cool :warm]})
-```
+   ```clojure
+   (banner {:text \"Hello\", :gradient-colors [:green :blue]})
+   (banner {:text \"Hello\", :gradient-colors [:red :magenta]})
+   (banner {:text \"Hello\", :gradient-colors [:yellow :purple]})
+   (banner {:text \"Hello\", :gradient-colors [:orange :purple]})
+   (banner {:text \"Hello\", :gradient-colors [:cool :warm]})
+   ```
 
-All the options:
+   Can be colorized solid with `bling.core/bling`
 
-* `:font`
-    - `map?`
-    - Optional.
-    - Defaults to bling.fonts.ansi-shadow/ansi-shadow.
-    - Must be one of the fonts that ships with Bling:
-        - `bling.fonts.ansi-shadow/ansi-shadow`,
-        - `bling.fonts.big-money.big-money/big-money`,
-        - `bling.fonts.big/big`, `bling.fonts.miniwi/miniwi`,
-        - `bling.fonts.drippy/drippy,` or
-        - `bling.fonts.isometric-1/isometric-1`.
-* `:text`
-    - `string?`
-    - Required.
-    - The text to set in the banner.
-* `:font-weight`
-    - `#{:bold \"bold\"}`
-    - Optional.
-    - If set to `:bold`, each subchar in figlet characters will be bolded. Only applies when a gradient is set.
-* `:gradient-colors`
-    - `#{[:yellow :purple] [\"orange\" \"purple\"] [\"cool\" \"warm\"] [\"green\" \"blue\"] [:red :magenta] [\"yellow\" \"purple\"] [\"red\" \"magenta\"] [:green :blue] [:cool :warm] [:orange :purple]}`
-    - Optional.
-    - Sets the beginning and end colors of the gradient. Expects a vector of 2 keywords.
-* `:gradient-direction`
-    - `#{:to-right :to-top \"to-bottom\" \"to-right\" \"to-top\" \"to-left\" :to-left :to-bottom}`
-    - Optional.
-    - Direction of the gradient.
-* `:gradient-shift`
-    - `[:int {:min 0, :max 5}]`
-    - Optional.
-    - Defaults to 0.
-    - If gradient is `[:warm :cool]` pair, this will shift the hue.
-* `:contrast`
-    - `keyword?`
-    - Optional.
-    - Defaults to :medium.
-    - If gradient is set, this will force an overall lighter or darker tone. If the user has a `BLING_MOOD` env var set, it will default to `:high` in order to optimize contrast for the users terminal theme (light or dark)
-* `:margin-top`
-    - `int?`
-    - Optional.
-    - Defaults to 1.
-    - Amount of margin (in newlines) at top, outside banner.
-* `:margin-bottom`
-    - `int?`
-    - Optional.
-    - Defaults to 0.
-    - Amount of margin (in newlines) at bottom, outside banner.
-* `:margin-left`
-    - `int?`
-    - Optional.
-    - Defaults to 0.
-    - Amount of margin (in blank character spaces) at left, outside banner.
-* `:margin-right`
-    - `int?`
-    - Optional.
-    - Defaults to 0.
-    - Amount of margin (in blank character spaces) at right, outside banner.
-"
+   ```clojure
+   (bling [:red (banner {:text \"Hello\"})])
+   ```
+
+   All the options you need:
+
+   * **`:font`**
+       - `map?`
+       - Optional.
+       - Defaults to `bling.fonts.ansi-shadow/ansi-shadow`.
+       - Must be one of the fonts that ships with Bling:
+           - bling.fonts.ansi-shadow/ansi-shadow
+           - bling.fonts.big-money.big-money/big-money
+           - bling.fonts.big/big
+           - bling.fonts.miniwi/miniwi
+           - bling.fonts.drippy/drippy
+           - bling.fonts.isometric-1/isometric-1
+
+   * **`:text`**
+       - `string?`
+       - Required.
+       - The text to set in the banner.
+
+   * **`:font-weight`**
+       - `#{:bold \"bold\"}`
+       - Optional.
+       - If set to `:bold`, each subchar in figlet characters will be bolded. Only applies when a gradient is set.
+
+   * **`:gradient-colors`**
+       - `#{[:yellow :purple] [\"orange\" \"purple\"] [\"cool\" \"warm\"] [\"green\" \"blue\"] [:red :magenta] [\"yellow\" \"purple\"] [\"red\" \"magenta\"] [:green :blue] [:cool :warm] [:orange :purple]}`
+       - Optional.
+       - Sets the beginning and end colors of the gradient. Expects a vector of 2 keywords.
+
+   * **`:gradient-direction`**
+       - `#{:to-right :to-top \"to-bottom\" \"to-right\" \"to-top\" \"to-left\" :to-left :to-bottom}`
+       - Optional.
+       - Direction of the gradient.
+
+   * **`:gradient-shift`**
+       - `[:int {:min 0, :max 5}]`
+       - Optional.
+       - Defaults to `0`.
+       - If gradient is `[:warm :cool]` pair, this will shift the hue.
+
+   * **`:contrast`**
+       - `keyword?`
+       - Optional.
+       - Defaults to `:medium`.
+       - If gradient is set, this will force an overall lighter or darker tone. If the user has a `BLING_MOOD` env var set, it will default to `:high` in order to optimize contrast for the users terminal theme (light or dark)
+
+   * **`:margin-top`**
+       - `int?`
+       - Optional.
+       - Defaults to `1`.
+       - Amount of margin (in newlines) at top, outside banner.
+
+   * **`:margin-bottom`**
+       - `int?`
+       - Optional.
+       - Defaults to `0`.
+       - Amount of margin (in newlines) at bottom, outside banner.
+
+   * **`:margin-left`**
+       - `int?`
+       - Optional.
+       - Defaults to `0`.
+       - Amount of margin (in blank character spaces) at left, outside banner.
+
+   * **`:margin-right`**
+       - `int?`
+       - Optional.
+       - Defaults to `0`.
+       - Amount of margin (in blank character spaces) at right, outside banner.
+
+   "
   {:desc     ["Returns a multi-line Figlet (ascii art) string with the provided `:text` option."
               "Intended to render a single line banner."]
    :examples '[{:id      :gradients
@@ -1427,11 +1450,11 @@ All the options:
                 :desc     ["Amount of margin (in blank character spaces) at right,"
                            "outside banner."]}
                :int]]
-
    :docsgen  '[:desc
                [:examples :gradients]
                [:examples :solid]
-               :options]}
+               :options]
+   }
 
   [m]
   #?(:cljs

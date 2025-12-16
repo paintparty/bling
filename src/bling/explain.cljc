@@ -3,6 +3,7 @@
             [clojure.string :as string]
             [clojure.walk :as walk]
             [bling.core :refer [bling]]
+            [bling.docsgen]
             [bling.hifi :refer [hifi]]
             [bling.util :as util :refer [maybe->]]
             [bling.macros :refer [keyed]]
@@ -13,7 +14,7 @@
 ;; Malli explain 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def core-preds-by-keyword 
+(def ^:private core-preds-by-keyword 
   {:vector  {:fn  vector?
              :sym 'vector?
              :tag "vector"}
@@ -168,7 +169,7 @@
            (boolean (and (= k (first schema))
                          (if (= 2 n) (fn? a) (and (map? a) (fn? b)))))))))
 
-(defn grouped* [v malli-schema]
+(defn- grouped* [v malli-schema]
   (reduce
    (fn [acc [disjunctor problems]]
      (if (contains? #{:or :and} disjunctor)
@@ -200,7 +201,7 @@
    (!? (grouped-by-disjunctor v malli-schema))))
 
 
-(defn disjunctions*
+(defn- disjunctions*
   [{problems     :errors
     malli-schema :schema
     :as          malli-ex-data}]
@@ -212,6 +213,7 @@
          acc))
      {}
      (group-by #(:in %) (:errors malli-ex-data)))))
+
 
 (defn- collated-problems 
   [{problems :errors
@@ -238,6 +240,7 @@
   (when (enum-schema? schema)
     (->> schema rest (into #{}))))
 
+
 (defn- fn-schema-fn [schema]
   (some-> schema
           (maybe-> vector?)
@@ -246,7 +249,8 @@
           (maybe-> #(fn? (second %)))
           second))
 
-(defn get-satisfaction 
+
+(defn- get-satisfaction 
   [{:keys [schema schema-cleaned]}]
   (or (some-> schema enum-schema->set)
       (some-> (get core-preds-by-keyword (or schema-cleaned schema)) :sym)
@@ -256,7 +260,7 @@
       schema))
 
 
-(defn disjuncted-satisfactions
+(defn- disjuncted-satisfactions
   [{:keys [schemas] :as problem}
    {:keys [indentation-str] :as m}]
   (let [lb    (if (or (:ultra-compact? m) (:compact? m)) "\n" "\n\n")
@@ -324,26 +328,121 @@
                                              :class :info-error})]))
            :margin-inline-start indentation})) )
 
-(defn explain-malli
-  "Prints a malli validation error callout block via bling.core/callout.
-   Within the block, the value is pretty-printed, potentially with syntax
-   coloring. The problem value is highlighted with the `:highlight-error`
-   class of the active fireworks theme, or the `:highlight-error-underlined`
-   class, if the value is not a collection.
-   
-   If two arguments are provided, the second should be a map with the following
-   optional keys:
+#_(? (string/replace (str "Hello\n There how are you\n what the hell") #"\n ([^\s])" #(str "\n" (second %))))
 
-   | Key                      | Pred                    | Description                                                  |
-   | :---------------         | ----------------------- | ------------------------------------------------------------ |
-   | `:function-name`         | `string?`               | The name of the function that can be used to construct the source location. Optional.
-   | `:file`                  | `pos-int?` or `string?` | The file name that can be used to construct the source location. Optional.
-   | `:line`                  | `pos-int?` or `string?` | The line number that can be used to construct the source location. Optional.
-   | `:column`                | `pos-int?` or `string?` | The column number that can be used to construct the source location. Optional.
-   | `:spacing`               | `#{:compact}`           | If the value of `:spacing` is set to `:compact`, the callout is compacted vertically. 
-   | `:display-schema?`       | `boolean?`              | Displays the schema passed to the underlying call to `malli.core/explain`.
-   | `:display-explain-data?` | `boolean?`              | Displays the output of `malli.core/explain` within the callout block.
-   | `:callout-opts`          | `map?`                  | A map of options for the underlying call to bling.core/callout. |"
+#_(println (bling.docsgen/format-malli-options-schema-for-docstring
+          {:desc    ["Prints a malli validation error callout block via bling.core/callout.\n"
+                     "\n"
+                     "Within the block, the value is pretty-printed, potentially with syntax\n"
+                     "coloring. The problem value is highlighted with the `:highlight-error`\n"
+                     "class of the active fireworks theme, or the `:highlight-error-underlined`\n"
+                     "class, if the value is not a collection."]
+           :options [:map
+                     {:desc "If two three arguments are provided, the third should be a map with the following optional keys:"}
+                     [:function-name
+                      {:optional true
+                       :desc     ["The name of the function that can be used to construct"
+                                  "the source location."]}
+                      :string]
+                     
+                     [:file
+                      {:optional true
+                       :desc     ["The file name that can be used to construct the source"
+                                  "location."]}
+                      [:or :pos-int :string]]
+                     
+                     [:line
+                      {:optional true
+                       :desc     ["The line number that can be used to construct the source"
+                                  "location."]}
+                      [:or :pos-int :string]]
+                     
+                     [:column
+                      {:optional true
+                       :desc     ["The column number that can be used to construct the"
+                                  "source location."]}
+                      [:or :pos-int :string]]
+                     
+                     [:spacing
+                      {:optional true
+                       :desc     ["If the value of `:spacing` is set to `:compact`, the"
+                                  "callout is compacted vertically."]}
+                      [:enum :compact "compact"]]
+                     
+                     [:display-schema?
+                      {:optional true
+                       :desc     ["Displays the schema passed to the underlying call to"
+                                  "`malli.core/explain`."]}
+                      :boolean]
+                     
+                     [:display-explain-data?
+                      {:optional true
+                       :desc     ["Displays the output of `malli.core/explain` within the"
+                                  "callout block."]}
+                      :boolean]
+                     
+                     [:callout-opts
+                      {:optional true
+                       :desc     ["A map of options for the underlying call to"
+                                  "bling.core/callout."]}
+                      :map]]}))
+
+
+(defn explain-malli
+ {:desc    ["Prints a malli validation error callout block via bling.core/callout."
+            "Within the block, the value is pretty-printed, potentially with syntax"
+            "coloring. The problem value is highlighted with the `:highlight-error`"
+            "class of the active fireworks theme, or the `:highlight-error-underlined`"
+            "class, if the value is not a collection."]
+  :options [:map
+            {:desc "If two three arguments are provided, the third should be a map with the following optional keys"}
+            [:function-name
+             {:optional true
+              :desc     ["The name of the function that can be used to construct"
+                         "the source location."]}
+             :string]
+            
+            [:file
+             {:optional true
+              :desc     ["The file name that can be used to construct the source"
+                         "location."]}
+             [:or :pos-int :string]]
+            
+            [:line
+             {:optional true
+              :desc     ["The line number that can be used to construct the source"
+                         "location."]}
+             [:or :pos-int :string]]
+            
+            [:column
+             {:optional true
+              :desc     ["The column number that can be used to construct the"
+                         "source location."]}
+             [:or :pos-int :string]]
+            
+            [:spacing
+             {:optional true
+              :desc     ["If the value of `:spacing` is set to `:compact`, the"
+                         "callout is compacted vertically."]}
+             [:enum :compact "compact"]]
+            
+            [:display-schema?
+             {:optional true
+              :desc     ["Displays the schema passed to the underlying call to"
+                         "`malli.core/explain`."]}
+             :boolean]
+            
+            [:display-explain-data?
+             {:optional true
+              :desc     ["Displays the output of `malli.core/explain` within the"
+                         "callout block."]}
+             :boolean]
+            
+            [:callout-opts
+             {:optional true
+              :desc     ["A map of options for the underlying call to"
+                         "bling.core/callout."]}
+             :map]]}
   ([schema v]
    (explain-malli schema v nil))
   ([schema 
@@ -586,3 +685,4 @@
                            (str " @ " file-info-str))))
            (println success-message)
            ))))))
+

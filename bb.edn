@@ -20,5 +20,5 @@
                                 :source-paths [
                                               ;;  "src/bling/core.cljc"
                                                "src/bling/banner.cljc"
-                                              ;;  "src/bling/explain.cljc"
+                                               "src/bling/explain.cljc"
                                                ]}}}}
