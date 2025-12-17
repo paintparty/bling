@@ -3,11 +3,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (ns bling.docsgen
-  (:require [fireworks.core]
-            [fireworks.core :refer [? !? ?> !?>]]
-            [clojure.string :as string]
-            #?(:clj [rewrite-clj.zip :as z])
-            #?(:clj [rewrite-clj.node :as n])
+  (:require [clojure.string :as string]
+            [rewrite-clj.zip :as z]
+            [rewrite-clj.node :as n]
+            [cljfmt.core]
             [bling.ansi]
             [bling.util :refer [join-lines]]
             [clojure.walk :as walk]))
@@ -21,8 +20,8 @@
   (cond (string? x)
         (esc-quoted-symbol x)
         (coll? x)
-        (walk/postwalk 
-         (fn [x] 
+        (walk/postwalk
+         (fn [x]
            (let [ret (if (string? x) (esc-quoted-symbol x) x)]
              ret))
          x)
@@ -32,7 +31,7 @@
 
 (defn- format-pred [pred]
   (cond (keyword? pred)
-        (-> pred name (str "?") symbol) 
+        (-> pred name (str "?") symbol)
         (and (vector? pred) (= (first pred) :enum))
         (->> pred
              rest
@@ -56,16 +55,16 @@
 
 
 (defn- sublines [{:keys [optional desc default]} pred]
-  (remove 
+  (remove
    nil?
    [(subline (md-code (format-pred pred)))
     (subline (if (= optional true) "Optional." "Required."))
     (when default
       (subline (str "Defaults to `" default "`.")))
-    (when-let [s (cond (and (vector? desc) (every? string? desc)) 
+    (when-let [s (cond (and (vector? desc) (every? string? desc))
                        (string/join " " desc)
 
-                       (and (map? desc) 
+                       (and (map? desc)
                             (and (:bullet-text desc)
                                  (:sub-bullet-level desc)
                                  (:sub-bullets desc)))
@@ -87,7 +86,7 @@
         options-section-label (str (or desc "All the options") ":")]
     [options-section-label
      (reduce (fn [s [option m pred]]
-               (str s 
+               (str s
                     "* " (md-code-bold option)
                     "\n"
                     (join-lines (sublines m pred))
@@ -105,26 +104,29 @@
          "\n```")))
 
 
-(defn vec-of-strings?
+(defn- vec-of-strings?
   "Returns true if x is a vector where every element is a string."
   [x]
   (and (vector? x) (every? string? x)))
 
 
-(defn docsgen-section
+(defn- desc->str [desc]
+  (cond (vec-of-strings? desc)
+        (string/replace
+         (join-lines " "
+                     (mapv #(string/replace % #"\"" "\\\\\"")
+                           desc))
+         #"\n ([^\s])"
+         #(str "\n" (second %)))
+        (string? (string/replace desc #"\"" "\\\""))
+        desc))
+
+
+(defn- docsgen-section
   [{:keys [desc examples options]} acc x]
   (cond
     (= x :desc)
-    (conj acc
-          (cond (vec-of-strings? desc)
-                (string/replace 
-                 (join-lines " " 
-                             (mapv #(string/replace % #"\"" "\\\\\"") 
-                                   desc))
-                 #"\n ([^\s])" 
-                 #(str "\n" (second %)))
-                (string? (string/replace desc #"\"" "\\\""))
-                desc))
+    (conj acc (desc->str desc))
 
     (and (vector? x) (= (first x) :examples))
     (if-let [ex (some->> examples
@@ -141,25 +143,29 @@
 
 
 (defn docsgen-template [m]
-  (let [examples 
+  (let [examples
         (some->> m
                  :examples
                  (reduce (fn [vc example]
-                           (or (conj vc 
-                                     (some->> example 
-                                                 :id 
-                                                 (vector :examples)))
+                           (or (some->> example
+                                        :id
+                                        (vector :examples)
+                                        (conj vc))
                                vc))
                          []))]
     (vec (remove nil? (concat [:desc] examples [:options])))))
 
 
-(defn format-malli-options-schema-for-docstring 
+(defn metadata-map->docstring
   "Experimental utility for repl usage, intended for turning existing malli 
    schemas for options maps into codeblocks that live in a docstring.
    
    Resulting docstrings and optimized for consumption by
-   [quickdoc](https://github.com/borkdude/quickdoc)."
+   [quickdoc](https://github.com/borkdude/quickdoc).
+   
+   Expects a map, usually a metadata map of a function.
+
+   Returns a string."
   [m]
   (let [template (or (:docsgen m)
                      (docsgen-template m))
@@ -168,89 +174,98 @@
         (string/split #"\n")
         (->> (map-indexed (fn [i x] (str (if (zero? i) "  " "   ") x)))
              join-lines)
-        (string/replace #"(?:\n +)+\"$" "\"" ))))
+        (string/replace #"(?:\n +)+\"$" "\""))))
 
 
-#?(:clj
-   (do
+(defn docstring->string-node
+  "Capitalizes the first letter of a string."
+  [s]
+  (some-> s
+          (string/replace #"^  \"|\"$" "")
+          (string/split #"\n")
+          n/string-node))
 
-     (defn create-doc-string
-       "Capitalizes the first letter of a string."
-       [s]
-       (string/capitalize s))
 
-     (defn has-desc-metadata?
-       "Checks if a node has metadata with a :desc key."
-       [zloc]
-       (when-let [meta-node (z/down (z/right (z/right zloc)))]
-         (and (z/map? meta-node)
-              (loop [m-loc (z/down meta-node)]
-                (cond
-                  (nil? m-loc) false
-                  (and (n/keyword-node? m-loc)
-                       (= :desc (z/sexpr m-loc))) true
-                  :else (recur (z/right (z/right m-loc))))))))
+(defn insert-docstring
+  "Inserts a docstring between function name and metadata."
+  [zloc s]
+  (-> zloc
+      (z/right)                                  ; move to fn name
+      (z/right)                                  ; move to metadata or params
+      (z/insert-left (docstring->string-node s)) ; insert docstr before metadata
+      (z/insert-left (n/newline-node "\n"))      ; add newline for formatting
+      (z/up)))                                   ; go back to defn level
 
-     (defn extract-desc-value
-       "Extracts the value of :desc from metadata map."
-       [zloc]
-       (when-let [meta-node (z/down (z/right (z/right zloc)))]
-         (loop [m-loc (z/down meta-node)]
-           (when m-loc
-             (if (and (n/keyword-node? m-loc)
-                      (= :desc (z/sexpr m-loc)))
-               (z/sexpr (z/right m-loc))
-               (recur (z/right (z/right m-loc))))))))
 
-     (defn insert-docstring
-       "Inserts a docstring between function name and metadata."
-       [zloc docstring]
-       (-> zloc
-           (z/right)                    ; move to fn name
-           (z/right)                    ; move to metadata or params
-           (z/insert-left docstring)    ; insert docstring before metadata
-           (z/insert-left (n/newline-node)) ; add newline for formatting
-           (z/up)))                     ; go back to defn level
-     
-     (defn process-defn
-       "Processes a single defn form, adding docstring if it has :desc metadata."
-       [zloc stats]
-       (if (and (z/list? zloc)
-                (= 'defn (z/sexpr (z/down zloc))))
-         (let [fn-name (z/sexpr (z/down (z/right (z/down zloc))))]
-           (if (has-desc-metadata? (z/down zloc))
-             (let [desc-value   (extract-desc-value (z/down zloc))
-                   docstring    (create-doc-string desc-value)
-                   updated-zloc (insert-docstring (z/down zloc) docstring)]
-               [updated-zloc (update stats :updated conj fn-name)])
-             [zloc stats]))
-         [zloc stats]))
+(defn process-defn
+  "Processes a single defn form, adding docstring if it has :desc metadata."
+  [zloc stats]
+  (if (and (z/list? zloc)
+           (= 'defn (z/sexpr (z/down zloc))))
+    (let [fn-name               (z/sexpr (-> zloc z/down z/right))
+          {:keys [desc] :as mm} (z/sexpr (-> zloc z/down z/right z/right))]
+      (if desc
+        (let [docstring    (metadata-map->docstring mm)
+              updated-zloc (insert-docstring (z/down zloc) docstring)]
+          [updated-zloc (update stats :updated conj fn-name)])
+        [zloc stats]))
+    [zloc stats]))
 
-     (defn update-file-docstrings
-       "Main function to process a source file and add docstrings from :desc metadata."
-       [source-path]
-       (let [zloc               (z/of-file source-path)
-             [final-zloc stats] (loop [loc   zloc
-                                       stats {:updated []}]
-                                  (if (z/end? loc)
-                                    [loc stats]
-                                    (let [[new-loc new-stats] (process-defn loc stats)]
-                                      (recur (z/next new-loc) new-stats))))
-             updated-content    (z/root-string final-zloc)]
-         
-    ;; Write updated content to file
-         (spit source-path updated-content)
-         
-    ;; Print report
-         (println "\n=== Docstring Update Report ===")
-         (println (str "File: " source-path))
-         (println (str "Functions updated: " (count (:updated stats))))
+
+(defn update-file-docstrings
+  "Creates and adds docstrings to functions from function metadata.
+
+   Expects a valid source path, and an optional map of options.
+
+   Optionally prints a report.
+
+   Returns a map of :source-path and :updated-functions.
+   
+   Options:
+   
+   * **`print-report?`**
+       - `boolean?`
+       - Optional.
+       - Default is `true`.
+       - Prints a report with source path and updated-functions.
+
+   * **`cljfmt-options`**
+       - `map?`
+       - Optional.
+       - See `cljfmt` [Formatting Options](https://github.com/weavejester/cljfmt?tab=readme-ov-file#formatting-options).
+   "
+  ([source-path]
+   (update-file-docstrings source-path nil))
+  ([source-path cljfmt-options]
+   (let [zloc               (z/of-file source-path)
+         [final-zloc stats] (loop [loc   zloc
+                                   stats {:updated []}]
+                              (if (z/end? loc)
+                                [loc stats]
+                                (let [[new-loc new-stats] 
+                                      (process-defn loc stats)]
+                                  (recur (z/next new-loc) new-stats))))
+         updated-content    (-> final-zloc
+                                z/root-string
+                                (cljfmt.core/reformat-string 
+                                 (merge {:indent-line-comments? true}
+                                        (when (map? cljfmt-options)
+                                          cljfmt-options))))]
+
+     (println updated-content)
+
+     ;; Write updated content to file
+     #_(spit source-path updated-content)
+
+     ;; Print report
+     (do (println "\n---- Docstring Update Report ----\n")
+         (println (str "File: " source-path "\n"))
+         (println (str "Functions updated: " (count (:updated stats)) "\n"))
          (when (seq (:updated stats))
            (println "Updated functions:")
            (doseq [fn-name (:updated stats)]
              (println (str "  - " fn-name))))
-         (println "==============================\n")
-         
-         stats))
-     
-     ))
+         (println "\n---------------------------------\n"))
+
+     {:source-path       source-path
+      :updated-functions (:updated stats)})))

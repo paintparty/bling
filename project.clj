@@ -9,7 +9,8 @@
                  ]
   :dependencies [[org.clojure/clojure "1.10.3"]
                  [io.github.paintparty/fireworks "0.18.0"]
-                 [clj-commons/rewrite-clj "1.2.50"]
+                 [rewrite-clj "1.2.50"]
+                 [dev.weavejester/cljfmt "0.15.6"]
                  [metosin/malli "0.18.0"]]
   :repl-options {:init-ns bling.core}
   :deploy-repositories [["clojars" {:url           "https://clojars.org/repo"

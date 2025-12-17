@@ -390,6 +390,7 @@
 
 (defn explain-malli
  {:desc    ["Prints a malli validation error callout block via bling.core/callout."
+            "\n\n"
             "Within the block, the value is pretty-printed, potentially with syntax"
             "coloring. The problem value is highlighted with the `:highlight-error`"
             "class of the active fireworks theme, or the `:highlight-error-underlined`"
@@ -637,8 +638,8 @@
                               section-opts))))
 
 
-            ;; The schema related to the problem value.
-            ;; Defaults to true, displaying schema
+               ;; The schema related to the problem value.
+               ;; Defaults to true, displaying schema
                (when display-schema? 
                  (section "Schema:"
                           #?(:cljs
@@ -648,8 +649,8 @@
                           section-opts))
 
 
-            ;; The result of calling malli.core/explain on the value.
-            ;; Defaults to false, not displaying schema
+               ;; The result of calling malli.core/explain on the value.
+               ;; Defaults to false, not displaying schema
                (when (true? display-explain-data?)
                  (section "Result of malli.core/explain:"
                           #?(:cljs
@@ -686,3 +687,6 @@
            (println success-message)
            ))))))
 
+
+#?(:clj
+   (bling.docsgen/update-file-docstrings "src/bling/explain.cljc"))
