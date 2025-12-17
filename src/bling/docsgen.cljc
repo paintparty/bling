@@ -269,3 +269,100 @@
 
      {:source-path       source-path
       :updated-functions (:updated stats)})))
+
+"quickdocstring
+
+A utility to generate docstrings from function metadata maps
+
+Why?
+
+Function metadata maps are just maps, they are easy to read and structurally edit.
+Manually formatting structured data or markdown within Clojure docstrings is not fun.
+
+
+How?
+
+Just give the function you want to document a metadata map. paradox looks for
+the following entries:
+
+```Clojure 
+(defn maths
+ {:desc     \"Does math\"
+  :examples [{:desc    \"Add two numbers\"
+              :samples '[(maths {:op + :print-result true} 2 3)]}
+             {:desc    \"Subtract numbers, no printing\"
+              :samples '[(maths {:op -} 8 4 2)]}]
+  :options  [:map
+             {:desc \"All the options\"}
+             [:op {:desc \"The arithematic operation to use\"}
+              :function]
+             [:print-result
+              {:desc     \"Print the result to standard out.\"
+               :optional true
+               :default  false}
+              :boolean]]
+ [{:keys [op print-result]} & args]
+ (let [result (apply op args)]
+   (when print-result (println result))
+   result)
+
+```
+ 
+docsgen will format the docstring from your metadata and use rewrite-clj to 
+add the docsstring your function:
+             
+
+```Clojure 
+(defn maths
+ \"Does math.
+
+  Add two numbers, print result:
+  `(maths {:op + :print-result true} 2 3)`
+
+  Subtract numbers, no printing:
+  `(maths {:op -} 8 4 2)`
+ 
+  All the options:
+  
+  * `:op`
+      - `:function`
+      - Required.
+      - The arithematic operation to use
+
+  * `:print-result`
+      - `:boolean`
+      - Optional.
+      - Default: `false`
+      - Print the result to stdout.\"
+ {:desc     \"Does math\"
+  :examples [{:id      :add
+              :desc    \"Add two numbers, print result.\"
+              :samples '[(maths {:op + :print-result true} 2 3)]}
+             {:id      :subtract
+              :desc    \"Subtract numbers, no printing\"
+              :samples '[(maths {:op -} 8 4 2)]}]
+  :options  [:map
+             {:desc \"All the options\"}
+             [:op {:desc \"The arithematic operation to use\"}
+              :function]
+             [:print-result
+              {:desc     \"Print the result to stdout.\"
+               :optional true
+               :default  false}
+              :boolean]]
+ [{:keys [op print-result]} & args]
+ (let [result (apply op args)]
+   (when print-result (println result))
+   result)
+
+```
+
+You can also provide a :paradox entry, which provides a custom template:
+
+```Clojure
+[:desc
+ [:examples :add]
+ :options]              
+```
+In the above example, we left out the example with the `:id` of `:subtract`:
+"
