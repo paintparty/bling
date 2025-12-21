@@ -58,9 +58,11 @@
    `(println (bling.core/hifi x))`
 
    In cljs (browser dev consoles), `print-hifi` is sugar for the the following:
-   `(->> (bling.core/hifi x)
+   ```Clojure
+   (->> (bling.core/hifi x)
          bling.browser/ansi-sgr-string->browser-dev-console-array
-         (.apply js/console.log js/console))`"
+         (.apply js/console.log js/console))
+   ```"
   ([x]
    (print-hifi x nil))
   ([x opts]
@@ -73,5 +75,3 @@
              (.apply js/console.log js/console)))
       :clj
       (println (hifi-impl x opts)))))
-
-

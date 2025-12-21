@@ -14,7 +14,7 @@
                                  point-of-interest
                                  bling-colors*
                                  ]]
-   [fireworks.core :refer [? !? ?> !?>]]
+   [fireworks.core :refer [? !? ?> !?> pprint]]
    [bling.sample :as sample]
    [bling.util :as util]
    [bling.defs]
@@ -31,13 +31,11 @@
    [bling.banner]
    [bling.hifi :refer [print-hifi hifi chopped]]
    [malli.core :as m]
-   [clojure.pprint :refer [pprint]]
    [clojure.string :as string]
+   [cljfmt.core]
    [lasertag.core :refer [tag-map]]
 
   ;;  [taoensso.tufte :as tufte :refer [p profile]]
-   ))
-
 ;; (bling.banner/banner {:font miniwi :text "hi"})
 
 ;; (tufte/add-handler! :my-console-handler (tufte/handler:console))
@@ -106,8 +104,7 @@
       :desc     ["The text to set in the banner."]}
      :string]]))
 
-(callout #_{:theme :minimal} 
-         (bling [:bold (str "Line 1" "\n" "Line 2")]))
+
 
 ;; (callout {:theme :sideline-bold} 
 ;;          (bling [:bold (str "Line 1" "\n" "Line 2")]))
