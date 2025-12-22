@@ -2,10 +2,20 @@
   (:require [clojure.string :as string]
             #?(:clj [clojure.java.shell :as shell])))
 
-(defn maybe [x pred]
-  (when (if (set? pred)
-          (contains? pred x)
-          (pred x))
+(defn ^:public maybe->
+  "If `(= (pred x) true)`, returns x, otherwise nil.
+   Useful in a `clojure.core/some->` threading form."
+  [x pred]
+  (when (or (true? (pred x))
+            (when (set? pred) (contains? pred x)))
+    x))
+
+(defn ^:public maybe->>
+  "If (= (pred x) true), returns x, otherwise nil.
+   Useful in a `clojure.core/some->>` threading form."
+  [pred x]
+  (when (or (true? (pred x))
+            (when (set? pred) (contains? pred x)))
     x))
 
 (defn as-str [x]
@@ -22,10 +32,10 @@
   "Stringifies a value and truncates the result with ellipsis 
    so that it fits on one line."
   [v limit]
-  (let [as-str                        (str v)
-        regex?                        (regex? v)
-        double-quotes?                (or (string? v) regex?)
-        regex-pound #?(:cljs nil :clj (when regex? "#"))]
+  (let [as-str         (str v)
+        regex?         (regex? v)
+        double-quotes? (or (string? v) regex?)
+        regex-pound    #?(:cljs nil :clj (when regex? "#"))]
     (if (> limit (count as-str))
       (if double-quotes?
         (str regex-pound (surround-with-quotes as-str))
@@ -88,3 +98,10 @@
        (catch Exception e
          80) ; fallback for error
        )))
+
+(defn join-lines
+  ([coll]
+   (join-lines "\n" coll))
+  ([sep coll]
+   (string/join sep coll)))
+

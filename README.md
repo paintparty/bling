@@ -87,12 +87,12 @@ Add as a dependency to your project:
 
 lein:
 ```Clojure
-[io.github.paintparty/bling "0.9.1"]
+[io.github.paintparty/bling "0.9.2"]
 ```
 
 deps:
 ```Clojure
-io.github.paintparty/bling {:mvn/version "0.9.1"}
+io.github.paintparty/bling {:mvn/version "0.9.2"}
 ```
 <br>
 
@@ -117,14 +117,14 @@ Or, import into your namespace:
 You can view an exhaustive sampling of Bling output by pasting this snippet into your terminal:
 
 ```clojure
-clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.9.1"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
+clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.9.2"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
 ```
 <br>
 
 To view the above sample with Babashka, paste this snippet into your terminal:
 
 ```clojure
-bb -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.9.1"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
+bb -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.9.2"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
 ```
 <br>
 
@@ -445,7 +445,7 @@ map instead of a hiccup-style keyword:
 | :---------------  | -----------------       | ------------------------------------------------------------ |
 | `:type`           | #{`keyword?` `string?`} | Should be one of: `:error`,  `:warning` , or `:info`. <br>Will set the label text (unless provided via `:label`). Will also set the `:colorway`, and override any provided `:colorway` value. |
 | `:colorway`       | #{`keyword?` `string?`} | The color of the sideline border, or gutter, depending on the value of `:theme`.<br />Should be one of: `:error`,  `:warning` , `:info` , `:positive`, or `:subtle`. <br>Can also be any one of the pallete colors such as  `:magenta`, `:green`,  `:negative`, `:neutral`, etc. |
-| `:theme`          | #{`keyword?` `string?`} | Theme of callout. Can be one of `:sideline`, `:sideline-bold`, `:minimal`, or `:gutter`. Defaults to `:sideline`. |
+| `:theme`          | #{`keyword?` `string?`} | Theme of callout. Can be one of `:sideline`, `:sideline-bold`, `:minimal`, `boxed`, or `:gutter`. Defaults to `:sideline`. |
 | `:label`          | `any?`                  | Labels the callout. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string). <br>In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively. |
 | `:side-label`     | `any?`                  | Side label to the the callout label. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string). <br>In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively. |
 | `:label-theme`    | #{`keyword?` `string?`} | Theme of label. Can be one of `:marquee` or `:minimal`. Defaults to `:minimal`. |
@@ -808,7 +808,7 @@ The trailing options map for `explain-malli` accepts the following:
 
 You can preview several examples of bling.explain/explain-malli in your terminal with the following snippet:
 ```
-clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.9.1"}}}' -e "(require '[bling.sample]) (bling.sample/explain-malli-examples)"
+clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.9.2"}}}' -e "(require '[bling.sample]) (bling.sample/explain-malli-examples)"
 ```
 
 <br>
@@ -843,7 +843,7 @@ smushing. Figlet banners only work in terminal context (JVM Clojure or Node.js C
 
 For a quick sample in your terminal:
 ```clojure
-clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.9.1"}}}' -e "(require '[bling.sample]) (println (bling.sample/print-bling-banner-font-samples))"
+clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.9.2"}}}' -e "(require '[bling.sample]) (println (bling.sample/print-bling-banner-font-samples))"
 ```
 ### Banner usage
 

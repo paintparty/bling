@@ -1,8 +1,7 @@
 (ns bling.test-gen
   (:require
    [fireworks.core :refer [? !? ?> !?> pprint]] ;; <-just for debugging
-   [bling.core :as bling :refer [bling boxed-callout]]
-   [bling.util :as util :refer [maybe]]
+   [bling.core :as bling :refer [bling callout]]
    [bling.sample :as sample :refer [callout+]]
    [clojure.string :as string]))
 
@@ -96,6 +95,14 @@
        "\n"
        "If you want do any experimentation use `bling.visual-test`\n") )   
 
+(def commented-box-callout
+  (callout {:theme                  :boxed
+            :vertical-border-char   ";;"
+            :horizontal-border-char ";"
+            :padding-inline         3
+            :width                  80
+            :data?                  true}
+           comment-box-text))
 
 (defn write-tests-ns!
   "This updates/generates a bling.test-suite namespace.
@@ -107,7 +114,7 @@
   []
   (spit (str "./test/bling/core_test" ".clj") 
         (str 
-         (boxed-callout comment-box-text {:padding-inline 3})
+         commented-box-callout
          "\n\n"
          (with-out-str 
            (pprint '(ns bling.core-test
@@ -124,10 +131,10 @@
 
 
 (deftest+ ^:pre-gen all-colors
-  (into [] (sample/all-the-colors*)))
+  (vec (sample/all-the-colors*)))
 
 (deftest+ ^:pre-gen color-contrast
-  (into [] (flatten (sample/bling-color-contrast))))
+  (vec (flatten (sample/bling-color-contrast))))
 
 (deftest+ underline-styles
   (bling [:underline "underline"]
@@ -167,7 +174,7 @@
 
 (deftests-str)
 
-(def write-tests? false)
+(def write-tests? true)
 
 ;; Call this from repl or uncomment here to regenerate test suite
 (when write-tests? 

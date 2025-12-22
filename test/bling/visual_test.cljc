@@ -1,3 +1,5 @@
+
+
 ;; Namespace for visual testing and sandbox dev during development
 
 (ns bling.visual-test
@@ -11,9 +13,8 @@
                                  callout
                                  point-of-interest
                                  bling-colors*
-                                 boxed-callout
                                  ]]
-   [fireworks.core :refer [? !? ?> !?>]]
+   [fireworks.core :refer [? !? ?> !?> pprint]]
    [bling.sample :as sample]
    [bling.util :as util]
    [bling.defs]
@@ -30,16 +31,91 @@
    [bling.banner]
    [bling.hifi :refer [print-hifi hifi chopped]]
    [malli.core :as m]
-   [clojure.pprint :refer [pprint]]
    [clojure.string :as string]
-   [lasertag.core :refer [tag-map]]
+   [lasertag.core :refer [tag-map]]))
 
-  ;;  [taoensso.tufte :as tufte :refer [p profile]]
-   ))
+
+;;  [taoensso.tufte :as tufte :refer [p profile]]
+
+;; (bling.banner/banner {:font miniwi :text "hi"})
 
 ;; (tufte/add-handler! :my-console-handler (tufte/handler:console))
 
+;; (print-bling [:bold (str "Line 1" "\n" "Line 2")])
+
+#_(callout {:type                   :info
+          ;; :colorway            :purple          ; <- any bling palette color, overrides :type
+          ;; :label                  "My label"              ; overrides label assigned by :theme
+          :side-label             "My side label"  ; must have a :label if you want a :side-label        
+          :theme                  :sideline        ; :sideline :sideline-bold :minimal :gutter
+          :label-theme            :minimal         ; :minimal :marquee
+          ;; :padding-top            0                 
+          ;; :padding-left           2                 
+          ;; :padding-bottom         0                 
+          ;; :padding-right          0                 
+          ;; :margin-top             1                 
+          ;; :margin-botom           0                 
+          ;; :margin-left            0                 
+          ;; :data?                  true             ; <- just returns string, no printing
+          
+          :border-block-length 80               ; <- Only applies to :minimal theme + no label
+          
+          ;; --- The options below exclusive to :theme of :boxed ---------------
+          ;; :box-drawing-style      :thin-round      ; :thin :bold :double
+          ;; :border-char            "*"
+          ;; :vertical-border-char   "**"
+          ;; :width                  40
+          ;; :max-width              100
+          ;; :min-width              40
+          ;; :padding-block          1
+          ;; :padding-inline         2
+          }
+         (bling [:bold (str "Line 1" "\n" "Line 2")]))
+
+#_(println (point-of-interest {:form                  '(+ 1 true) ; <- required
+                                :line                  42
+                                :column                11
+                                :file                  "myfile.core"
+                                :text-decoration-style :wavy  ; :underline :solid :dashed :dotted :double
+                                :type                  :error ; :warning 
+                                ;; :margin-block          0       ; <- default is one
+                                ;; :text-decoration-index 2       ; <- If form is collection, this will focus underline
+                                ;; :text-decoration-color :yellow ; <- any bling palette color
+                                }))
+
+#_(println (bling.banner/banner {:text "FUDGE" :font ansi-shadow}))
+
+#_(print
+ (bling.hifi/format-malli-options-schema-for-docstring
+  "My docs"
+  [:map
+    [:font
+     {:optional true
+      :default  'bling.fonts.ansi-shadow/ansi-shadow
+      :desc     ["Must be one of the fonts that ships with Bling:"
+                 "`bling.fonts.ansi-shadow/ansi-shadow`,"
+                 "`bling.fonts.big-money.big-money/big-money`,"
+                 "`bling.fonts.big/big`, `bling.fonts.miniwi/miniwi`,"
+                 "`bling.fonts.drippy/drippy,` or"
+                 "`bling.fonts.isometric-1/isometric-1`."]}
+     :map]
+    
+    [:text
+     {:optional true
+      :desc     ["The text to set in the banner."]}
+     :string]]))
+
+
+
+;; (callout {:theme :sideline-bold} 
+;;          (bling [:bold (str "Line 1" "\n" "Line 2")]))
+
+;; (callout {:theme :gutter} 
+;;          (bling [:bold (str "Line 1" "\n" "Line 2")]))
+
 #_(? (count (re-seq ansi-sgr-re (bling [:red "Hi"]))))
+
+#_(print-hifi {:a 1 :b 3})
 
 ;; (?sgr (bling [:red.wavy-underline "Hi"] " there " [:blue.yellow-bg "GOLD"]))
 ;; (?sgr (bling [:bold.gray "Hi"] " there " [:bold.purple "GOLD"]))
@@ -89,13 +165,13 @@
         [:p "If you want do any experimentation use " [:bold "bling.visual-test"] "."]))
 
 ;; (callout {:type :warning}
-;;          "What the hell")
+;;          "Hello World")
 
 ;; (callout {:type :warning :theme :minimal}
-;;          "What the hell")
+;;          "Hello World")
 
 ;; (callout {:type :warning :theme :gutter}
-;;          "What the hell")
+;;          "Hello World")
 
 
 (def d
@@ -115,7 +191,7 @@
           :theme :boxed
           :width 60
           }
-         "What the hell\n"
+         "Hello World\n"
          (hifi d))
 
 ;; (println)
@@ -796,11 +872,11 @@
     (!?sgr (bling [:bold.red "hello"])))
 
 (defn visual-test-suite []
-  #_(random-callouts)
-  #_(bling-basics)
-  #_(examples-warnings-for-bad-arg-to-callout))
+  (random-callouts)
+  (bling-basics)
+  (examples-warnings-for-bad-arg-to-callout))
 
-(visual-test-suite)
+#_(visual-test-suite)
 
 #_(sample/explain-malli-examples)
 
@@ -841,7 +917,7 @@
 ;;                 #"✂〠✂([^〠✂]+)〠✂〠"
 ;;                 (str "✂〠✂background-color: rgb(255 238 0 / 1);font-weight: bold;text-decoration-line: underline;text-decoration-style: wavy〠✂〠"
 ;;                      "Hello"
-;;                      "✂〠✂color: initial; line-height: 1.4〠✂〠")))
+;;                      "✂〠✂color: initial; line-height: 1.45〠✂〠")))
 ;;          tagged
 ;;          (string/replace s #"✂〠✂([^〠✂]+)〠✂〠" "%c")]
 ;;      {:tagged       tagged
@@ -853,7 +929,7 @@
 ;; (tagged->enriched 
 ;;  (str "✂〠✂background-color: rgb(255 238 0 / 1);font-weight: bold;text-decoration-line: underline;text-decoration-style: wavy〠✂〠"
 ;;       "Hello"
-;;       "✂〠✂color: initial; line-height: 1.4〠✂〠"))
+;;       "✂〠✂color: initial; line-height: 1.45〠✂〠"))
 
 ;; (print-hifi "Hello")
 

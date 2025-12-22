@@ -1,10 +1,12 @@
 (ns bling.hifi
   (:require [fireworks.core]
+            ;; [fireworks.core :refer [? !? ?> !?>]]
             [clojure.string :as string]
             [bling.ansi]
+            [bling.util :refer [join-lines]]
             #?(:cljs [bling.browser :as browser])
             #?(:cljs [bling.js-env :refer [node?]])
-            ))
+            [clojure.walk :as walk]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Hi-Fidelity printing 
@@ -16,13 +18,11 @@
   [s max-width]
   (->> (string/split s #"\n")
       (mapv #(let [sgr-count (bling.ansi/sgr-count %)]
-              ;;  (println)
-              ;;  (prn %)
-              ;;  (println [(count %) sgr-count (- (count %) sgr-count)])
                (if (> (- (count %) sgr-count) max-width)
                  (str (subs % 0 (- max-width 3)) "...")
                  %)))
-      (string/join "\n")))
+      join-lines))
+
 
 (defn- hifi-impl [x user-opts]
   (let [ret  
@@ -58,9 +58,11 @@
    `(println (bling.core/hifi x))`
 
    In cljs (browser dev consoles), `print-hifi` is sugar for the the following:
-   `(->> (bling.core/hifi x)
+   ```Clojure
+   (->> (bling.core/hifi x)
          bling.browser/ansi-sgr-string->browser-dev-console-array
-         (.apply js/console.log js/console))`"
+         (.apply js/console.log js/console))
+   ```"
   ([x]
    (print-hifi x nil))
   ([x opts]
