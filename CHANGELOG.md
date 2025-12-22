@@ -14,6 +14,20 @@ For a list of breaking changes, check [here](#breaking-changes)
 
 #### Removed
 
+
+## 0.9.2
+
+2025-12-22
+
+#### Fixed 
+- Bumped Fireworks dep to 0.19.0.
+
+- Rich formatting lost after newline, only within callout [#7](https://github.com/paintparty/bling/issues/7)
+
+
+<br>
+<br>
+
 ## 0.9.1
 
 2025-12-12
