@@ -95,6 +95,14 @@
        "\n"
        "If you want do any experimentation use `bling.visual-test`\n") )   
 
+(def commented-box-callout
+  (callout {:theme                  :boxed
+            :vertical-border-char   ";;"
+            :horizontal-border-char ";"
+            :padding-inline         3
+            :width                  80
+            :data?                  true}
+           comment-box-text))
 
 (defn write-tests-ns!
   "This updates/generates a bling.test-suite namespace.
@@ -106,7 +114,7 @@
   []
   (spit (str "./test/bling/core_test" ".clj") 
         (str 
-         (callout {:theme :boxed :padding-inline 3} comment-box-text)
+         commented-box-callout
          "\n\n"
          (with-out-str 
            (pprint '(ns bling.core-test
@@ -166,7 +174,7 @@
 
 (deftests-str)
 
-(def write-tests? false)
+(def write-tests? true)
 
 ;; Call this from repl or uncomment here to regenerate test suite
 (when write-tests? 

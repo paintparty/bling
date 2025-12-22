@@ -32,10 +32,11 @@
    [bling.hifi :refer [print-hifi hifi chopped]]
    [malli.core :as m]
    [clojure.string :as string]
-   [cljfmt.core]
-   [lasertag.core :refer [tag-map]]
+   [lasertag.core :refer [tag-map]]))
 
-  ;;  [taoensso.tufte :as tufte :refer [p profile]]
+
+;;  [taoensso.tufte :as tufte :refer [p profile]]
+
 ;; (bling.banner/banner {:font miniwi :text "hi"})
 
 ;; (tufte/add-handler! :my-console-handler (tufte/handler:console))
@@ -871,9 +872,9 @@
     (!?sgr (bling [:bold.red "hello"])))
 
 (defn visual-test-suite []
-  #_(random-callouts)
-  #_(bling-basics)
-  #_(examples-warnings-for-bad-arg-to-callout))
+  (random-callouts)
+  (bling-basics)
+  (examples-warnings-for-bad-arg-to-callout))
 
 #_(visual-test-suite)
 
@@ -916,7 +917,7 @@
 ;;                 #"✂〠✂([^〠✂]+)〠✂〠"
 ;;                 (str "✂〠✂background-color: rgb(255 238 0 / 1);font-weight: bold;text-decoration-line: underline;text-decoration-style: wavy〠✂〠"
 ;;                      "Hello"
-;;                      "✂〠✂color: initial; line-height: 1.4〠✂〠")))
+;;                      "✂〠✂color: initial; line-height: 1.45〠✂〠")))
 ;;          tagged
 ;;          (string/replace s #"✂〠✂([^〠✂]+)〠✂〠" "%c")]
 ;;      {:tagged       tagged
@@ -928,7 +929,7 @@
 ;; (tagged->enriched 
 ;;  (str "✂〠✂background-color: rgb(255 238 0 / 1);font-weight: bold;text-decoration-line: underline;text-decoration-style: wavy〠✂〠"
 ;;       "Hello"
-;;       "✂〠✂color: initial; line-height: 1.4〠✂〠"))
+;;       "✂〠✂color: initial; line-height: 1.45〠✂〠"))
 
 ;; (print-hifi "Hello")
 

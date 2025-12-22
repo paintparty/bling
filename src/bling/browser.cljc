@@ -105,7 +105,7 @@
                  :else
                  {})
            "line-height"
-           1.275)))
+           1.45)))
 
 
 (defn- style-map->css-style-str [m]
@@ -134,7 +134,7 @@
   ;; =>
   ;; [\"%c:foo%c\",
   ;;  \"color: rgb(122, 62, 157)\",
-  ;;  \"line-height: 1.4; color: default\"]
+  ;;  \"line-height: 1.45; color: default\"]
 
   ;; Print the value, with formatting, to dev console:
   (.apply js/console.log js/console console-array)
@@ -162,13 +162,4 @@
                             style-map->css-style-str
                             (conj vc)))
                      [with-format-specifiers]))]
-
     #?(:cljs (into-array vc) :clj vc)))
-
-
-#?(:cljs
-   (defn print-to-browser-dev-console [s]
-     (->> s
-          ansi-sgr-string->browser-dev-console-array
-          (.apply js/console.log js/console))))
-

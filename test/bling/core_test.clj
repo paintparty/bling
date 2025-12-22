@@ -295,7 +295,7 @@
       :type :info})
     escape-sgr
     string/join)
-   "〠38;5;39〠〠0;〠〠38;5;39〠▆〠0;〠  〠1〠INFO〠0;〠\n〠38;5;39〠〠38;5;39〠█〠0;〠〠0;〠  Callout with type of :info")))
+   "〠38;5;39〠〠0;〠〠38;5;39〠▆〠0;〠  〠1〠〠1〠INFO〠0;〠〠〠\n〠38;5;39〠〠38;5;39〠█〠0;〠〠0;〠  Callout with type of :info")))
 
 
 (deftest
@@ -326,7 +326,7 @@
       :type :warning})
     escape-sgr
     string/join)
-   "〠38;5;208〠〠0;〠〠38;5;208〠▆〠0;〠  〠1〠WARNING〠0;〠\n〠38;5;208〠〠38;5;208〠█〠0;〠〠0;〠  Callout with type of :warning\n〠38;5;208〠〠38;5;208〠█〠0;〠〠0;〠  This is not a real warning")))
+   "〠38;5;208〠〠0;〠〠38;5;208〠▆〠0;〠  〠1〠〠1〠WARNING〠0;〠〠〠\n〠38;5;208〠〠38;5;208〠█〠0;〠〠0;〠  Callout with type of :warning\n〠38;5;208〠〠38;5;208〠█〠0;〠〠0;〠  This is not a real warning")))
 
 
 (deftest
@@ -341,7 +341,7 @@
       :type :error})
     escape-sgr
     string/join)
-   "〠38;5;196〠〠0;〠〠38;5;196〠▆〠0;〠  〠1〠ERROR〠0;〠\n〠38;5;196〠〠38;5;196〠█〠0;〠〠0;〠  Callout with type of :error\n〠38;5;196〠〠38;5;196〠█〠0;〠〠0;〠  This is not a real error")))
+   "〠38;5;196〠〠0;〠〠38;5;196〠▆〠0;〠  〠1〠〠1〠ERROR〠0;〠〠〠\n〠38;5;196〠〠38;5;196〠█〠0;〠〠0;〠  Callout with type of :error\n〠38;5;196〠〠38;5;196〠█〠0;〠〠0;〠  This is not a real error")))
 
 
 (deftest
@@ -357,4 +357,4 @@
       :label "SUCCESS!"})
     escape-sgr
     string/join)
-   "〠38;5;40〠〠0;〠〠38;5;40〠▆〠0;〠  〠1〠SUCCESS!〠0;〠\n〠38;5;40〠〠38;5;40〠█〠0;〠〠0;〠  Callout with colorway of :positive and custom :label")))
+   "〠38;5;40〠〠0;〠〠38;5;40〠▆〠0;〠  〠1〠〠1〠SUCCESS!〠0;〠〠〠\n〠38;5;40〠〠38;5;40〠█〠0;〠〠0;〠  Callout with colorway of :positive and custom :label")))

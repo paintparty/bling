@@ -2,7 +2,6 @@
 
 (ns bling.core
   (:require [clojure.string :as string]
-            [fireworks.core :refer [? !? ?> !?>]]
             [clojure.walk :as walk]
             [bling.ansi :as ansi :refer [adjusted-char-count]]
             [bling.browser]
@@ -335,7 +334,7 @@
       {:text-underline-str (poi-text-underline-str
                             strlen
                             str-index
-                            (? text-decoration-style))})
+                            text-decoration-style)})
     {:text-underline-str (poi-text-underline-str
                           (count form-as-str)
                           0
@@ -1465,7 +1464,7 @@
          pd-bottom                  (or (maybe-> pd-bottom pos-int?) pd-block)
          pd-hrz                     #(min (or (maybe-> % pos-int?) pd-inline) 10)
          pd-right                   (pd-hrz pd-right)
-         pd-left                    (pd-hrz (? pd-left))
+         pd-left                    (pd-hrz pd-left)
          terminal-width             (resolve-terminal-width min-width max-width)
          cols                       (or width terminal-width)
          max-inner-cols             (- cols
@@ -2201,10 +2200,8 @@
         #?(:cljs
            (if node?                                                           ;; TODO <- move to enriched or data
              (callout* callout-opts+)
-             (do 
-               (-> (callout* (assoc callout-opts+ :browser-dev-console? true))
-                   browser/print-to-browser-dev-console)
-               #_(browser-callout callout-opts+)))
+             (-> (callout* (assoc callout-opts+ :browser-dev-console? true))
+                 print-to-browser-dev-console))
 
            :clj
            (callout* callout-opts+))))))
