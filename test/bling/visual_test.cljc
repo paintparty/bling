@@ -27,10 +27,6 @@
    [bling.fonts.big-money :refer [big-money]]
    [bling.fonts.rounded :refer [rounded]]
    [bling.fonts.isometric-1 :refer [isometric-1]]
-   [edamame.core :refer [parse-string iobj? parse-string-all]]
-   [rewrite-clj.parser :as p]
-   [rewrite-clj.node :as n]
-   [flatland.ordered.map]
    [bling.fontlib]
    [bling.banner]
    [bling.hifi :refer [print-hifi hifi chopped]]
@@ -43,7 +39,7 @@
 
 ;; (bling.banner/banner {:font miniwi :text "hi"})
 
-(tufte/add-handler! :my-console-handler (tufte/handler:console))
+;; (tufte/add-handler! :my-console-handler (tufte/handler:console))
 
 ;; (print-bling [:bold (str "Line 1" "\n" "Line 2")])
 
