@@ -2,6 +2,14 @@
   (:require [clojure.string :as string]
             #?(:clj [clojure.java.shell :as shell])))
 
+(defn ^:public when->
+  "If `(= (pred x) true)`, returns x, otherwise nil.
+   Useful in a `clojure.core/some->` threading form."
+  [x pred]
+  (when (or (true? (pred x))
+            (when (set? pred) (contains? pred x)))
+    x))
+
 (defn ^:public maybe->
   "If `(= (pred x) true)`, returns x, otherwise nil.
    Useful in a `clojure.core/some->` threading form."
@@ -105,3 +113,13 @@
   ([sep coll]
    (string/join sep coll)))
 
+(defn partition-by-pred [pred coll]
+  "Given a coll and a pred, returns a vector of two vectors. The first vector
+   contains all the values from coll that satisfy the pred. The second vector
+   contains all the values from the coll that do not satisfy the pred."
+  (let [ret* (reduce (fn [acc v]
+                       (let [k (if (pred v) :valid :invalid)]
+                         (assoc acc k (conj (k acc) v))))
+                     {:valid [] :invalid []}
+                     coll)]
+    [(:valid ret*) (:invalid ret*)]))
