@@ -632,8 +632,7 @@
            "blue"   
            "purple" 
            "magenta"
-           "gray"
-           ]]
+           "gray"]]
     (doseq [contrast [:low :medium :high ]]
       (print-bling [{:contrast    contrast 
                      :color       color
@@ -650,8 +649,7 @@
          "blue"   
          "purple" 
          "magenta"
-         "gray"
-         ]]
+         "gray"]]
     (for [contrast [:low :medium :high ]]
       (bling [{:contrast    contrast 
                :color       color
@@ -863,3 +861,403 @@
 ;; Make exhaustive banner example image
 ;; docs for banner
 
+#?(:cljs
+   ()
+   :clj
+   (def lasertag-sample-values
+     [
+        {:name "Integer"
+         :desc "ClojureScript integer literal"
+         :example 42}
+        
+        ;; no cljs
+        {:name "Long"
+         :desc "Coerces a number into a long"
+         :quoted '(long 42)
+         :example (long 42)}
+        
+        ;; no cljs
+        {:name "Short"
+         :desc "Coerces a number into a short"
+         :quoted '(short 42)
+         :example (short 42)}
+        
+         {:name "Float"
+          :desc "Coerces a number into a float"
+          :quoted '(float 42.05)
+          :example (float 42.05)}
+        
+        {:name "Double"
+         :desc "Coerces a number into a double"
+         :quoted '(double 42)
+         :example (double 42)}
+        
+        {:name "Zero"
+         :desc "Integer zero"
+         :example 0}
+        
+        {:name "Negative Integer"
+         :desc "Negative integer literal"
+         :example -42}
+        
+        {:name "Decimal"
+         :desc "Decimal number literal"
+         :example 42.05}
+        
+        {:name "Negative Decimal"
+         :desc "Negative decimal number literal"
+         :example -42.05}
+        
+        ;;  {:name "BigInt"
+        ;;   :desc "Big Integer (max safe integer)"
+        ;;   :quoted '(clojure.lang.BigInt 9007199254740991)
+        ;;   :example (clojure.lang.BigInt 9007199254740991)}
+        
+        {:name "Positive Infinity"
+         :desc "Special numeric value representing positive infinity"
+         :quoted '##Inf
+         :example ##Inf}
+        
+        {:name "Negative Infinity"
+         :desc "Special numeric value representing negative infinity"
+         :quoted '##-Inf
+         :example ##-Inf}
+        
+        {:name "NaN"
+         :desc "Special numeric value representing Not-a-Number"
+         :quoted '##NaN
+         :example ##NaN}
+        
+        {:name "String"
+         :desc "ClojureScript string literal"
+         :example "hello"}
+        
+        {:name "Keyword"
+         :desc "ClojureScript keyword"
+         :example :hello}
+        
+        {:name "Symbol"
+         :desc "ClojureScript symbol, quoted"
+         :quoted ''hello
+         :example 'hello}
+        
+        ;; throws error
+        ;; {:name "Regex"
+        ;;  :desc "ClojureScript regular expression literal"
+        ;;  :quoted '#"hello"
+        ;;  :example #"hello"}
+        
+        {:name "Character"
+         :desc "Creates a character from a string"
+         :quoted '(char \h)
+         :example (char \h)}
+        
+        {:name "Boolean True"
+         :desc "Boolean true value"
+         :example true}
+        
+        {:name "Boolean False"
+         :desc "Boolean false value"
+         :example false}
+        
+        {:name "Nil"
+         :desc "ClojureScript nil value (represents absence of value)"
+         :example nil}
+        
+        {:name "Atom"
+         :desc "Mutable reference type, created with initial value"
+         :quoted '(atom 1)
+         :example (atom 1)}
+        
+        ;; Error
+        ;; {:name "Delay"
+        ;;  :desc "Delayed computation that executes only once when dereferenced"
+        ;;  :quoted '(delay (+ 1 1) 100)
+        ;;  :example (delay (+ 1 1) 100)}
+        
+        {:name "Volatile"
+         :desc "Unsynchronized mutable reference type"
+         :quoted '(volatile! 1)
+         :example (volatile! 1)}
+        
+        ;;  {:name "UUID"
+        ;;   :desc "Universally Unique Identifier"
+        ;;   :quoted '(uuid "00000000-0000-0000-0000-000000000000")
+        ;;   :example (uuid "00000000-0000-0000-0000-000000000000")}
+        
+        {:name "Hash Map"
+         :desc "ClojureScript hash map, literal notation"
+         :quoted '{:a 1}
+         :example {:a 1}}
+        
+        {:name "Hash Map"
+         :desc "ClojureScript hash map, created with function call"
+         :quoted '(hash-map :a 1)
+         :example (hash-map :a 1)}
+        
+        {:name "Sorted Map"
+         :desc "ClojureScript sorted map, maintains keys in sorted order"
+         :quoted '(sorted-map :d 2 :a 1)
+         :example (sorted-map :d 2 :a 1)}
+        
+        {:name "Hash Set"
+         :desc "ClojureScript hash set, literal notation"
+         :quoted '#{:b :c}
+         :example #{:b :c}}
+        
+        {:name "Hash Set"
+         :desc "ClojureScript hash set, created with function call"
+         :quoted '(hash-set :b :c)
+         :example (hash-set :b :c)}
+        
+        {:name "Sorted Set"
+         :desc "ClojureScript sorted set, maintains elements in sorted order"
+         :quoted '(sorted-set :z :b)
+         :example (sorted-set :z :b)}
+        
+        {:name "Vector"
+         :desc "ClojureScript vector, literal notation"
+         :quoted '[1 2 3]
+         :example [1 2 3]}
+        
+        {:name "List"
+         :desc "ClojureScript list, quoted literal"
+         :quoted ''(1 2 3)
+         :example '(1 2 3)}
+        
+        {:name "Range"
+         :desc "Lazy sequence of integers from 0 to n-1"
+         :quoted '(range 5)
+         :example (range 5)}
+        
+        {:name "Reverse"
+         :desc "Returns a sequence in reverse order"
+         :quoted '(reverse (range 5))
+         :example (reverse (range 5))}
+        
+        {:name "Cons"
+         :desc "Constructs a new sequence with element prepended to collection"
+         :quoted '(cons 1 '(2 3))
+         :example (cons 1 '(2 3))}
+        
+        {:name "Cons"
+         :desc "Constructs a new sequence with element prepended to collection"
+         :quoted '(cons 1 '(2 3))
+         :example (cons 1 '(2 3))
+         }
+        
+        ;; throws
+        #_{:name "Assert"
+           :desc "Throws an error if condition is false"
+           :quoted '(assert false "thrown error")
+           :example (assert false "thrown error")}
+        
+        {:name "Repeat"
+         :desc "Returns a lazy infinite sequence of x"
+         :quoted '(take 12 (repeat 3))
+         :example (take 12 (repeat 3))}
+        
+        {:name "Repeat with count"
+         :desc "Returns a lazy sequence of n repetitions of x"
+         :quoted '(repeat 5 :x)
+         :example (repeat 5 :x)}
+        
+        {:name "Repeatedly"
+         :desc "Returns a lazy infinite sequence of calls to function f"
+         :quoted '(take 12 (repeatedly rand))
+         :example (take 12 (repeatedly rand))}
+        
+        {:name "Cycle"
+         :desc "Returns a lazy infinite sequence of repetitions of the items in collection"
+         :quoted '(take (cycle [1 2 3]))
+         :example (take (cycle [1 2 3]))}
+        
+        ;; infinite
+        ;; {:name "Iterate"
+        ;;   :desc "Returns a lazy infinite sequence of x, (f x), (f (f x)), etc."
+        ;;   :quoted '(iterate inc 0)
+        ;;   :example (iterate inc 0)}
+        
+        {:name "Take"
+         :desc "Returns a lazy sequence of the first n items"
+         :quoted '(take 3 (range 10))
+         :example (take 3 (range 10))}
+        
+        {:name "Drop"
+         :desc "Returns a lazy sequence with the first n items removed"
+         :quoted '(drop 3 (range 10))
+         :example (drop 3 (range 10))}
+        
+        {:name "List (function)"
+         :desc "Creates a list from arguments"
+         :quoted '(list 1 2 3)
+         :example (list 1 2 3)}
+        
+        {:name "Vector (function)"
+         :desc "Creates a vector from arguments"
+         :quoted '(vector 1 2 3)
+         :example (vector 1 2 3)}
+        
+        {:name "Array Map"
+         :desc "Creates a small map optimized for sequential lookup"
+         :quoted '(array-map :a 1 :b 2)
+         :example (array-map :a 1 :b 2)}
+        
+        ;;  {:name "Queue"
+        ;;   :desc "Persistent queue (FIFO)"
+        ;;   :quoted '(conj cljs.core.PersistentQueue.EMPTY 1 2 3)
+        ;;   :example (conj cljs.core.PersistentQueue.EMPTY 1 2 3)}
+        
+        {:name "Lazy Seq"
+         :desc "Creates a lazy sequence from a body of expressions"
+         :quoted '(lazy-seq (cons 1 (lazy-seq (cons 2 nil))))
+         :example (lazy-seq (cons 1 (lazy-seq (cons 2 nil))))}
+        
+        {:name "Interleave"
+         :desc "Returns a lazy seq of first item from each coll, then second, etc."
+         :quoted '(interleave [1 2 3] [:a :b :c])
+         :example (interleave [1 2 3] [:a :b :c])}
+        
+        {:name "Interpose"
+         :desc "Returns a lazy seq with separator interposed between elements"
+         :quoted '(interpose "," ["a" "b" "c"])
+         :example (interpose "," ["a" "b" "c"])}
+        
+        {:name "Concat"
+         :desc "Returns a lazy seq representing the concatenation of collections"
+         :quoted '(concat [1 2] [3 4] [5 6])
+         :example (concat [1 2] [3 4] [5 6])}
+        
+        {:name "Mapcat"
+         :desc "Returns the result of applying concat to the result of applying map"
+         :quoted '(mapcat reverse [[1 2] [3 4]])
+         :example (mapcat reverse [[1 2] [3 4]])}
+        
+        {:name "Flatten"
+         :desc "Takes any nested combination of sequential things and returns a flat sequence"
+         :quoted '(flatten [1 [2 [3 4]] 5])
+         :example (flatten [1 [2 [3 4]] 5])}
+        
+        {:name "Partition"
+         :desc "Returns a lazy sequence of lists of n items each"
+         :quoted '(partition 2 [1 2 3 4 5 6])
+         :example (partition 2 [1 2 3 4 5 6])}
+        
+        {:name "Partition-all"
+         :desc "Returns a lazy sequence of lists like partition, but includes final partial partition"
+         :quoted '(partition-all 2 [1 2 3 4 5])
+         :example (partition-all 2 [1 2 3 4 5])}
+        
+        {:name "Split-at"
+         :desc "Returns a vector of [(take n coll) (drop n coll)]"
+         :quoted '(split-at 2 [1 2 3 4 5])
+         :example (split-at 2 [1 2 3 4 5])}
+        
+        {:name "Subvec"
+         :desc "Returns a subvector of vector v from start (inclusive) to end (exclusive)"
+         :quoted '(subvec [1 2 3 4 5] 1 3)
+         :example (subvec [1 2 3 4 5] 1 3)}
+        
+        {:name "Transient"
+         :desc "Creates a transient version of a collection for efficient batch updates"
+         :quoted '(transient [1 2 3])
+         :example (transient [1 2 3])}
+        
+        {:name "Persistent!"
+         :desc "Converts a transient collection back to persistent"
+         :quoted '(persistent! (transient [1 2 3]))
+         :example (persistent! (transient [1 2 3]))}
+        
+        {:name "Character Literal"
+         :desc "Character literal notation"
+         :quoted '\h
+         :example \h}
+        
+        {:name "Newline Character"
+         :desc "Newline character literal"
+         :quoted '\n
+         :example \n}
+        
+        {:name "Tab Character"
+         :desc "Tab character literal"
+         :quoted '\tab
+         :example \tab}
+        
+        ;; {:name "Ratio"
+        ;;   :desc "Rational number (note: ClojureScript compiles these to doubles)"
+        ;;   :quoted '22/7
+        ;;   :example 22/7}
+        
+        {:name "Scientific Notation"
+         :desc "Number in scientific notation"
+         :quoted (symbol "1.5e3")
+         :example 1.5e3}
+        
+        {:name "Hexadecimal"
+         :desc "Hexadecimal number literal"
+         :quoted (symbol "0xFF")
+         :example 0xFF}
+        
+        {:name "Octal"
+         :desc "Octal number literal"
+         :quoted (symbol "077")
+         :example 077}
+        
+        {:name "Binary"
+         :desc "Binary number literal"
+         :quoted (symbol "2r1010")
+         :example 2r1010}
+        
+        {:name "Arbitrary Radix"
+         :desc "Number in arbitrary base (radix)"
+         :quoted (symbol "36rZZ")
+         :example 36rZZ}
+        
+        {:name "Tagged Literal"
+         :desc "Extensible data notation tagged literal"
+         :quoted '#inst "2024-01-01"
+         :example #inst "2024-01-01"}
+        
+        ;; f'd
+        ;;  {:name    "Var Quote"
+        ;;   :desc    "Gets the var object itself rather than its value"
+        ;;    :quoted 'x
+        ;;   :example (let [x 1] '#x)}
+        
+        {:name "Anonymous Function"
+         :desc "Anonymous function literal syntax"
+         :quoted (symbol "#(+ % 1)")
+         :example #(+ % 1)}
+        
+        {:name "Metadata"
+         :desc "Attaches metadata to an object"
+         :quoted '(with-meta [1 2 3] {:doc "My vector"})
+         :example (with-meta [1 2 3] {:doc "My vector"})}
+        
+        {:name "Deref"
+         :desc "Dereferences a reference type (atom, delay, etc.)"
+         :quoted '(deref (atom 42))
+         :example (deref (atom 42))}
+        
+        {:name "Deref shorthand"
+         :desc "Shorthand syntax for deref"
+         :quoted '@(atom 42)
+         :example @(atom 42)}
+        
+        {:name "Java hashmap"
+         :desc "Shorthand syntax for deref"
+         :quoted '(java.util.HashMap. {"a" 1 "b" 2})
+         :example (java.util.HashMap. {"a" 1 "b" 2})}
+
+        {:name "Java hashset"
+         :desc "Shorthand syntax for deref"
+         :quoted '(java.util.ArrayList. [1 2 3])
+         :example (java.util.ArrayList. [1 2 3])
+         }
+
+        {:name "Java arraylist"
+         :desc "Shorthand syntax for deref"
+         :quoted '(java.util.HashSet. {"a" 1 "b" 2})
+         :example (java.util.HashSet. #{"a" 1 "b" 2})
+         }
+        ]))

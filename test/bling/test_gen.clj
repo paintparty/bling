@@ -174,7 +174,7 @@
 
 (deftests-str)
 
-(def write-tests? true)
+(def write-tests? false)
 
 ;; Call this from repl or uncomment here to regenerate test suite
 (when write-tests? 
