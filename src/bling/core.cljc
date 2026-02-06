@@ -102,14 +102,13 @@
 ;; support "dark-orange to force dark"
 ;; support "light-orange to force light"
 
-
 ;; TODO - Move to colors namespace?
 (def ^:private bling-colors-dark
   (apply
    array-map
    ["red"     {:sgr 124 :css "#af0000"}
 
-    "orange"  {:sgr 172 :css "#d78700"}
+    "orange"  {:sgr 166 :css "#d75f00"}
 
     "yellow"  {:sgr 136 :css "#af8700"}
 
@@ -134,7 +133,7 @@
    array-map
    ["red"     {:sgr 203 :css "#ff5f5f"}
 
-    "orange"  {:sgr 214 :css "#ffaf00"}
+    "orange"  {:sgr 208 :css "#ff8700"}
 
     "yellow"  {:sgr 220 :css "#ffd700"}
 
@@ -159,8 +158,8 @@
    ["red"        {:sgr      196
                   :css      "#ff0000"
                   :semantic "negative"}
-    "orange"     {:sgr      208
-                  :css      "#ff8700"
+    "orange"     {:sgr      172
+                  :css      "#d78700"
                   :semantic "warning"}
     "yellow"     {:sgr 178 :css "#d7af00"}
     "olive"      {:sgr 106 :css "#87af00"}
