@@ -2,13 +2,14 @@
 
 (ns bling.core
   (:require [clojure.string :as string]
+            [fireworks.core :refer [? !? ?> !?>]]
             [clojure.walk :as walk]
-            [bling.ansi :as ansi :refer [adjusted-char-count]]
+            [bling.ansi :as ansi :refer [strlen-minus-ansi-sgr]]
             [bling.browser]
             [bling.hifi]
             [bling.defs :as defs]
             [bling.macros :refer [let-map keyed]]
-            [bling.util :as util :refer [maybe->]]
+            [bling.util :as util :refer [maybe-> when->]]
             #?(:cljs [bling.js-env :refer [node?]])
             ;; TODO - eliminate goog.object req
             #?(:cljs [goog.object])))
@@ -291,8 +292,7 @@
   ;; "╱╲" <- pretty good look too
   (str (string/join (repeat str-index " "))
        (string/join (repeat n
-                            (case (some-> text-decoration-style
-                                          as-str)
+                            (case (some-> text-decoration-style as-str)
                               "wavy" "^"
                               "dashed" "-"
                               "dotted" "•"
@@ -301,43 +301,6 @@
                               "^")))))
 
 (def ^:private form-limit 33)
-
-(defn- poi-text-underline
-  [{:keys [form form-as-str text-decoration-index text-decoration-style]}]
-  (if (and text-decoration-index
-          (or (pos? text-decoration-index)
-              (zero? text-decoration-index))
-          (coll? form)
-          (< (count (as-str form)) form-limit))
-    (let [form
-          (vec form)
-
-          data
-          (reverse
-           (for [n (-> form count range reverse)]
-             (let [v            (-> form (nth n nil))
-                   value-as-str (str v)
-                   len          (-> v str count)
-                   sv           (-> form
-                                    (subvec 0 n)
-                                    str
-                                    count)]
-               {:strlen       len
-                :v            v
-                :value-as-str value-as-str
-                :index        n
-                :str-index    sv})))
-
-          {:keys [strlen str-index]}
-          (nth data text-decoration-index nil)]
-      {:text-underline-str (poi-text-underline-str
-                            strlen
-                            str-index
-                            text-decoration-style)})
-    {:text-underline-str (poi-text-underline-str
-                          (count form-as-str)
-                          0
-                          text-decoration-style)}))
 
 (defn- x->sgr [x k]
   (when x
@@ -626,170 +589,98 @@
 ;; PPPPPPPPPP               OOOOOOOOO     IIIIIIIIII
 
 
+(defn- list-formatted-as-fn-call [x opts]
+  (if (list? x)
+    (-> x
+        (bling.hifi/hifi opts)
+        (string/replace-first #"\n" "")
+        (string/replace #"\n$" "")
+        (string/replace #"^\(|\)$" "")
+        (string/replace #"\n" (str "\n" (-> x
+                                            first
+                                            name
+                                            count
+                                            inc
+                                            spaces))))
+    x))
+
 ;; Line and point of interest public fns  -------------------------------------
 
-(def ^{:no-doc true} point-of-interest-options-schema
-  [:map
-   [:form
-    {:required true
-     :desc     ["The form to draw attention to. Will be cast to string and"
-                "truncated at 33 chars"]}
-    :any]
-   
-   [:file
-    {:optional true
-     :desc     ["File or namespace"]}
-    :string]
-   
-   [:line
-    {:optional true
-     :desc     ["Line number"]}
-    :int]
-   
-   [:column
-    {:optional true
-     :desc     ["Column number"]}
-    :int]
-   
-   [:margin-block
-    {:optional true
-     :default  1
-     :desc     ["Controls the number of blank lines above and below the diagram."]}
-    :int]
-   
-   [:type
-    {:optional true
-     :desc     ["Automatically sets the `:text-decoration-color`."]}
-    [:enum :error "error" :warning "warning"]]
-   
-   [:text-decoration-color
-    {:optional true
-     :default  :neutral
-     :desc     ["Controls the color of the underline."]}
-    [:enum :error "error" :warning "warning" :neutral "neutral" :magenta "magenta" :green "green" :negative "negative"]]
-   
-   [:text-decoration-style
-    {:optional true
-     :desc     ["Controls the color of the underline."]}
-    [:enum :wavy "wavy" :solid "solid" :dashed "dashed" :dotted "dotted" :double "double"]]
-   
-   [:text-decoration-index
-    {:optional true
-     :desc     ["If the value of `:form` is a collection, this is the index of"
-                "the item to apply text-decoration (underline)."]}
-    :pos-int]])
-
-
 (defn ^:public point-of-interest
-  "Example:
-
-   ```Clojure
-   (point-of-interest {:form                  '(+ 1 true) ; <- required
-                       :line                  42
-                       :column                11
-                       :file                  \"myfile.core\"
-                       :text-decoration-style :wavy  ; :underline :solid :dashed :dotted :double
-                       :type                  :error ; :warning 
-                       ;; :margin-block          0       ; <- default is one
-                       ;; :text-decoration-index 2       ; <- If form is collection, this will focus underline
-                       ;; :text-decoration-color :yellow ; <- and bling palette color
-                       })
-   ```
-   
-   `point-of-interest` creates namespace info diagram which identifies a
-   specific form. This provides the namespace, column, and line number, and a
-   bolded, potentially truncated, representation of the specific form of
-   interest. This form representation is accented with a squiggly underline.
-   
-   The `:line`, `:column`, `:form`, and `:file` options must all be present in
-   order for the namespece info diagram to be rendered. If the `:form` option is
-   supplied, but any of the others are omitted, only the form will be rendered
-   (with an underline and no line-info diagram).
-   
-   By default, the diagram is created with a leading and trailing newlines.
-   This can be set to zero, or increased, with the `:margin-block` option.
-   
-   All the options:
-
-   ```Clojure
-   [:form
-    {:required true
-     :desc     [\"The form to draw attention to. Will be cast to string and\"
-                \"truncated at 33 chars\"]}
-    :any]
-
-   [:file
-    {:optional true
-     :desc     [\"File or namespace\"]}
-    :string]
-
-   [:line
-    {:optional true
-     :desc     [\"Line number\"]}
-    :int]
-
-   [:column
-    {:optional true
-     :desc     [\"Column number\"]}
-    :int]
-
-   [:margin-block
-    {:optional true
-     :default  1
-     :desc     [\"Controls the number of blank lines above and below the diagram.\"]}
-    :int]
-
-   [:type
-    {:optional true
-     :desc     [\"Automatically sets the `:text-decoration-color`.\"]}
-    [:enum
-     :error
-     \"error\"
-     :warning
-     \"warning\"]]
-
-   [:text-decoration-color
-    {:optional true
-     :default  :neutral
-     :desc     [\"Controls the color of the underline.\"]}
-    [:enum
-     :error
-     \"error\"
-     :warning
-     \"warning\"
-     :neutral
-     \"neutral\"
-     :magenta
-     \"magenta\"
-     :green
-     \"green\"
-     :negative
-     \"negative\"]]
-
-   [:text-decoration-style
-    {:optional true
-     :desc     [\"Controls the color of the underline.\"]}
-    [:enum
-     :wavy
-     \"wavy\"
-     :solid
-     \"solid\"
-     :dashed
-     \"dashed\"
-     :dotted
-     \"dotted\"
-     :double
-     \"double\"]]
-
-   [:text-decoration-index
-    {:optional true
-     :desc     [\"If the value of `:form` is a collection, this is the index of\"
-                \"the item to apply text-decoration (underline).\"]}
-    :pos-int]
-   ```"
-
-  ;; TODO - change text-decoration-color to underline-color?
-  ;; TODO - Add option for doing underline in sgr?
+  {:desc          ["`point-of-interest` creates namespace info diagram which identifies a"
+                   "specific form. This provides the namespace, column, and line number, and a"
+                   "bolded, potentially truncated, representation of the specific form of"
+                   "interest. This form representation is accented with a squiggly underline."
+                   
+                   "The `:line`, `:column`, `:form`, and `:file` options must all be present in"
+                   "order for the namespece info diagram to be rendered. If the `:form` option is"
+                   "supplied, but any of the others are omitted, only the form will be rendered"
+                   "(with an underline and no line-info diagram)."
+                   
+                   "By default, the diagram is created with a leading and trailing newlines."
+                   "This can be set to zero, or increased, with the `:margin-block` option."]
+   :examples      [{:desc "Example"
+                    :form '(point-of-interest
+                            {:form                  '(+ 1 true)
+                             :line                  42
+                             :column                11
+                             :file                  "myfile.core"
+                             :text-decoration-style :wavy
+                             :type                  :error})}]
+   ;; TODO - Consider adding option for :file-info-style, which would be a map for bling
+   ;; TODO - Consider adding option for :line-number-style, to decorate number in gutter, which would be a map for bling
+   :options       [:map
+                   [:form
+                    {:required true
+                     :desc     ["The form to draw attention to. Will be cast to string and"
+                                "truncated at 33 chars"]}
+                    :any]
+                   
+                   [:file
+                    {:optional true
+                     :desc     ["File or namespace"]}
+                    :string]
+                   
+                   [:line
+                    {:optional true
+                     :desc     ["Line number"]}
+                    :int]
+                   
+                   [:column
+                    {:optional true
+                     :desc     ["Column number"]}
+                    :int]
+                   
+                   [:margin-block
+                    {:optional true
+                     :default  1
+                     :desc     ["Controls the number of blank lines above and below the diagram."]}
+                    :int]
+                   
+                   [:type
+                    {:optional true
+                     :desc     ["Automatically sets the `:text-decoration-color`."]}
+                    [:enum :error "error" :warning "warning"]]
+                   
+                   [:text-decoration-color
+                    {:optional true
+                     :default  :neutral
+                     :desc     ["Controls the color of the underline."]}
+                    [:enum :error "error" :warning "warning" :neutral "neutral" :magenta "magenta" :green "green" :negative "negative"]]
+                   
+                   [:text-decoration-style
+                    {:optional true
+                     :desc     ["Controls the color of the underline."]}
+                    [:enum :wavy "wavy" :solid "solid" :dashed "dashed" :dotted "dotted" :double "double"]]
+                   
+                   [:truncate-form-to-single-line?
+                    {:optional true
+                     :default  true
+                     :desc     ["Truncates the form to a single line."]}
+                    :boolean]]
+   :clj-docstring [[:example "Example"]
+                   :desc
+                   :options]}
   [{:keys [line
            file
            column
@@ -798,26 +689,26 @@
            body   ; <- deprecated / undocumented
            margin-block
            text-decoration-color
-           type]
-    :as   opts}]
+           text-decoration-style
+           type
+           truncate-form-to-single-line?
+           form-hifi-options]
+    :as   opts
+    :or   {truncate-form-to-single-line? true
+           form-hifi-options             nil}}]
   (let [type             (some-> type as-str (maybe-> #{"warning" "error"}))
-        file-info        (ns-info-str opts)
+        file-info        (bling [:italic 
+                                 (ns-info-str opts)])
         gutter           (some-> line str count spaces)
         underline-color  (or (some->> type (get semantics-by-semantic-type))
                              (some-> text-decoration-color
                                      as-str
                                      (maybe-> all-color-names))
                              "neutral")
-        form-as-str      (util/shortened form 33)
-        underline-str    (-> opts
-                             (assoc :form-as-str form-as-str)
-                             poi-text-underline
-                             :text-underline-str)
-        bolded-form      [{:font-weight :bold} form-as-str]
-        underline-styled [{:font-weight :bold
-                           :color       underline-color
-                           :contrast    :medium}
-                          underline-str]
+        form-hifi        (or  (some-> form
+                                      (when-> list?)
+                                      (list-formatted-as-fn-call form-hifi-options))
+                              (bling.hifi/hifi form form-hifi-options))
         header           (str header)
         body             (str body)
         mb*              (or (some-> margin-block (maybe-> pos-int?))
@@ -825,22 +716,55 @@
                                0
                                1))
         mb               (char-repeat mb* "\n")
-        diagram-char     #?(:cljs (fn [s] s) :clj #(bling [:subtle %]))
-        diagram          (cond
-                           (and line column file form)
-                           [mb
-                            gutter (diagram-char " ┌─ ") file-info "\n"
-                            gutter (diagram-char " │ ") "\n"
-                            line   (diagram-char " │ ") bolded-form "\n"
-                            gutter (diagram-char " │ ") underline-styled
-                            mb
-                            "\n"]
 
-                           form
-                           [mb
-                            bolded-form "\n"
-                            underline-styled
-                            mb])
+        ;; Fix for cljs
+        diagram-char     #?(:cljs (fn [s] s) :clj #(bling [:subtle %]))
+        diagram          (when form
+                           (if truncate-form-to-single-line?
+                             (let [form-as-str      (-> form-hifi
+                                                        (string/split #"\n")
+                                                        first
+                                                        (str "..."))
+                                   underline-str    (poi-text-underline-str
+                                                     (strlen-minus-ansi-sgr form-as-str)
+                                                     0
+                                                     text-decoration-style)
+                                   bolded-form      form-as-str
+                                   underline-styled [{:font-weight :normal
+                                                      :color       underline-color
+                                                      :contrast    :medium}
+                                                     underline-str]]
+                               (if (and line column file form) 
+                                 [mb
+                                  gutter (diagram-char " ┌─ ") file-info "\n"
+                                  gutter (diagram-char " │ ") "\n"
+                                  line   (diagram-char " │ ") bolded-form "\n"
+                                  gutter (diagram-char " │ ") underline-styled
+                                  mb
+                                  "\n"]
+                                 [mb
+                                  bolded-form "\n"
+                                  underline-styled
+                                  mb]))
+                             (if (and line column file form)
+                               (let [form-hifi-with-gutter
+                                     (-> form-hifi
+                                         (string/split #"\n")
+                                         (->> (map-indexed 
+                                               (fn [i ln] 
+                                                 (str (when (pos? i) 
+                                                        (str gutter
+                                                             (diagram-char " │ "))) 
+                                                      ln)))
+                                              (string/join "\n")))]
+                                 (vec (concat [mb
+                                               gutter (diagram-char " ┌─ ") file-info "\n"
+                                               gutter (diagram-char " │ ") "\n"
+                                               line   (diagram-char " │ ") form-hifi-with-gutter "\n"
+                                               gutter (diagram-char " │ ")]
+                                              [mb
+                                               "\n"])))
+                               form-hifi)))
         ret              (apply bling
                                 (util/concatv header
                                               diagram
@@ -1233,7 +1157,7 @@
     acc
     (let [nl?              (= word "\n")
           space+word       (str (when-not (or nl? (zero? col)) " ") word)
-          space+word-width (adjusted-char-count space+word)
+          space+word-width (strlen-minus-ansi-sgr space+word)
           exceeds?         (< max-cols (+ col space+word-width))
           string-to-concat (if exceeds?
                              (str "\n" word)
@@ -1273,7 +1197,7 @@
 (defn- with-wrapped-single-words
   [max-width acc s]
   (into acc
-        (if (< max-width (adjusted-char-count s))
+        (if (< max-width (strlen-minus-ansi-sgr s))
           (wrap-single-word max-width s)
           [s])))
 
@@ -1312,14 +1236,14 @@
                                        (->> (str " "))
                                        colorize)
                                "")
-        label-char-count   (adjusted-char-count label-str)
+        label-char-count   (strlen-minus-ansi-sgr label-str)
         label-pd-str       (when (and (pos? label-char-count) pd)
                              (-> pd
                                  dec
                                  (util/sjr horizontal-border-char)
                                  (colored-border colorway)))
         label-pd-str-count (or (some-> label-pd-str
-                                       adjusted-char-count)
+                                       strlen-minus-ansi-sgr)
                                0)]
     (keyed [label-str
             label-char-count
@@ -1420,7 +1344,7 @@
             (colored-border colorway))
 
         vertical-border-char-count 
-        (adjusted-char-count vertical-border-char)
+        (strlen-minus-ansi-sgr vertical-border-char)
 
         horizontal-border-char     
         (or (some->> box-drawing-style (-> bdc :h))
@@ -1435,6 +1359,7 @@
             horizontal-border-char])))
 
 
+;; TODO - support "fit-width"
 (defn- boxed-callout
   "Creates a callout with a border on all sides"
   ([s] (boxed-callout s nil))
@@ -1457,10 +1382,10 @@
                  vertical-border-char-count 
                  horizontal-border-char]} 
          (border-chars m)
-         pd-block                   (or (maybe-> pd-block pos-int?) 1)
+         pd-block                   (or (some-> pd-block (maybe-> #(< -1 %))) 2)
          pd-inline                  (or (maybe-> pd-inline pos-int?) 2)
-         pd-top                     (or (maybe-> pd-top pos-int?) pd-block)
-         pd-bottom                  (or (maybe-> pd-bottom pos-int?) pd-block)
+         pd-top                     (or (some-> pd-top (maybe-> #(< -1 %))) pd-block)
+         pd-bottom                  (or (some-> pd-bottom (maybe-> #(< -1 %))) pd-block)
          pd-hrz                     #(min (or (maybe-> % pos-int?) pd-inline) 10)
          pd-right                   (pd-hrz pd-right)
          pd-left                    (pd-hrz pd-left)
@@ -1472,7 +1397,7 @@
                                        (* 2 vertical-border-char-count))
          pd-left-str                (util/sjr pd-left " ")
          start                      (str vertical-border-char pd-left-str)
-         start-count                (adjusted-char-count start)
+         start-count                (strlen-minus-ansi-sgr start)
          pd-ln                      (str vertical-border-char
                                          (util/sjr (- cols
                                                       (* 2 vertical-border-char-count))
@@ -1498,8 +1423,8 @@
          side-label-for-border      (when-not truncated-label
                                       (when side-label
                                         (if label
-                                          (when (< 4 (- cols (+ (adjusted-char-count label)
-                                                                (adjusted-char-count side-label)
+                                          (when (< 4 (- cols (+ (strlen-minus-ansi-sgr label)
+                                                                (strlen-minus-ansi-sgr side-label)
                                                                 4)))
                                             side-label)
                                           truncated-side-label)))
@@ -1544,7 +1469,7 @@
                             ln
                             (util/sjr (- cols
                                          (+ start-count 
-                                            (adjusted-char-count ln))
+                                            (strlen-minus-ansi-sgr ln))
                                          vertical-border-char-count)
                                       " ")
                             vertical-border-char))
