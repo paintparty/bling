@@ -81,11 +81,14 @@
 
 
 (defn- target-key? [problem v]
-  (let [in        (:in problem)
-        m         (get-in v (drop-last in))
-        [mek mev] (when (map? m) (find m (last in)))]
-    (boolean (and (not= mev (:value problem))
-                  (= mek (:value problem))))))
+  (boolean
+   (let [in (:in problem)]
+     (when (coll? v)
+       (let [vectorized (walk/postwalk #(if (list? %) (vec %) %) v)
+             m          (get-in vectorized (drop-last in))
+             [mek mev]  (when (map? m) (find m (last in)))]
+         (and (not= mev (:value problem))
+              (= mek (:value problem))))))))
 
 
 (defn- problem-path
@@ -111,7 +114,9 @@
    {:keys [compact?
            ultra-compact?
            label-style
+           label-margin-bottom
            margin-top
+           margin-bottom
            section-break?
            omit-section-labels]
     :or   {section-break? true}}]
@@ -127,7 +132,9 @@
     (vec
      (remove nil?
              [(when section-break? section-break)
+              (some-> margin-top (maybe-> pos-int?) (repeat  "\n") string/join)
               (when label (bling [label-style label]))
+              (some-> label-margin-bottom (maybe-> pos-int?) (repeat  "\n") string/join)
               (when label section-header-break)
               v]))))
 
@@ -169,16 +176,16 @@
   (let [frm (problem :value-schema/form)]
     (or 
      ;; Turns [:enum :foo :bar :baz] => #{:foo :bar :baz}
-     (some-> frm enum-schema->set)
+     (!? (some-> frm enum-schema->set))
 
      ;; Something like :int => int?
-     (:value-schema/sym problem)
+     (!? (:value-schema/sym problem))
 
      ;; Returns the :error/message from schema
-     (some-> frm m/properties :error/message)
+     (!? (some-> problem :value-schema m/properties :error/message))
 
      ;; Returns the :error/fn from schema
-     (some-> frm m/properties :error/fn)
+     (some-> problem :value-schema m/properties :error/fn)
 
      ;; Returns the schema with option maps removed
      (:value-schema/cleaned problem)
@@ -189,8 +196,8 @@
 
 (defn- file-info*
   [{:keys [:file :line :column :function-name]}]
-  (when (and file line column)
-    (symbol (str file
+  (when (and line column)
+    (symbol (str (if (nil? file) "[unknown file]" file)
                  (when function-name (str "/" function-name))
                  ":"
                  line
@@ -240,15 +247,22 @@
          :schema/form   (m/form (:schema m))))
 
 
+;; you need to check this with the root path thing
+;; parent schema only makes sense if all problems same path length
+;; otherwise it is like a ancestor schema
+
+;; maybe you sould do some error rollup situation
+
+;; TODO this should be fixed for situations where there is only one problem
 (defn- parent-schema* [schema v]
   (let [common-path        (->> v (mapv :path) common-root-path-max)
         parent-schema      (mu/get-in schema common-path)
         parent-schema-form (m/form parent-schema)
         junction-type      (some-> parent-schema-form
-                            (maybe-> vector?)
-                            seq
-                            first
-                            (maybe-> #{:or :and}))]
+                                   (maybe-> vector?)
+                                   seq
+                                   first
+                                   (maybe-> #{:or :and}))]
     [parent-schema-form parent-schema junction-type]))
 
 
@@ -305,14 +319,48 @@
                      :value-schema/tag  tag})))))
 
 
+(defn schema-path-siblings [filtered]
+  (let [grouped-by-path-count (group-by (fn [[k]] (count k)) filtered)
+        max-path-count        (->> grouped-by-path-count keys (apply max))]
+    (some-> grouped-by-path-count
+            (get max-path-count)
+            first
+            second)))
+
+
+(defn regrouped-errors 
+  "This is intended to reduce the number of errors that are reported.
+
+   Should only work when:
+   - There are multiple errors in the erroneous values's error group
+   - 2 or more errors are siblings based on their schema :path value
+   - The grouped siblings with the longest path are used, and all other errors
+     are discarded"
+  [grouped-errors]
+  (let [paths-by-count* (group-by #(-> % :path drop-last vec) grouped-errors)
+        grouped-errors  (if (< 1 (count paths-by-count*))
+                          (let [filtered  (reduce-kv (fn [m k v] 
+                                                       (if (< 1 (count v))
+                                                         (assoc m k v) 
+                                                         m))
+                                                     {} 
+                                                     paths-by-count*)]
+                            (when (seq filtered)
+                              (or (schema-path-siblings filtered)
+                                  grouped-errors)))
+                          grouped-errors)]
+    grouped-errors))
+
+
 (defn- narrowed-problem-group
   [schema bad-value in-path-for-group grouped-errors value]
-  (let [[parent-schema-form
+  (let [grouped-errors (regrouped-errors grouped-errors)
+        [parent-schema-form
          parent-schema 
          junction-type] (parent-schema* schema grouped-errors)
-        ;; schema-form     (m/form schema)
-        error-type (or junction-type
-                       #_(when ()))]
+        error-type      junction-type
+        errors          (mapv error-summary grouped-errors)
+        ]
     (merge {:value              bad-value
             :in                 in-path-for-group
             :path/reduce        (reduction-path value in-path-for-group bad-value)
@@ -321,7 +369,8 @@
                                      common-root-path-max)
             :parent-schema      parent-schema
             :parent-schema/form parent-schema-form
-            :errors             (mapv error-summary grouped-errors)
+            :errors             errors
+
             :error-group-type   error-type}
            (some->> junction-type (hash-map :junction-type))
            (when (and (not junction-type) 
@@ -374,8 +423,8 @@
                                               value))))
             []
             grouped))]
-    (into (? narrowed-missing-key-errors)
-          (? narrowed-problem-groups*))))
+    (into (!? narrowed-missing-key-errors)
+          (!? narrowed-problem-groups*))))
 
 
 ;; This is hifi printing of problem, study input and replicate
@@ -407,7 +456,7 @@
 
   
 
-  (defn ^:public explain-malli
+  (defn ^:public explain-malli*
     "Prints a Malli validation error \"callout\" block via bling.core/callout. 
    
    Within the block, the value is pretty-printed, potentially with syntax coloring. The problem value is highlighted with the `:highlight-error` class of the active fireworks theme, or the `:highlight-error-underlined` class, if the value is not a collection.
@@ -525,7 +574,7 @@
                  :desc     ["The column number of the call site"]}
                 :int]]}
     ([schema v]
-     (explain-malli schema v nil))
+     (explain-malli* schema v nil))
     ([schema
       v
       {:keys [highlighted-problem-section-label
@@ -572,161 +621,213 @@
            (or (when (string? file-info-str) file-info-str)
                (file-info* explain-malli-opts))
 
-           compact?             (= :compact spacing)
+           compact?             
+           (= :compact spacing)
 
-           ultra-compact?       (= :ultra-compact spacing)]
+           ultra-compact?       
+           (= :ultra-compact spacing)
+           
+           label-style         
+           :italic
+
+           display-schema?     
+           (and (not (true? display-explain-data?))
+                (not (false? display-schema?)))
+
+           omit-sections       
+           (some->> omit-sections
+                    seq
+                    (into #{}))
+
+           omit-section-labels 
+           (some->> omit-section-labels
+                    seq
+                    (into #{}))
+
+           section-opts        
+           {:compact?            compact?
+            :ultra-compact?      ultra-compact?
+            :label-style         label-style
+            :omit-section-labels omit-section-labels}
+           ]
        (if (seq problems)
          (let [problems (do
                           ;;  (!? (m/form schema))
                           ;;  (!? (me/error-value malli-ex-data {::me/mask-valid-values '...}))
                           ;;  (!? (me/humanize malli-ex-data {::me/mask-valid-values '...}))
-                          (narrow-problems malli-ex-data))]
+                          (!? (narrow-problems malli-ex-data)))
+               
+               num-problems       
+               (count problems)
 
-           (doseq [problem problems]
-             (let [schema              (some-> problem :schema m/form)
+               multiple-problems? 
+               (< 1 num-problems)
 
-                   error-message       (schema-error-message schema)
+               printed
+               (map-indexed (fn [i problem]
+                              (let [schema         (some-> problem :schema m/form)
 
-                   missing-key         (if (= :malli.core/missing-key (:type problem))
-                                         (some-> problem :path last)
-                                         :bling.explain/no-missing-key)
+                                    error-message  (schema-error-message schema)
 
-                   missing-key?        (not= missing-key :bling.explain/no-missing-key)
+                                    missing-key    (if (= :malli.core/missing-key (:type problem))
+                                                     (some-> problem :path last)
+                                                     :bling.explain/no-missing-key)
 
-                   missing-keys?       (-> problem :error-group-type (= :missing-keys))
+                                    missing-key?   (not= missing-key :bling.explain/no-missing-key)
 
-                   error-message?      (boolean (and error-message (not missing-key?)))
+                                    missing-keys?  (-> problem :error-group-type (= :missing-keys))
 
-                   must-satisfy?       (boolean (and (not error-message)
-                                                     (not missing-keys?)))
+                                    error-message? (boolean (and error-message (not missing-key?)))
 
-                   label-style         :italic
+                                    must-satisfy?  (boolean (and (not error-message)
+                                                                 (not missing-keys?)))]
+                                (concat
+                                 (when preamble-section-body
+                                   (section preamble-section-label
+                                            (bling indentation-str preamble-section-body)
+                                            (assoc section-opts :section-break? false)))
 
-                   display-schema?     (and (not (true? display-explain-data?))
-                                            (not (false? display-schema?)))
+                                 (section highlighted-problem-section-label
+                                          ;; TODO - when would you want to use narrowed v? 
+                                          ;; bunched
+                                          ;; what if value is crazy nested or after truncation?
+                                          ;; macro version for filename
+                                          (let [path         (problem-path missing-keys? problem v)
+                                                narrowed-map (when (and select-keys-in-problem-path?
+                                                                        (seq path)
+                                                                        (not-any? coll? path)
+                                                                        (map? v))
+                                                               (let [trimmed (select-keys v path)]
+                                                                 (when (seq trimmed) trimmed)))
+                                                ;; v            (or narrowed-map v)
+                                                opts         {:non-coll-mapkey-length-limit 30
+                                                              :find (vec
+                                                                     (remove nil?
+                                                                             [{:path  path 
+                                                                               :class :highlight-error}
+                                                                              (when narrowed-map
+                                                                                {:pred  #(= % (first path))
+                                                                                 :class :info-error})]))}
+                                                poi-diagram  (string/replace
+                                                              (bling.core/point-of-interest
+                                                               {:file                          file
+                                                                :line                          line
+                                                                :column                        column
+                                                                :truncate-form-to-single-line? false
+                                                                :form                          v
+                                                                :form-hifi-options             opts
+                                                                :margin-block                  0})
+                                                              #"\n$"
+                                                              "")]
+                                            #_(!? (keyed [path narrowed-map v malli-ex-data]))
+                                            poi-diagram)
+                                          (assoc section-opts
+                                                 :section-break?
+                                                 (if preamble-section-body true false)))
 
-                   omit-sections       (some->> omit-sections
-                                                seq
-                                                (into #{}))
+                                 (when-let [missing-keys (-> problem :missing-keys seq)]
+                                   (section (str "Missing key"
+                                                 (when (< 1 (count missing-keys)) "s")
+                                                 ":")
+                                            (string/join
+                                             "\n"
+                                             (mapv
+                                              #(hifi+ %
+                                                      (when highlight-missing-keys?
+                                                        {:find {:pred  (fn [val] (= val %))
+                                                                :class :info-error}}))
+                                              (:missing-keys problem)))
+                                            section-opts))
 
-                   omit-section-labels (some->> omit-section-labels
-                                                seq
-                                                (into #{}))
+                                 (when-not (contains? omit-sections :problem-value)
+                                   (when-not missing-keys?
+                                     (section "Problem value:" 
+                                              (hifi+ (:value problem) 
+                                                     {:non-coll-mapkey-length-limit 30})
+                                              section-opts)))
 
-                   section-opts        {:compact?            compact?
-                                        :ultra-compact?      ultra-compact?
-                                        :label-style         label-style
-                                        :omit-section-labels omit-section-labels}]
-               (apply
-                bling.core/callout
-                (concat
-                 [(merge {:colorway       :error
-                          :theme          #?(:cljs :minimal :clj :sideline)
-                          :label-theme    #?(:clj :marquee :cljs :pipe)
-                          :label          "Malli Schema Error"
-                          :side-label     (when file-info
-                                            (bling [:italic file-info]))
-                          :margin-top     #?(:cljs 0 :clj 1)
-                          :padding-top    (cond ultra-compact? 0 compact? 0 :else 1)
-                          :padding-bottom (if (or ultra-compact? compact?) 0 1)}
-                         callout-opts)]
+                                 (when error-message?
+                                   (section "Message:"
+                                            (indented-string indentation error-message)
+                                            section-opts))
 
-                 (when preamble-section-body
-                   (section preamble-section-label
-                            (bling indentation-str preamble-section-body)
-                            (assoc section-opts :section-break? false)))
+                                 (when must-satisfy?
+                                   (section "Must satisfy:"
+                                            (if-let [junction-form 
+                                                     (when (contains? problem :junction-type)
+                                                       (:parent-schema/form problem))]
+                                              (hifi+ junction-form {:print-level 3})
+                                              (hifi+ (get-satisfaction (!? problem))))
+                                            section-opts))
 
-                 (section highlighted-problem-section-label
-                          ;; TODO - when would you want to use narrowed v? 
-                          ;; bunched
-                          ;; what if value is crazy nested or after truncation?
-                          ;; macro version for filename
-                          (let [path         (problem-path missing-keys? problem v)
-                                narrowed-map (when (and select-keys-in-problem-path?
-                                                        (seq path)
-                                                        (not-any? coll? path)
-                                                        (map? v))
-                                               (let [trimmed (select-keys v path)]
-                                                 (when (seq trimmed) trimmed)))
-                                ;; v            (or narrowed-map v)
-                                opts         {:find (vec
-                                                     (remove nil?
-                                                             [{:path  path 
-                                                               :class :highlight-error}
-                                                              (when narrowed-map
-                                                                {:pred  #(= % (first path))
-                                                                 :class :info-error})]))}
-                                poi-diagram  (string/replace
-                                              (bling.core/point-of-interest
-                                               {:file                          file
-                                                :line                          line
-                                                :column                        column
-                                                :truncate-form-to-single-line? false
-                                                :form                          v
-                                                :form-hifi-options             opts
-                                                :margin-block                  0})
-                                              #"\n$"
-                                              "")]
-                            #_(!? (keyed [path narrowed-map v malli-ex-data]))
-                            poi-diagram)
-                          (assoc section-opts
-                                 :section-break?
-                                 (if preamble-section-body true false)))
+                                 )))
+                            problems)
+               
+               printed-with-numbering
+               (concat
+                (if (< 1 (count printed))
+                  (interpose 
+                   ["\n\n\n"
+                    (bling [:subtle.italic
+                            (str "--------------------------------------------")])
+                    "\n\n\n"]
+                   printed)
+                  printed)
+                
+                (let [single-problem-top-level? 
+                      (and (not multiple-problems?)
+                           (= (-> problems first :parent-schema)
+                              (? (-> problems first :value-schema)))
+                           (= (-> problems first :value-schema)
+                              (m/form schema)))]
+                  [
+                   ;; The schema passed to bling.explain/explain-malli
+                   ;; Defaults to true, displaying schema
+                   (when (and multiple-problems?
+                              (or display-schema? display-explain-data?))
+                     ["\n\n\n"
+                      (bling [:subtle.italic
+                              (str "--------------------------------------------")])])
 
-                 (when-let [missing-keys (-> problem :missing-keys seq)]
-                   (section (str "Missing key"
-                                 (when (< 1 (count missing-keys)) "s")
-                                 ":")
-                            (string/join
-                             "\n"
-                             (mapv
-                              #(hifi+ %
-                                      (when highlight-missing-keys?
-                                        {:find {:pred  (fn [val] (= val %))
-                                                :class :info-error}}))
-                              (:missing-keys problem)))
-                            section-opts))
+                   (when (and display-schema?
+                              (not (? single-problem-top-level?)))
+                     (section "Schema:"
+                              (hifi+ (m/form malli-schema) )
+                              section-opts))
 
-                 (when-not (contains? omit-sections :problem-value)
-                   (when-not missing-keys?
-                     (section "Problem value:" 
-                              (hifi+ (:value problem))
-                              section-opts)))
+                   "\n\n"
 
-                 (when error-message?
-                   (section "Message:"
-                            (indented-string indentation error-message)
-                            section-opts))
-
-                 (when must-satisfy?
-                   (section "Must satisfy:"
-                            (if-let [junction-form 
-                                     (when (contains? problem :junction-type)
-                                       (:parent-schema/form problem))]
-                              (hifi+ junction-form)
-                              (hifi+ (get-satisfaction problem)))
-                            section-opts))
-
-                 ;; The schema passed to bling.explain/explain-malli
-                 ;; Defaults to true, displaying schema
-                 (when display-schema?
-                   (section "Schema:"
-                            (hifi+ (m/form malli-schema))
-                            section-opts))
-
-                 ;; The result of calling malli.core/explain on the value.
-                 ;; Defaults to false, not displaying schema
-                 (when (true? display-explain-data?)
-                   (section "Result of malli.core/explain:"
-                            (hifi+ (explain-data* malli-ex-data))
-                            section-opts)))))))
+                   ;; The result of calling malli.core/explain on the value.
+                   ;; Defaults to false, not displaying schema
+                   (when (true? display-explain-data?)
+                     (section "Result of malli.core/explain:"
+                              (hifi+ (explain-data* malli-ex-data))
+                              section-opts))]))]
+           
+           (callout 
+            (merge {:colorway          :error
+                    :theme             :minimal
+                    :label-theme       :minimal
+                    :label             (str "Malli Schema Error"
+                                            (when multiple-problems? "s")
+                                            (when multiple-problems? (str " (" num-problems ")")))
+                    :side-label        (when file-info
+                                         (bling [:italic file-info]))
+                    :margin-top        #?(:cljs 0 :clj 1)
+                    :border-notches?   true
+                    :label-margin-left 3
+                    :padding-left      2
+                    :padding-top       (cond ultra-compact? 0 compact? 1 :else 1)
+                    :padding-bottom    (cond ultra-compact? 0 compact? 1 :else 1)}
+                   callout-opts)
+            (apply str (flatten printed-with-numbering))))
 
          (when-not (nil? success-message)
            (case success-message
 
              ::explain-malli-success-verbose
              (callout (merge {:colorway       :positive
-                              :label-theme    :marquee
+                              :label-theme    :minimal
                               :padding-top    1
                               :padding-bottom 1}
                              callout-opts
@@ -743,108 +844,20 @@
                            (when file-info-str
                              (str " @ " file-info-str))))
              (println success-message)))))))
-
-  (defn friends
-    "One-line ASCII emoji with \"wtf\" optional prefix
-   
-   Basic example
-   ```clojure
-   (friends)
-   ;; =>
-   \"¯\\_(ツ)_/¯\"
-   ```
-   
-   Example with prefix and `:flipping` moji
-   ```clojure
-   (friends {:prefix \"Flip a table: \", :moji :flipping})
-   ;; =>
-   \"Flip a table: (╯°□°）╯︵ ┻━┻\"
-   ```
-   
-   Illustrated example
-   ```clojure
-   (callout {:type                   :error
-             ;; :colorway            :purple           ; <- any bling palette color, overrides :type
-             ;; :label               \"My label\"      ; overrides label assigned by :theme
-             :side-label             \"My side label\" ; must have a :label if you want a :side-label        
-             :theme                  :sideline         ; :sideline :sideline-bold :minimal :gutter
-             :label-theme            :minimal          ; :minimal :marquee
-             ;; :padding-top         0                 
-             ;; :padding-left        2                 
-             ;; :padding-bottom      0                 
-             ;; :padding-right       0                 
-             ;; :margin-top          1                 
-             ;; :margin-botom        0                 
-             ;; :margin-left         0                 
-             ;; :data?               true              ; <- just returns string, no printing
-             })```
-   
-   All the options:
-   
-   * **`:prefix`**
-       - `string?`
-       - Optional.
-       - Text to prefix the moji
-   
-   * **`:moji`**
-       - `#{:flipping :happy :shruggie :lenny :excited :crying}`
-       - Optional.
-       - Defaults to `:shruggie`.
-       - The name of the friend. 
-         [See more](https://pets.com)"
-    {:desc     "One-line ASCII emoji with \"wtf\" optional prefix"
-
-     :examples [{:desc   "Basic example"
-                 :form   '(friends)
-                 :result "¯\\_(ツ)_/¯"}
-
-                {:desc   "Example with prefix and `:flipping` moji"
-                 :form   '(friends {:prefix "Flip a table: "
-                                    :moji   :flipping})
-                 :result "Flip a table: (╯°□°）╯︵ ┻━┻"}
-
-                {:desc "Illustrated example"
-                 :form "(callout {:type                   :error
-                     |          ;; :colorway            :purple           ; <- any bling palette color, overrides :type
-                     |          ;; :label               \"My label\"      ; overrides label assigned by :theme
-                     |          :side-label             \"My side label\" ; must have a :label if you want a :side-label        
-                     |          :theme                  :sideline         ; :sideline :sideline-bold :minimal :gutter
-                     |          :label-theme            :minimal          ; :minimal :marquee
-                     |          ;; :padding-top         0                 
-                     |          ;; :padding-left        2                 
-                     |          ;; :padding-bottom      0                 
-                     |          ;; :padding-right       0                 
-                     |          ;; :margin-top          1                 
-                     |          ;; :margin-botom        0                 
-                     |          ;; :margin-left         0                 
-                     |          ;; :data?               true              ; <- just returns string, no printing
-                     |          })"}]
-
-     :options  [:map
-                {:desc "All the options"}
-                [:prefix
-                 {:desc     "Text to prefix the moji"
-                  :optional true}
-                 :string]
-                [:moji
-                 {:desc     "The name of the friend. \n[See more](https://pets.com)"
-                  :optional true
-                  :default  :shruggie}
-                 [:enum
-                  :crying
-                  :flipping
-                  :happy
-                  :excited
-                  :lenny
-                  :shruggie]]]}
-    ([]
-     (friends nil))
-    ([{:keys [prefix moji]}]
-     (let [mojis {:crying   "ಥ_ಥ"
-                  :flipping "(╯°□°）╯︵ ┻━┻"
-                  :happy    "ヽ(・∀・)ﾉ"
-                  :excited  "ヾ(≧▽≦*)o"
-                  :lenny    "( ͡° ͜ʖ ͡°)"
-                  :shruggie "¯\\_(ツ)_/¯"}
-           moji  (if (contains? mojis moji) moji :shruggie)]
-       (str prefix (get mojis moji)))))
+  
+  (defmacro ^:public explain-malli
+    ([schema v]
+     (let [{:keys [file line column]} (meta &form)]
+       `(bling.explain/explain-malli* ~schema
+                                      ~v
+                                      {:file   ~file
+                                       :line   ~line
+                                       :column ~column})))
+    ([schema v opts]
+     (let [{:keys [file line column]} (meta &form)] 
+       `(bling.explain/explain-malli* ~schema
+                                      ~v
+                                      (merge {:file   ~file
+                                              :line   ~line
+                                              :column ~column}
+                                             ~opts)))))
