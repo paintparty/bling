@@ -15,7 +15,7 @@
    [fireworks.core :refer [? !? ?> !?> pprint] :rename {pprint fwpp}]
    [fireworks.sample :refer [array-map-of-everything-cljc]]
    [clojure.pprint :refer [pprint]]
-   [bling.sample :as sample]
+   #_[bling.sample :as sample]
    [bling.util :as util :refer [maybe->> maybe->]]
    [bling.defs]
    [bling.explain]
@@ -437,6 +437,15 @@
     :s               "Example callout, default"
     :docs/secondary? true}])
 
+(defn callout+ 
+  ([opts]
+   (callout+ opts
+             (bling.hifi/hifi opts)
+             nil))
+  ([opts _]
+   (callout opts
+            (bling.hifi/hifi opts))))
+
 (defn bling-basics
   ([]
    (bling-basics false))
@@ -597,7 +606,7 @@
     "Example callout, with :type of :warning, padding-left of 3.")
 
    (callout
-    {:type         :warning
+    {:type         :info
      :theme        :boxed
      :max-width    110
      :padding-left 3}
@@ -606,7 +615,7 @@
    (callout
     {:type         :warning
      :theme        :boxed
-     :width        80
+     :width        60
      :padding-left 3}
     "Example callout, :theme of :boxed, :type of :warning, padding-left of 3.")
 
@@ -615,9 +624,9 @@
      :label        "My Label"
      :side-label   "My Side Label"
      :theme        :boxed
-     :width        80
+     :width        60
      :padding-left 3}
-    "Example callout, :theme of :boxed, :type of :warning, padding-left of 3.")
+    "Example callout, :theme of :boxed, fixed width of 80 :type of :warning, padding-left of 3.")
 
    (callout
     {:colorway     :neutral
@@ -634,7 +643,7 @@
      :label        (bling [:bold.blue "My Label"])
      :side-label   (bling [:bold.purple "My Side Label"])
      :theme        :boxed
-     :width        80
+     :width        60
      :padding-left 3}
     "Example callout, :theme of :boxed, :type of :warning, padding-left of 3.")
 
@@ -644,7 +653,7 @@
      :label             (bling [:bold.blue "My Label"])
      :side-label        (bling [:bold.purple "My Side Label"])
      :theme             :boxed
-     :width             80
+     :width             60
      :padding-left      3}
     "Example callout, :theme of :boxed, :type of :warning, padding-left of 3.")
 
@@ -654,7 +663,7 @@
      :label             (bling [:bold.blue "My Label"])
      :side-label        (bling [:bold.purple "My Side Label"])
      :theme             :boxed
-     :width             80
+     :width             60
      :padding-left      3}
     "With some code inside\n\n"
     (hifi {:a         "foo"
@@ -865,9 +874,42 @@
 (defn visual-test-suite []
   (random-callouts)
   (bling-basics)
-  (examples-warnings-for-bad-arg-to-callout))
+  #_(examples-warnings-for-bad-arg-to-callout))
 
 #_(visual-test-suite)
+
+
+#_(callout {:colorway          :warning
+          :type :info
+          ;; :label             (bling [:p.subtle.italic
+          ;;                             "Docstring generation options"]
+          ;;                           [:p "more"])
+          ;; :label-theme       :marquee
+          :header-padding-left 0
+          :side-label        "yeah"
+          ;; :header-padding-left 3
+          ;; :padding-top       2
+          ;; :padding-bottom    0
+          ;; :padding-left      4
+          :margin-top        1
+          :margin-left       2
+          :theme             :minimal
+          ;; :theme             :sideline
+          ;; :theme             :gutter
+          :border-style      :solid
+          ;; :border-notches?   true
+          }
+         "right"
+         #_(bling [:p (friends {:prefix "WTF  "
+                              :emoji  :flipping})]
+                [:p "hi"]
+                [:p "hi"]))
+
+
+
+
+
+
 
 #_(sample/explain-malli-examples)
 
