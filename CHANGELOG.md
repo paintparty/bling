@@ -13,7 +13,13 @@ For a list of breaking changes, check [here](#breaking-changes)
 #### Fixed
 
 #### Removed
+- `border-block-length` option (for minimal theme)
 
+#### Breaking
+- `bling.core/callout` with a single argument will now print the argument within
+a generic callout, formatting the value with `bling.hifi/hifi`.
+
+- `border-block-length` removed, use `:header-width` instead
 
 ## 0.9.2
 
