@@ -805,20 +805,20 @@
                               section-opts))]))]
            
            (callout 
-            (merge {:colorway          :error
-                    :theme             :minimal
-                    :label-theme       :minimal
-                    :label             (str "Malli Schema Error"
-                                            (when multiple-problems? "s")
-                                            (when multiple-problems? (str " (" num-problems ")")))
-                    :side-label        (when file-info
-                                         (bling [:italic file-info]))
-                    :margin-top        #?(:cljs 0 :clj 1)
-                    :border-notches?   true
-                    :label-margin-left 3
-                    :padding-left      2
-                    :padding-top       (cond ultra-compact? 0 compact? 1 :else 1)
-                    :padding-bottom    (cond ultra-compact? 0 compact? 1 :else 1)}
+            (merge {:colorway            :error
+                    :theme               :minimal
+                    :label-theme         :minimal
+                    :label               (str "Malli Schema Error"
+                                              (when multiple-problems? "s")
+                                              (when multiple-problems? (str " (" num-problems ")")))
+                    :side-label          (when file-info
+                                           (bling [:italic file-info]))
+                    :margin-top          #?(:cljs 0 :clj 1)
+                    :border-notches?     true
+                    :header-padding-left 3
+                    :padding-left        2
+                    :padding-top         (cond ultra-compact? 0 compact? 1 :else 1)
+                    :padding-bottom      (cond ultra-compact? 0 compact? 1 :else 1)}
                    callout-opts)
             (apply str (flatten printed-with-numbering))))
 

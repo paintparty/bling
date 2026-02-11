@@ -26,6 +26,7 @@
          docstring {:doc        "Invoke docstring to generate docstrings from function metadata maps"
                     :extra-deps {io.github.paintparty/docstring {:local/root "./../docstring/"}
                                  io.github.paintparty/bling     {:local/root "."}
+                                 io.github.paintparty/fireworks {:local/root "./../fireworks"}
                                  }
                     :task       (exec 'docstring.api/docstring)
                     :exec-args  {:source-paths [
@@ -38,5 +39,5 @@
                                                 ]
                                       ;; :exclude              [bling.friends/friends]
                                     ;;  :print-report?        true
-                                    ;;  :print-report-banner? true
+                                     :print-report-banner? false
                                  }}}}
