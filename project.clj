@@ -7,9 +7,9 @@
                  "../lasertag/src"
                  "../fireworks/src"
                  ]
-  :dependencies [[org.clojure/clojure "1.10.3"]
+  :dependencies [[org.clojure/clojure "1.11.1"]
                  [io.github.paintparty/fireworks "0.19.0"]
-                 [metosin/malli "0.18.0"]
+                 [metosin/malli "0.20.0"]
 
                 ;;  [dev.weavejester/cljfmt "0.15.6"]
                 ;;  [com.taoensso/tufte "3.0.0"]
