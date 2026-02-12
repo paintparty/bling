@@ -242,7 +242,7 @@
   (print-comment ";; You need to require the following things to make this work:")
   (print-comment ";; (require '[bling.core :refer [bling callout point-of-interest]])")
 
-  ;; CALLOUT examples with default :sideline theme, minimal label --------------
+  ;; CALLOUT examples with default :sideline theme, simple label --------------
   (callout+ {:type :info})
   (callout+ {:type  :info :label "My custom label"})
   (callout+ {:type :warning})
@@ -251,7 +251,7 @@
   
 
   (println)
-  ;; CALLOUT examples with :sideline-bold theme, minimal label -----------------
+  ;; CALLOUT examples with :sideline-bold theme, simple label -----------------
   (callout+ {:type :info :theme :sideline-bold })
   (callout+ {:type :warning :theme :sideline-bold})
   (callout+ {:type :error :theme :sideline-bold})
