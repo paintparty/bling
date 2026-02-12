@@ -2176,7 +2176,8 @@
              ;; :padding-block          1
              ;; :padding-inline         2
              }
-    (bling [:bold (str \"Line 1\" \"\\n\" \"Line 2\")])```
+    (bling [:bold (str \"Line 1\" \"\\n\" \"Line 2\")])
+   ```
    
    All the options:
    
