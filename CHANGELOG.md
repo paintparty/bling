@@ -7,19 +7,25 @@ For a list of breaking changes, check [here](#breaking-changes)
 
 ## Unreleased
 #### Added 
+- `border-style` option
+- `border-shape` option
+- `border-weight` option
+- Add ultra-compact setting for `explain-malli` [#46](https://github.com/paintparty/bling/issues/46)
 
 #### Changed
+- Better support for grouping Malli errors for disjunctions [#44](https://github.com/paintparty/bling/issues/44)
 
 #### Fixed
 
 #### Removed
 - `border-block-length` option (for minimal theme)
+- `box-drawing-style` option 
 
 #### Breaking
 - `bling.core/callout` with a single argument will now print the argument within
 a generic callout, formatting the value with `bling.hifi/hifi`.
 
-- `border-block-length` removed, use `:header-width` instead
+- `border-block-length` removed, use `:width` instead
 
 ## 0.9.2
 
