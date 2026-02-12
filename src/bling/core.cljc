@@ -898,11 +898,12 @@
         ;; Fix for cljs
         diagram-char     #?(:cljs (fn [s] s) :clj #(bling [:subtle %]))
         diagram          (when form
-                           (if truncate-form-to-single-line?
-                             (let [form-as-str      (-> form-hifi
+                           (if (? truncate-form-to-single-line?)
+                             (let [multi-line?      (boolean (re-find #"\n" form-hifi))
+                                   form-as-str      (-> form-hifi
                                                         (string/split #"\n")
                                                         first
-                                                        (str "..."))
+                                                        (str (if multi-line? "..." "")))
                                    underline-str    (poi-text-underline-str
                                                      (strlen-minus-ansi-sgr form-as-str)
                                                      0
