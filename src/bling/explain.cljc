@@ -806,8 +806,8 @@
            
            (callout 
             (merge {:colorway            :error
-                    :theme               :minimal
-                    :label-theme         :minimal
+                    :theme               :sandwich
+                    :label-theme         :simple
                     :label               (str "Malli Schema Error"
                                               (when multiple-problems? "s")
                                               (when multiple-problems? (str " (" num-problems ")")))
@@ -827,7 +827,7 @@
 
              ::explain-malli-success-verbose
              (callout (merge {:colorway       :positive
-                              :label-theme    :minimal
+                              :label-theme    :simple
                               :padding-top    1
                               :padding-bottom 1}
                              callout-opts
