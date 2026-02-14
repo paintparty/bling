@@ -43,7 +43,8 @@
 
 (defn ^:public hifi
   "Hi-fidelity, pretty-printed string with syntax-coloring. Dispatches to
-   fireworks.core/_p2"
+   fireworks.core/_p2. More information about the available options can be found
+   [here](https://github.com/paintparty/fireworks?tab=readme-ov-file#options)"
   ([x]
    (hifi x nil))
   ([x opts]

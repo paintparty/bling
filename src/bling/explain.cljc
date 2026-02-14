@@ -3,7 +3,6 @@
    [bling.core :refer [bling callout]]
    [bling.hifi :refer [hifi]]
    [bling.util :as util :refer [maybe->]]
-   [bling.macros :refer [keyed]]
    [clojure.string :as string]
    [clojure.walk :as walk]
    [fireworks.core :refer [!? ?]]
@@ -302,6 +301,7 @@
                          (callout-ln "Potential common root path" common-root-path*)
                          (callout-ln "Ancestor path?" ancestor-path? (if ancestor-path? :green.bold :red))
                          (when ancestor-path? [:p.bold "Errors at path " [:blue in-path] " will not be printed."])])))
+
                ancestor-path?))
           grouped)))
 
@@ -719,7 +719,6 @@
                                                                 :margin-block                  0})
                                                               #"\n$"
                                                               "")]
-                                            #_(!? (keyed [path narrowed-map v malli-ex-data]))
                                             poi-diagram)
                                           (assoc section-opts
                                                  :section-break?
