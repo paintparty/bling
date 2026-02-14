@@ -1,5 +1,6 @@
 (ns bling.cycle
   (:require
+   [clojure.string :as string]
    [fireworks.core :refer [? !? ?> !?>]]
    [bling.core :as bling :refer [bling print-bling callout point-of-interest]]
    [bling.util :as util :refer [when-> char-repeat]]
@@ -523,10 +524,10 @@
 ;; TODO - create a hr construct, to use when not animating 
 ;; Figure out how to trigger an error and do reporting
 ;; Create a no-print mode
-;; Use to generate a test suite
+;; Use to generate a test suite from examples and variants
 
 
-(variants
+#_(variants
  point-of-interest
  {:wrapper-f        println
 
@@ -604,12 +605,4 @@
                   :find {:path  [4]
                          :class :highlight-error}}}))
 
-
-
-;;  :truncate-form-to-single-line? false
-
-
-;; pick a option as top-level loop
-;; [:truncate-form-to-single-line? [:form [:type
-;;                                         :text-decoration-style]]]
 

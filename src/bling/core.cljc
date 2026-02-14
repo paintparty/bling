@@ -780,11 +780,10 @@
 ;; Line and point of interest public fns  -------------------------------------
 
 (defn ^:public point-of-interest
-  "`point-of-interest` creates namespace info diagram which identifies a
-   specific form.
+  "Formatted and decorated diagram of a form with line, column, and file info.
    
-   This provides the namespace, column, and line number, and a bolded,
-   potentially truncated, representation of the specific form of interest.
+   Provides the namespace, column, and line number and a potentially truncated
+   representation of the specific form of interest.
    
    The `:line`, `:column`, and `:form` options must all be present in
    order for the namespece info diagram to be rendered. If the `:form` option
@@ -797,15 +796,15 @@
    If you would like to print a multi-line form with individual subforms highlighted,
    there are two approaches:
    
-        1) Pass the collection as-is and supply an option map that includes
-           something like:
-           `{:hifi-options {:find {:path [1 1] :class :highlight-error}}}`
+       1) Pass the collection as-is and supply an option map that includes
+          something like:
+          `{:hifi-options {:find {:path [1 1] :class :highlight-error}}}`
    
-        2) Pass as a pre-formatted string (indentation, etc) and supply an option map
-           that includes something like:
-           `{:text-decoration-relative-line-number 2
-             :text-decoration-row-start 3
-             :text-decoration-row-end 3}
+       2) Pass as a pre-formatted string (indentation, etc) and supply an option map
+          that includes something like:
+          `{:text-decoration-relative-line-number 2
+            :text-decoration-row-start 3
+            :text-decoration-row-end 3}
    
    By default, the diagram is created with a leading and trailing newlines.
    This can be set to zero, or increased, with the `:margin-block` option.
@@ -864,17 +863,22 @@
    * **`:text-decoration-relative-line-number`**
        - `pos-int?`
        - Optional.
-       - Controls which line of the form gets decorated with an underline. Only applies if form supplied is stringified and multi-line Will underline the whole line, unless valid values are supplied for `:text-decoration-row-start` and `:text-decoration-row-end`
+       - Controls which line of the form gets decorated with an underline.
+         Only applies if form supplied is stringified and multi-line
+         Will underline the whole line, unless valid values are supplied
+         for `:text-decoration-row-start` and `:text-decoration-row-end`
    
    * **`:text-decoration-row-start`**
        - `pos-int?`
        - Optional.
-       - Controls which row the underline starts at. Only applies if form supplied is stringified and multi-line
+       - Controls which row the underline starts at.
+         Only applies if form supplied is stringified and multi-line
    
    * **`:text-decoration-row-end`**
        - `pos-int?`
        - Optional.
-       - Controls which row the underline ends at. Only applies if form supplied is stringified and multi-line
+       - Controls which row the underline ends at.
+         Only applies if form supplied is stringified and multi-line
    
    * **`:truncate-form-to-single-line?`**
        - `boolean?`
@@ -885,34 +889,39 @@
    * **`:hifi-options`**
        - `map?`
        - Optional.
-       - Options map for hifi printing of form This only applies if form is supplied as a collection More information about the available options can be found [here](https://github.com/paintparty/fireworks?tab=readme-ov-file#options) You can pass an option map such as `{:hifi-options {:find {:path [1 1] :class :highlight-error}}}` to highlight a subform at a specific path within the form."
-  {:desc          ["`point-of-interest` creates namespace info diagram which identifies a\n"
-                   "specific form.\n\n"
+       - Options map for hifi printing of form This only applies if form
+         is supplied as a collection More information about the available
+         options can be found [here](https://github.com/paintparty/fireworks?tab=readme-ov-file#options)
+         To highlight a subform at a specific path within the form, you can pass an option map such as:
+         `{:hifi-options {:find {:path  [1 1]
+                                 :class :highlight-error}}}`."
+  {:tldr          "Formatted and decorated diagram of a form with line, column, and file info."
+   :desc          "Provides the namespace, column, and line number and a potentially truncated
+                   representation of the specific form of interest.
 
-                   "This provides the namespace, column, and line number, and a bolded,\n"
-                   "potentially truncated, representation of the specific form of interest.\n\n"
+                   The `:line`, `:column`, and `:form` options must all be present in
+                   order for the namespece info diagram to be rendered. If the `:form` option
+                   is supplied, but any of the others are omitted, only the form will be rendered
+                   (with an underline and no line-info diagram).
 
-                   "The `:line`, `:column`, and `:form` options must all be present in\n"
-                   "order for the namespece info diagram to be rendered. If the `:form` option\n"
-                   "is supplied, but any of the others are omitted, only the form will be rendered\n"
-                   "(with an underline and no line-info diagram).\n\n"
+                   If the form is provided is a collection or list, it will be pretty-printed
+                   as a potentially multi-line list.
+                   If `:truncate-form-to-single-line?` is `true`, the form is truncated and underlined.
+                   If you would like to print a multi-line form with individual subforms highlighted,
+                   there are two approaches:
 
-                   "If the form is provided is a collection or list, it will be pretty-printed\n"
-                   "as a potentially multi-line list.\n"
-                   "If `:truncate-form-to-single-line?` is `true`, the form is truncated and underlined.\n"
-                   "If you would like to print a multi-line form with individual subforms highlighted,\n"
-                   "there are two approaches:\n\n"
-                   "    1) Pass the collection as-is and supply an option map that includes\n"
-                   "       something like:\n"
-                   "       `{:hifi-options {:find {:path [1 1] :class :highlight-error}}}`\n\n"
-                   "    2) Pass as a pre-formatted string (indentation, etc) and supply an option map\n"
-                   "       that includes something like:\n"
-                   "       `{:text-decoration-relative-line-number 2\n"
-                   "         :text-decoration-row-start 3\n"
-                   "         :text-decoration-row-end 3}\n\n"
+                       1) Pass the collection as-is and supply an option map that includes
+                          something like:
+                          `{:hifi-options {:find {:path [1 1] :class :highlight-error}}}`
 
-                   "By default, the diagram is created with a leading and trailing newlines.\n"
-                   "This can be set to zero, or increased, with the `:margin-block` option."]
+                       2) Pass as a pre-formatted string (indentation, etc) and supply an option map
+                          that includes something like:
+                          `{:text-decoration-relative-line-number 2
+                            :text-decoration-row-start 3
+                            :text-decoration-row-end 3}
+
+                   By default, the diagram is created with a leading and trailing newlines.
+                   This can be set to zero, or increased, with the `:margin-block` option."
    :examples      [{:desc  "Basic Example"
                     :forms '[[(point-of-interest
                                {:form                  (+ 1 true)
@@ -937,26 +946,25 @@
                     {:gen/elements ['(+ 1 1 (+ 5 6))
                                     '(+ 1 1 (+ 5 6))
                                     "(+ 9 8 \n   (+ 5 6))"]
-                     :desc         ["The form to draw attention to. Will be cast to string and"
-                                    "truncated at 33 chars"]}
+                     :desc         "The form to draw attention to. Will be cast to string and truncated at 33 chars"}
                     :any]
 
                    [:file
                     {:optional     true
                      :gen/elements ["foo.cljs" "barasdfasdfas_asdfs.cljs" "bar.cljs" nil]
-                     :desc         ["File or namespace"]}
+                     :desc         "File or namespace"}
                     :string]
 
                    [:line
                     {:optional     true
                      :gen/elements [12 22 33 555 77777]
-                     :desc         ["Line number"]}
+                     :desc         "Line number"}
                     :int]
 
                    [:column
                     {:optional     true
                      :gen/elements [22 77]
-                     :desc         ["Column number"]}
+                     :desc         "Column number"}
                     :int]
 
                    [:margin-block
@@ -964,55 +972,56 @@
                      :default  1
                      :gen/min  0
                      :gen/max  5
-                     :desc     ["Controls the number of blank lines above and below the diagram."]}
+                     :desc     "Controls the number of blank lines above and below the diagram."}
                     :int]
 
                    [:type
                     {:optional true
-                     :desc     ["Automatically sets the `:text-decoration-color`."]}
+                     :desc     "Automatically sets the `:text-decoration-color`."}
                     [:enum :error "error" :warning "warning"]]
 
                    [:text-decoration-color
                     {:optional true
                      :default  :neutral
-                     :desc     ["Controls the color of the underline."]}
+                     :desc     "Controls the color of the underline."}
                     [:enum :error "error" :warning "warning" :neutral "neutral" :magenta "magenta" :green "green" :negative "negative"]]
 
                    [:text-decoration-style
                     {:optional true
                      :default  :wavy
-                     :desc     ["Controls the color of the underline."]}
+                     :desc     "Controls the color of the underline."}
                     [:enum :wavy "wavy" :solid "solid" :dashed "dashed" :dotted "dotted" :double "double"]]
 
                    [:text-decoration-relative-line-number
                     {:optional true
                      :gen/min  0
                      :gen/max  5
-                     :desc     ["Controls which line of the form gets decorated with an underline."
-                                "Only applies if form supplied is stringified and multi-line"
-                                "Will underline the whole line, unless valid values are supplied for `:text-decoration-row-start` and `:text-decoration-row-end`"]}
+                     :desc     "Controls which line of the form gets decorated with an underline.
+                                Only applies if form supplied is stringified and multi-line
+                                Will underline the whole line, unless valid values are supplied
+                                for `:text-decoration-row-start` and `:text-decoration-row-end`"}
                     :pos-int]
 
                    [:text-decoration-row-start
                     {:optional true
                      :gen/min  0
                      :gen/max  15
-                     :desc     ["Controls which row the underline starts at."
-                                "Only applies if form supplied is stringified and multi-line"]}
+                     :desc     "Controls which row the underline starts at.
+                                Only applies if form supplied is stringified and multi-line"}
                     :pos-int]
 
                    [:text-decoration-row-end
                     {:optional true
                      :gen/min  0
                      :gen/max  15
-                     :desc     ["Controls which row the underline ends at."
-                                "Only applies if form supplied is stringified and multi-line"]}
+                     :desc     "Controls which row the underline ends at.
+                                Only applies if form supplied is stringified and multi-line"}
                     :pos-int]
 
                    [:truncate-form-to-single-line?
                     {:optional true
                      :default  true
-                     :desc     ["Truncates the form to a single line."]}
+                     :desc     "Truncates the form to a single line."}
                     :boolean]
 
                    [:hifi-options
@@ -1024,10 +1033,12 @@
                                               :class :highlight-error}}
                                       {:find {:path  [3 1]
                                               :class :highlight-error}}]
-                     :desc           ["Options map for hifi printing of form"
-                                      "This only applies if form is supplied as a collection"
-                                      "More information about the available options can be found [here](https://github.com/paintparty/fireworks?tab=readme-ov-file#options)"
-                                      "You can pass an option map such as `{:hifi-options {:find {:path [1 1] :class :highlight-error}}}` to highlight a subform at a specific path within the form."]}
+                     :desc           "Options map for hifi printing of form This only applies if form
+                                      is supplied as a collection More information about the available
+                                      options can be found [here](https://github.com/paintparty/fireworks?tab=readme-ov-file#options)
+                                      To highlight a subform at a specific path within the form, you can pass an option map such as:
+                                      `{:hifi-options {:find {:path  [1 1]
+                                                              :class :highlight-error}}}`."}
                     :map]]
    :clj-docstring [[:example "Example"]
                    :desc
@@ -2332,15 +2343,31 @@
 ;;           CCCCCCCCCCCCC         OOOOOOOOO 
 
 (defn ^:public callout
-  "Prints a message to the console with a block-based coloring motif. Returns nil.
+  "
    
-   If the `:data?` option is set to `true`, it does not print anything, and returns a data representation of the formatting and styling.
+   Prints a message to the console with a block-based coloring motif.
+   Returns nil.
    
-   Callout prints a colored bounding border in the inline start position. The color of the border is determined by the value of the `:type` option, or the `:colorway` option. The characteristics of this border are controlled by the `:theme` option.
+   If the `:data?` option is set to `true`, it does not print anything, and
+   returns a data representation of the formatting and styling.
    
-   For callouts of the type `:error`, `:warning`, or `:info`, a label is printed in the block start postion. If a :type option is set, the label string will default to an uppercased version of that string, e.g. {:type :INFO} => \"INFO\". If a `:label` option is supplied, that value is used instead. When you want to omit label for callouts of the type `:error`, `:warning`, or `:info`, you must explicitly set the :label option to an empty string.
+   Callout prints a colored bounding border in the inline start position.
+   The color of the border is determined by the value of the `:type` option, or
+   the `:colorway` option. The characteristics of this border are controlled by
+   the `:theme` option.
    
-   The amount of vertical padding (in number of lines) within the bounds of the message body can be controlled the `padding-top` and `padding-bottom` options. The amount of space (in number of lines) above and below the message block can be controlled the `margin-top` and `margin-bottom` options.
+   For callouts of the type `:error`, `:warning`, or `:info`, a label is
+   printed in the block start postion. If a :type option is set, the label
+   string will default to an uppercased version of that string, e.g.
+   {:type :INFO} => \"INFO\". If a `:label` option is supplied, that value is
+   used instead. When you want to omit label for callouts of the type `:error`,
+   `:warning`, or `:info`, you must explicitly set the :label option to an empty
+   string.
+   
+   The amount of vertical padding (in number of lines) within the bounds of the
+   message body can be controlled the `padding-top` and `padding-bottom` options.
+   The amount of space (in number of lines) above and below the message block
+   can be controlled the `margin-top` and `margin-bottom` options.
    
    If two arguments are provided, the first should be a map of valid options.
    
@@ -2369,7 +2396,7 @@
              :width                  40
              :min-width              40
              
-             ;; --- The options below exclusive to :theme of :boxed ---------------
+             ;; --- The options below exclusive to :theme of :boxed ---
              ;; :border-char            \"*\"
              ;; :vertical-border-char   \"**\"
              ;; :max-width              100
@@ -2394,14 +2421,16 @@
    * **`:label`**
        - `any?`
        - Optional.
-       - Labels the callout. 
-          In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively.
+       - Labels the callout.
+         In the case of a callout `:type` of `:warning`, `:error`, or `:info`,
+         the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively.
    
    * **`:side-label`**
        - `any?`
        - Optional.
-       - Side label to the the callout label. 
-          In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively.
+       - Side label to the the callout label. In the case of a callout
+         `:type` of `:warning`, `:error`, or `:info`, the value of the label
+         will default to `WARNING`, `ERROR`, or `INFO`, respectively.
    
    * **`:label-theme`**
        - `#{:simple \"marquee\" :marquee \"simple\"}`
@@ -2443,13 +2472,15 @@
        - `int?`
        - Optional.
        - Defaults to `1`.
-       - Amount of margin (in newlines) at top, outside callout. Only applies to terminal emulator printing.
+       - Amount of margin (in newlines) at top, outside callout.
+         Only applies to terminal emulator printing.
    
    * **`:margin-bottom`**
        - `int?`
        - Optional.
        - Defaults to `0`.
-       - Amount of margin (in newlines) at bottom, outside callout. Only applies to terminal emulator printing.
+       - Amount of margin (in newlines) at bottom, outside callout.
+         Only applies to terminal emulator printing.
    
    * **`:margin-left`**
        - `int?`
@@ -2490,13 +2521,15 @@
        - `#{\"sharp\" :round :sharp \"round\"}`
        - Optional.
        - Defaults to `:sharp`.
-       - The corner shape of the borders, either sharp or round. Only applies when `:border-style` is `:solid` AND `:border-weight` is `:normal`
+       - The corner shape of the borders, either sharp or round. Only applies when `:border-style` is
+         `:solid` AND `:border-weight` is `:normal`
    
    * **`:border-notches?`**
        - `boolean?`
        - Optional.
        - Defaults to `:false`.
-       - Only applies to `:sandwich` callout theme. Will use top-left-corner and bottom-right-corner box-drawing chars for first character of header and footer borders.
+       - Only applies to `:sandwich` callout theme. Will use top-left-corner
+         and bottom-right-corner box-drawing chars for first character of header and footer borders.
    
    * **`:border-weight`**
        - `#{:bold \"normal\" :normal \"bold\"}`
@@ -2507,12 +2540,15 @@
    * **`:width`**
        - `pos-int?`
        - Optional.
-       - Width of the box in number of chars, aka columns in terminal. If not set, will be the width of the terminal. If terminal width cannot be detected, will fallback to 80.
+       - Width of the box in number of chars, aka columns in
+         terminal. If not set, will be the width of the terminal.
+         If terminal width cannot be detected, will fallback to 80.
    
    * **`:min-width`**
        - `pos-int?`
        - Optional.
-       - Min width of box in number of chars, aka columns in terminal. Overridden by the `:width` value, if set.
+       - Min width of box in number of chars, aka columns in
+         terminal. Overridden by the `:width` value, if set.
    
    * **`:border-char`**
        - `string?`
@@ -2522,12 +2558,14 @@
    * **`:vertical-border-char`**
        - `string?`
        - Optional.
-       - A char that will override the default box-drawing character, for the vertical borders.
+       - A char that will override the default box-drawing character,
+         for the vertical borders.
    
    * **`:horizontal-border-char`**
        - `string?`
        - Optional.
-       - A char that will override the default box-drawing character, for the horizontal borders.
+       - A char that will override the default box-drawing character,
+         for the horizontal borders.
    
    * **`:box-drawing-style`**
        - `#{:bold :thin-round :double \"thin\" :thin \"thin-round\" \"double\" \"bold\"}`
@@ -2537,32 +2575,33 @@
    * **`:max-width`**
        - `pos-int?`
        - Optional.
-       - Max width of box in number of chars, aka columns in terminal. Overridden by the `:width` value, if set."
-  {:desc     ["Prints a message to the console with a block-based coloring motif."
-              "Returns nil.\n\n"
+       - Max width of box in number of chars, aka columns in
+         terminal. Overridden by the `:width` value, if set."
+  {:desc     "Prints a message to the console with a block-based coloring motif.
+             Returns nil.
 
-              "If the `:data?` option is set to `true`, it does not print anything, and"
-              "returns a data representation of the formatting and styling.\n\n"
+             If the `:data?` option is set to `true`, it does not print anything, and
+             returns a data representation of the formatting and styling.
 
-              "Callout prints a colored bounding border in the inline start position."
-              "The color of the border is determined by the value of the `:type` option, or"
-              "the `:colorway` option. The characteristics of this border are controlled by"
-              "the `:theme` option.\n\n"
+             Callout prints a colored bounding border in the inline start position.
+             The color of the border is determined by the value of the `:type` option, or
+             the `:colorway` option. The characteristics of this border are controlled by
+             the `:theme` option.
 
-              "For callouts of the type `:error`, `:warning`, or `:info`, a label is"
-              "printed in the block start postion. If a :type option is set, the label"
-              "string will default to an uppercased version of that string, e.g."
-              "{:type :INFO} => \"INFO\". If a `:label` option is supplied, that value is"
-              "used instead. When you want to omit label for callouts of the type `:error`,"
-              "`:warning`, or `:info`, you must explicitly set the :label option to an empty"
-              "string.\n\n"
+             For callouts of the type `:error`, `:warning`, or `:info`, a label is
+             printed in the block start postion. If a :type option is set, the label
+             string will default to an uppercased version of that string, e.g.
+             {:type :INFO} => \"INFO\". If a `:label` option is supplied, that value is
+             used instead. When you want to omit label for callouts of the type `:error`,
+             `:warning`, or `:info`, you must explicitly set the :label option to an empty
+             string.
 
-              "The amount of vertical padding (in number of lines) within the bounds of the"
-              "message body can be controlled the `padding-top` and `padding-bottom` options."
-              "The amount of space (in number of lines) above and below the message block"
-              "can be controlled the `margin-top` and `margin-bottom` options.\n\n"
+             The amount of vertical padding (in number of lines) within the bounds of the
+             message body can be controlled the `padding-top` and `padding-bottom` options.
+             The amount of space (in number of lines) above and below the message block
+             can be controlled the `margin-top` and `margin-bottom` options.
 
-              "If two arguments are provided, the first should be a map of valid options."]
+             If two arguments are provided, the first should be a map of valid options."
 
    :examples [{:desc  "Example call with all of the options"
                :forms "(callout {:type                   :error            ; :warning, :info
@@ -2588,7 +2627,7 @@
                       |          :width                  40
                       |          :min-width              40
                       |          
-                      |          ;; --- The options below exclusive to :theme of :boxed ---------------
+                      |          ;; --- The options below exclusive to :theme of :boxed ---
                       |          ;; :border-char            \"*\"
                       |          ;; :vertical-border-char   \"**\"
                       |          ;; :max-width              100
@@ -2600,12 +2639,12 @@
    :options  [:map
               [:type
                {:optional true
-                :desc     ["Will set the label text (unless provided via `:label`). Will also set the `:colorway`, and override any provided `:colorway` value."]}
+                :desc     "Will set the label text (unless provided via `:label`). Will also set the `:colorway`, and override any provided `:colorway` value."}
                [:enum :error "error" :warning "warning" :info "info"]]
 
               [:colorway
                {:optional true
-                :desc     ["The color of the border, or gutter, depending on the value of `:theme`."]}
+                :desc     "The color of the border, or gutter, depending on the value of `:theme`."}
                [:enum :error "error" :warning "warning" :info "info" :positive "positive" :subtle "subtle" :magenta "magenta" :green "green" :negative "negative" :neutral "neutral"]]
 
               #_[:sections
@@ -2616,141 +2655,143 @@
               [:theme
                {:optional true
                 :default  :sideline
-                :desc     ["Name of callout layout template."]}
+                :desc     "Name of callout layout template."}
                [:enum :sideline "sideline" :sandwich "simple" :gutter "gutter" :boxed "boxed"]]
 
               [:label
                {:optional true
-                :desc     ["Labels the callout."
-                           "\n"
-                           "In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively."]}
+                :desc     "Labels the callout.
+                           In the case of a callout `:type` of `:warning`, `:error`, or `:info`,
+                           the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively."}
                :any]
 
               [:side-label
-               {:optional true
-                :desc     ["Side label to the the callout label."
-                           "\n"
-                           "In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively."]}
+               {:optional  true
+                :desc      "Side label to the the callout label. In the case of a callout
+                            `:type` of `:warning`, `:error`, or `:info`, the value of the label
+                            will default to `WARNING`, `ERROR`, or `INFO`, respectively."}
                :any]
 
               [:label-theme
                {:optional true
                 :default  :simple
-                :desc     ["Name of label flavor."]}
+                :desc     "Name of label flavor."}
                [:enum :marquee "marquee" :simple "simple"]]
 
               [:padding-block
                {:optional true
                 :default  1
-                :desc     ["Amount of padding (in newlines) at top and bottom, inside callout."]}
+                :desc     "Amount of padding (in newlines) at top and bottom, inside callout."}
                :int]
 
               [:padding-top
                {:optional true
                 :default  1
-                :desc     ["Amount of padding (in newlines) at top, inside callout."]}
+                :desc     "Amount of padding (in newlines) at top, inside callout."}
                :int]
 
               [:padding-bottom
                {:optional true
                 :default  1
-                :desc     ["Amount of padding (in newlines) at bottom, inside callout."]}
+                :desc     "Amount of padding (in newlines) at bottom, inside callout."}
                :int]
 
               [:padding-inline
                {:optional true
                 :default  2
-                :desc     ["Amount of padding (in blank character spaces) at left and right, inside callout."]}
+                :desc     "Amount of padding (in blank character spaces) at left and right, inside callout."}
                :int]
 
               [:padding-left
                {:optional true
                 :default  2
-                :desc     ["Amount of padding (in blank character spaces) at left, inside callout."]}
+                :desc     "Amount of padding (in blank character spaces) at left, inside callout."}
                :int]
 
               [:margin-top
                {:optional true
                 :default  1
-                :desc     ["Amount of margin (in newlines) at top, outside callout."
-                           "Only applies to terminal emulator printing."]}
+                :desc     "Amount of margin (in newlines) at top, outside callout.
+                           Only applies to terminal emulator printing."}
                :int]
 
               [:margin-bottom
                {:optional true
                 :default  0
-                :desc     ["Amount of margin (in newlines) at bottom, outside callout."
-                           "Only applies to terminal emulator printing."]}
+                :desc     "Amount of margin (in newlines) at bottom, outside callout.
+                           Only applies to terminal emulator printing."}
                :int]
 
               [:margin-left
                {:optional true
                 :default  0
-                :desc     ["Amount of margin (in blank character spaces) at left, outside callout."]}
+                :desc     "Amount of margin (in blank character spaces) at left, outside callout."}
                :int]
 
               [:data?
                {:optional true
-                :desc     ["Returns a data representation of result instead of printing it."]}
+                :desc     "Returns a data representation of result instead of printing it."}
                :boolean]
 
               [:header-padding-left
                {:optional true
                 :default  2
-                :desc     ["Amount of left margin (in character spaces) for the label, in the callout header"]}
+                :desc     "Amount of left margin (in character spaces) for the label, in the callout header"}
                :int]
 
               [:header-gap
                {:optional true
                 :default  5
-                :desc     ["The gap (in character spaces) the label and the optional side lable, in the callout header."]}
+                :desc     "The gap (in character spaces) the label and the optional side lable, in the callout header."}
                :int]
 
               [:border-style
                {:optional true
                 :default  :solid
-                :desc     ["The style of box-drawing character used."]}
+                :desc     "The style of box-drawing character used."}
                [:enum :solid "solid" :double "double"]]
 
               [:border-weight
                {:optional true
                 :default  :normal
-                :desc     ["The weight of box-drawing character used. Applies only to `:border-style` of `:solid`"]}
+                :desc     "The weight of box-drawing character used. Applies only to `:border-style` of `:solid`"}
                [:enum :normal "normal" :bold "bold"]]
 
               [:border-shape
                {:optional true
                 :default  :sharp
-                :desc     ["The corner shape of the borders, either sharp or round. Only applies when `:border-style` is `:solid` AND `:border-weight` is `:normal`"]}
+                :desc     "The corner shape of the borders, either sharp or round. Only applies when `:border-style` is
+                           `:solid` AND `:border-weight` is `:normal`"}
                [:enum :sharp "sharp" :round "round"]]
 
               [:border-notches?
                {:optional true
                 :default  :false
                 :theme    :sandwich
-                :desc     ["Only applies to `:sandwich` callout theme. Will use top-left-corner and bottom-right-corner box-drawing chars for first character of header and footer borders."]}
+                :desc     "Only applies to `:sandwich` callout theme. Will use top-left-corner
+                           and bottom-right-corner box-drawing chars for first character of header and footer borders."}
                :boolean]
 
               [:border-weight
                {:optional true
                 :theme    :sandwich
                 :default  :normal
-                :desc     ["The style of box-drawing character used."]}
+                :desc     "The style of box-drawing character used."}
                [:enum :normal "normal" :bold "bold"]]
 
               [:width
                {:optional true
                 :theme    [:sandwich :boxed]
-                :desc     ["Width of the box in number of chars, aka columns in"
-                           "terminal. If not set, will be the width of the terminal."
-                           "If terminal width cannot be detected, will fallback to 80."]}
+                :desc     "Width of the box in number of chars, aka columns in
+                           terminal. If not set, will be the width of the terminal.
+                           If terminal width cannot be detected, will fallback to 80."}
                :pos-int]
 
               [:min-width
                {:optional true
                 :theme    [:sandwich :boxed]
-                :desc     ["Min width of box in number of chars, aka columns in"
-                           "terminal. Overridden by the `:width` value, if set."]}
+                :desc     "Min width of box in number of chars, aka columns in
+                           terminal. Overridden by the `:width` value, if set."}
                :pos-int]
 
               ;; boxed ---------------------------------------------------------
@@ -2764,26 +2805,36 @@
               [:vertical-border-char
                {:optional true
                 :theme    :boxed
-                :desc     "A char that will override the default box-drawing character, for the vertical borders."}
+                :desc     "A char that will override the default box-drawing character,
+                           for the vertical borders."}
                :string]
 
               [:horizontal-border-char
                {:optional true
                 :theme    :boxed
-                :desc     "A char that will override the default box-drawing character, for the horizontal borders."}
+                :desc     "A char that will override the default box-drawing character,
+                           for the horizontal borders."}
                :string]
 
               [:box-drawing-style
                {:optional true
                 :theme    :boxed
-                :desc     ["The style of box-drawing character used."]}
-               [:enum :thin-round "thin-round" :thin "thin" :bold "bold" :double "double"]]
+                :desc     "The style of box-drawing character used."}
+               [:enum
+                :thin-round
+                "thin-round"
+                :thin
+                "thin"
+                :bold
+                "bold"
+                :double
+                "double"]]
 
               [:max-width
                {:optional true
                 :theme    :boxed
-                :desc     ["Max width of box in number of chars, aka columns in"
-                           "terminal. Overridden by the `:width` value, if set."]}
+                :desc     "Max width of box in number of chars, aka columns in
+                           terminal. Overridden by the `:width` value, if set."}
                :pos-int]]}
   [x & args]
   (if (empty? args)
