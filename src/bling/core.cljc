@@ -717,9 +717,9 @@
    `:text-decoration-relative-line-number` is a pos int, renders a multi-line
    string with an ascii underline below the specified row."
   [{:keys [form
-           text-decoration-relative-line-number 
-           text-decoration-row-start 
-           text-decoration-row-end 
+           text-decoration-relative-line-number
+           text-decoration-row-start
+           text-decoration-row-end
            text-decoration-color
            text-decoration-style]}]
   (when-let [s (some-> form (when-> string?))]
@@ -729,14 +729,14 @@
       (when-let [ln (nth lns
                          (dec text-decoration-relative-line-number)
                          nil)]
-        (when-let [underline-start 
+        (when-let [underline-start
                    (or (when-let [n (maybe-> text-decoration-row-start pos-int?)]
                          (maybe-> n #(< n (count ln))))
-                       (some-> ln 
+                       (some-> ln
                                (string/split #"")
                                seq
                                (->> (keep-indexed
-                                     (fn [i s] 
+                                     (fn [i s]
                                        (when-not (= s " ") i))))
                                first))]
           (let [underline-end (or (some-> text-decoration-row-end
@@ -746,7 +746,7 @@
                 style         {:color text-decoration-color}
                 underline-ln  (bling (char-repeat underline-start " ")
                                      [style
-                                      (char-repeat (- underline-end 
+                                      (char-repeat (- underline-end
                                                       underline-start)
                                                    (case text-decoration-style
                                                      :wavy
@@ -768,9 +768,9 @@
                                                 underline-ln)
                                      (dec text-decoration-relative-line-number)
                                      (str (subs ln 0 underline-start)
-                                          (bling [style 
+                                          (bling [style
                                                   (subs ln
-                                                        underline-start 
+                                                        underline-start
                                                         underline-end)])
                                           (subs ln underline-end (count ln))))]
 
@@ -780,22 +780,37 @@
 ;; Line and point of interest public fns  -------------------------------------
 
 (defn ^:public point-of-interest
-  "`point-of-interest` creates namespace info diagram which identifies a specific form.
+  "`point-of-interest` creates namespace info diagram which identifies a
+   specific form.
    
-   This provides the namespace, column, and line number, and a potentially truncated representation of the specific form of interest. This form representation is accented with a squiggly underline.
+   This provides the namespace, column, and line number, and a bolded,
+   potentially truncated, representation of the specific form of interest.
    
-   The `:line`, `:column`, `:form`, and options must all be present in order for the namespece info diagram to be rendered. If the `:form` option is supplied, but any of the others are omitted, only the form will be rendered (with an underline and no line-info diagram).
+   The `:line`, `:column`, and `:form` options must all be present in
+   order for the namespece info diagram to be rendered. If the `:form` option
+   is supplied, but any of the others are omitted, only the form will be rendered
+   (with an underline and no line-info diagram).
    
-   If the form is provided is a collection or list, it will be pretty-printed as a potentially multi-line list.
-
+   If the form is provided is a collection or list, it will be pretty-printed
+   as a potentially multi-line list.
    If `:truncate-form-to-single-line?` is `true`, the form is truncated and underlined.
-
-   If you would like to print a multi-line form with individual subforms highlighted, there are two approaches:
-       1) Pass the collection as-is and 
-
-   By default, the diagram is created with a leading and trailing newlines. This can be set to zero, or increased, with the `:margin-block` option.
+   If you would like to print a multi-line form with individual subforms highlighted,
+   there are two approaches:
    
-   Example
+        1) Pass the collection as-is and supply an option map that includes
+           something like:
+           `{:hifi-options {:find {:path [1 1] :class :highlight-error}}}`
+   
+        2) Pass as a pre-formatted string (indentation, etc) and supply an option map
+           that includes something like:
+           `{:text-decoration-relative-line-number 2
+             :text-decoration-row-start 3
+             :text-decoration-row-end 3}
+   
+   By default, the diagram is created with a leading and trailing newlines.
+   This can be set to zero, or increased, with the `:margin-block` option.
+   
+   Basic Example
    ```clojure
    (point-of-interest
     {:text-decoration-style :wavy,
@@ -803,7 +818,7 @@
      :type :error,
      :column 11,
      :line 42,
-     :form '(+ 1 true)})
+     :form (+ 1 true)})
    ```
    
    All the options:
@@ -843,34 +858,36 @@
    * **`:text-decoration-style`**
        - `#{\"dashed\" :double :wavy :solid \"wavy\" \"dotted\" \"solid\" \"double\" :dashed :dotted}`
        - Optional.
+       - Defaults to `:wavy`.
        - Controls the color of the underline.
+   
+   * **`:text-decoration-relative-line-number`**
+       - `pos-int?`
+       - Optional.
+       - Controls which line of the form gets decorated with an underline. Only applies if form supplied is stringified and multi-line Will underline the whole line, unless valid values are supplied for `:text-decoration-row-start` and `:text-decoration-row-end`
+   
+   * **`:text-decoration-row-start`**
+       - `pos-int?`
+       - Optional.
+       - Controls which row the underline starts at. Only applies if form supplied is stringified and multi-line
+   
+   * **`:text-decoration-row-end`**
+       - `pos-int?`
+       - Optional.
+       - Controls which row the underline ends at. Only applies if form supplied is stringified and multi-line
    
    * **`:truncate-form-to-single-line?`**
        - `boolean?`
        - Optional.
        - Defaults to `true`.
-       - Truncates the form to a single line."
-  {:desc          ["`point-of-interest` creates namespace info diagram which identifies a"
-                   "specific form.\n\n"
-
-                   "This provides the namespace, column, and line number, and a"
-                   "bolded, potentially truncated, representation of the specific form of"
-                   "interest.\n\n"
-
-                   "The `:line`, `:column`, and `:form` options must all be present in"
-                   "order for the namespece info diagram to be rendered. If the `:form` option is"
-                   "supplied, but any of the others are omitted, only the form will be rendered"
-                   "(with an underline and no line-info diagram).\n\n"
-
-                   "If the form is provided is a collection or list, it will be pretty-printed as a potentially multi-line list.\n"
-                   "If `:truncate-form-to-single-line?` is `true`, the form is truncated and underlined.\n"
-                   "If you would like to print a multi-line form with individual subforms highlighted, there are two approaches:\n"
-                   "    1) Pass the collection as-is and supply an option map that includes something like:\n"
-                   "       `{:hifi-options {:find {:path [1 1] :class :highlight-error}}}`"
-                   "    2) Pass as a pre-formatted string (indentation, etc) and supply an option map that includes something like {:text-decoration-relative-line-number 2 :text-decoration-row-start 3 :text-decoration-row-end 3}"
-
-                   "By default, the diagram is created with a leading and trailing newlines."
-                   "This can be set to zero, or increased, with the `:margin-block` option."]
+       - Truncates the form to a single line.
+   
+   * **`:hifi-options`**
+       - `map?`
+       - Optional.
+       - Options map for hifi printing of form This only applies if form is supplied as a collection More information about the available options can be found [here](https://github.com/paintparty/fireworks?tab=readme-ov-file#options) You can pass an option map such as `{:hifi-options {:find {:path [1 1] :class :highlight-error}}}` to highlight a subform at a specific path within the form."
+  {:desc          "This gives you a good and positive experience with the thing that 
+                   You want to describe."
    :examples      [{:desc  "Basic Example"
                     :forms '[[(point-of-interest
                                {:form                  (+ 1 true)
@@ -880,20 +897,19 @@
                                 :text-decoration-style :wavy
                                 :type                  :error})]]}
                    #_{:desc  "FOO"
-                    :forms '[[(point-of-interest
-                               {:form                  (+ 1 true)
-                                :line                  42
-                                :column                11
-                                :file                  "myfile.core"
-                                :text-decoration-style :wavy
-                                :type                  :error})]]}]
+                      :forms '[[(point-of-interest
+                                 {:form                  (+ 1 true)
+                                  :line                  42
+                                  :column                11
+                                  :file                  "myfile.core"
+                                  :text-decoration-style :wavy
+                                  :type                  :error})]]}]
 
    ;; TODO - Consider adding option for :file-info-style, which would be a map for bling
    ;; TODO - Consider adding option for :line-number-style, to decorate number in gutter, which would be a map for bling
    :options       [:map
                    [:form
-                    {:gen/elements [
-                                    '(+ 1 1 (+ 5 6))
+                    {:gen/elements ['(+ 1 1 (+ 5 6))
                                     '(+ 1 1 (+ 5 6))
                                     "(+ 9 8 \n   (+ 5 6))"]
                      :desc         ["The form to draw attention to. Will be cast to string and"
@@ -1006,8 +1022,7 @@
     :as   opts
     :or   {hifi-options                  nil
            truncate-form-to-single-line? ::unsupplied}}]
-  (let [
-        type                    (some-> type as-str (maybe-> #{"warning" "error"}))
+  (let [type                    (some-> type as-str (maybe-> #{"warning" "error"}))
         file-info               (bling [:italic
                                         (ns-info-str opts)])
         gutter                  (some-> line str count spaces)
@@ -1016,15 +1031,15 @@
                                             as-str
                                             (maybe-> all-color-names))
                                     "neutral")
-        stringified             (stringified-form-with-line-based-decoration 
+        stringified             (stringified-form-with-line-based-decoration
                                  (assoc opts
                                         :text-decoration-color
                                         text-decoration-color))
         form-as-fn-call         (some-> form
                                         (when-> list?)
-                                        (list-formatted-as-fn-call hifi-options))       
+                                        (list-formatted-as-fn-call hifi-options))
         form-is-coll-with-find? (and (coll? form)
-                                     (some-> hifi-options :find :path vector?))       
+                                     (some-> hifi-options :find :path vector?))
         form-hifi               (or  stringified
                                      form-as-fn-call
                                      (bling.hifi/hifi form hifi-options))
@@ -1045,7 +1060,7 @@
 
                                   false
                                   false
-                                  
+
                                   ::unsupplied
                                   (if (or stringified
                                           form-as-fn-call
@@ -1055,7 +1070,7 @@
                                   true)
 
         multi-line?             (some->> form-hifi (re-find #"\n") boolean)
-                                          
+
         diagram                 (when form
                                   (if (or truncate? (not multi-line?))
                                     (let [form-as-str      (-> form-hifi
@@ -1378,13 +1393,13 @@
 (defn- body-lines-no-border
   [{:keys [margin-left-str padding-left-str] :as m}]
   (when-not (::no-callout-body? m)
-   (let [body-lns (string/split-lines (:value m))]
-     (string/join
-      "\n"
-      (util/concatv
-       (repeat (:padding-top m) (str margin-left-str padding-left-str))
-       (mapv #(str margin-left-str padding-left-str %) body-lns)
-       (repeat (:padding-bottom m) (str margin-left-str padding-left-str)))))))
+    (let [body-lns (string/split-lines (:value m))]
+      (string/join
+       "\n"
+       (util/concatv
+        (repeat (:padding-top m) (str margin-left-str padding-left-str))
+        (mapv #(str margin-left-str padding-left-str %) body-lns)
+        (repeat (:padding-bottom m) (str margin-left-str padding-left-str)))))))
 
 ;; Minimal callout start -------------------------------------------------------
 
@@ -1498,7 +1513,6 @@
            (when side-label
              side-label)))))
 
-
 (defn- sandwich-callout-label-line-length*
   [label-line m]
   (let [n (apply max
@@ -1507,7 +1521,6 @@
                                0))
                        (string/split label-line #"\n")))]
     (max (- (or n 0) (:margin-left m)) 0)))
-
 
 (defn- sandwich-callout
   [{:keys [border-style-map
@@ -2293,7 +2306,6 @@
 ;;        CCC::::::::::::C       OO:::::::::OO    
 ;;           CCCCCCCCCCCCC         OOOOOOOOO 
 
-
 (defn ^:public callout
   "Prints a message to the console with a block-based coloring motif. Returns nil.
    
@@ -2339,8 +2351,7 @@
              ;; :padding-block          1
              ;; :padding-inline         2
              }
-    (bling [:bold (str \"Line 1\" \"\\n\" \"Line 2\")])
-   ```
+    (bling [:bold (str \"Line 1\" \"\\n\" \"Line 2\")])```
    
    All the options:
    
@@ -2573,9 +2584,9 @@
                [:enum :error "error" :warning "warning" :info "info" :positive "positive" :subtle "subtle" :magenta "magenta" :green "green" :negative "negative" :neutral "neutral"]]
 
               #_[:sections
-               {:optional true
-                :desc     ["Print only specified sections of a callout"]}
-               [:enum [:header] [:header :body] [:header :body :footer] [:body :footer] [:footer] [:header :footer] [:body]]]
+                 {:optional true
+                  :desc     ["Print only specified sections of a callout"]}
+                 [:enum [:header] [:header :body] [:header :body :footer] [:body :footer] [:footer] [:header :footer] [:body]]]
 
               [:theme
                {:optional true
@@ -2718,7 +2729,7 @@
                :pos-int]
 
               ;; boxed ---------------------------------------------------------
-              
+
               [:border-char
                {:optional true
                 :theme    :boxed
@@ -2757,7 +2768,7 @@
           callout-opts  (some-> opts callout-opts*)
           callout-opts+ (merge {:value (string/join "" args)
                                 ::no-callout-body? (or (= args '(nil))
-                                                          (every? nil? args))}
+                                                       (every? nil? args))}
                                opts
                                callout-opts)]
       {:theme               (keyword (:theme callout-opts))
