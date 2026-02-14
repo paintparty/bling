@@ -51,11 +51,11 @@
 
 (def filter-themes
   #{
-    ;; {:theme :sideline}
-    {:theme :sandwich}
-    ;; {:theme           :sandwich
-    ;;  :border-notches? true}
-    ;; {:theme :gutter}
+    #_{:theme :sideline}
+    #_{:theme :sandwich}
+    #_{:theme           :sandwich
+     :border-notches? true}
+    #_{:theme :gutter}
     #_{:theme :boxed}})
 
 (def filter-options
@@ -80,24 +80,24 @@
 
 #_(do 
   ;; Test with :label-theme :marquee
-  #_
-  (bling.cycle/option-sequences 
+  
+  #_(bling.cycle/callout-option-sequences 
    {:padding-frame-rate padding-frame-rate
     :label-theme        :marquee
     :filter-themes      filter-themes
     :filter             filter-options})
 
   ;; Test with :label-theme :simple
-  #_
-    (bling.cycle/option-sequences 
+  
+    #_
+    (bling.cycle/callout-option-sequences 
      {:padding-frame-rate padding-frame-rate
       :label-theme        :simple
       :filter-themes      filter-themes
       :filter             filter-options})
 
   ;; Test with :theme :box
-  
-  (bling.cycle/option-sequences 
+  (bling.cycle/callout-option-sequences 
    {:padding-frame-rate 75
     :filter-themes      #{{:theme :boxed}}
     :filter             filter-options}))

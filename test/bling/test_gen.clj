@@ -133,8 +133,8 @@
         :append false))
 
 
-;; UNCOMMENT TO GENERATE TESTS
-(do (deftest+ ^:pre-gen all-colors
+;; UNCOMMENT TO GENERATE TESTS. Set write-tests? to true
+#_(do (deftest+ ^:pre-gen all-colors
       (vec (sample/all-the-colors*)))
 
     (deftest+ ^:pre-gen color-contrast
@@ -177,7 +177,7 @@
 
     (deftests-str)
 
-    (def write-tests? true)
+    (def write-tests? false)
 
     (when write-tests? 
       (println "--- Writing new bling.core_test namespace --------------------")
