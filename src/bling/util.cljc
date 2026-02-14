@@ -107,11 +107,13 @@
          80) ; fallback for error
        )))
 
+
 (defn join-lines
   ([coll]
    (join-lines "\n" coll))
   ([sep coll]
    (string/join sep coll)))
+
 
 (defn partition-by-pred [pred coll]
   "Given a coll and a pred, returns a vector of two vectors. The first vector
@@ -123,3 +125,7 @@
                      {:valid [] :invalid []}
                      coll)]
     [(:valid ret*) (:invalid ret*)]))
+
+(defn char-repeat [n s]
+  (when (pos-int? n)
+    (string/join (repeat n (or s "")))))
