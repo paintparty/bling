@@ -886,8 +886,33 @@
        - `map?`
        - Optional.
        - Options map for hifi printing of form This only applies if form is supplied as a collection More information about the available options can be found [here](https://github.com/paintparty/fireworks?tab=readme-ov-file#options) You can pass an option map such as `{:hifi-options {:find {:path [1 1] :class :highlight-error}}}` to highlight a subform at a specific path within the form."
-  {:desc          "This gives you a good and positive experience with the thing that 
-                   You want to describe."
+  {:desc          ["`point-of-interest` creates namespace info diagram which identifies a\n"
+                   "specific form.\n\n"
+
+                   "This provides the namespace, column, and line number, and a bolded,\n"
+                   "potentially truncated, representation of the specific form of interest.\n\n"
+
+                   "The `:line`, `:column`, and `:form` options must all be present in\n"
+                   "order for the namespece info diagram to be rendered. If the `:form` option\n"
+                   "is supplied, but any of the others are omitted, only the form will be rendered\n"
+                   "(with an underline and no line-info diagram).\n\n"
+
+                   "If the form is provided is a collection or list, it will be pretty-printed\n"
+                   "as a potentially multi-line list.\n"
+                   "If `:truncate-form-to-single-line?` is `true`, the form is truncated and underlined.\n"
+                   "If you would like to print a multi-line form with individual subforms highlighted,\n"
+                   "there are two approaches:\n\n"
+                   "    1) Pass the collection as-is and supply an option map that includes\n"
+                   "       something like:\n"
+                   "       `{:hifi-options {:find {:path [1 1] :class :highlight-error}}}`\n\n"
+                   "    2) Pass as a pre-formatted string (indentation, etc) and supply an option map\n"
+                   "       that includes something like:\n"
+                   "       `{:text-decoration-relative-line-number 2\n"
+                   "         :text-decoration-row-start 3\n"
+                   "         :text-decoration-row-end 3}\n\n"
+
+                   "By default, the diagram is created with a leading and trailing newlines.\n"
+                   "This can be set to zero, or increased, with the `:margin-block` option."]
    :examples      [{:desc  "Basic Example"
                     :forms '[[(point-of-interest
                                {:form                  (+ 1 true)
