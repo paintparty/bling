@@ -252,12 +252,6 @@
 
 (defn- spaces [n] (string/join (repeat n " ")))
 
-(defn- ns-info-str
-  [{:keys [file line column file-line-column]}]
-  (if (not (string/blank? file-line-column))
-    file-line-column
-    (str (some-> file (str ":")) line ":" column)))
-
 (defn- poi-text-underline-str [n str-index text-decoration-style]
   ;; "╱╲" <- pretty good look too
   (when-not (= :none :text-decoration-style)
@@ -1122,16 +1116,16 @@
            margin-block
            text-decoration-color
            text-decoration-style
+           gutter-line-number-style
            type
            truncate-form-to-single-line?
            hifi-options]
     :as   opts
     :or   {hifi-options                  nil
+           gutter-line-number-style      {}
            truncate-form-to-single-line? ::unsupplied}}]
   (let [type                    (some-> type as-str (maybe-> #{"warning" "error"}))
-        file-info               (bling [{:font-style :italic
-                                         :color      :subtle}
-                                        (ns-info-str opts)])
+        file-info               (file-info-str opts)
         gutter                  (some-> line str count spaces)
         text-decoration-color   (or (some->> type (get semantics-by-semantic-type))
                                     (some-> text-decoration-color
@@ -1178,6 +1172,7 @@
 
         multi-line?             (some->> form-hifi (re-find #"\n") boolean)
 
+        line-number             (bling [gutter-line-number-style line])
         diagram                 (when form
                                   (if (or truncate? (not multi-line?))
                                     (let [form-as-str      (-> form-hifi
@@ -1195,10 +1190,10 @@
                                                             underline-str]]
                                       (if (and line column form)
                                         [mb
-                                         gutter (diagram-char " ┌─ ") file-info "\n"
-                                         gutter (diagram-char " │ ") "\n"
-                                         line   (diagram-char " │ ") bolded-form "\n"
-                                         gutter (diagram-char " │ ") underline-styled
+                                         gutter      (diagram-char " ┌─ ") file-info "\n"
+                                         gutter      (diagram-char " │ ") "\n"
+                                         line-number (diagram-char " │ ") bolded-form "\n"
+                                         gutter      (diagram-char " │ ") underline-styled
                                          mb
                                          "\n"]
                                         [mb
@@ -1217,10 +1212,10 @@
                                                              ln)))
                                                      (string/join "\n")))]
                                         (vec (concat [mb
-                                                      gutter (diagram-char " ┌─ ") file-info "\n"
-                                                      gutter (diagram-char " │ ") "\n"
-                                                      line   (diagram-char " │ ") form-hifi-with-gutter "\n"
-                                                      gutter (diagram-char " │ ")]
+                                                      gutter      (diagram-char " ┌─ ") file-info "\n"
+                                                      gutter      (diagram-char " │ ") "\n"
+                                                      line-number (diagram-char " │ ") form-hifi-with-gutter "\n"
+                                                      gutter      (diagram-char " │ ")]
                                                      [mb
                                                       "\n"])))
                                       form-hifi)))
@@ -1299,11 +1294,29 @@
            side-label]
     :as m}]
 
-  (let [margin-left-str    (char-repeat margin-left (if (= "gutter" theme) defs/gutter-char " "))
+  (let [margin-left-str    (char-repeat margin-left 
+                                        (if (= "gutter" theme) 
+                                          defs/gutter-char
+                                          " "))
         margin-left-str-0  (char-repeat margin-left
                                         (if (= "gutter" theme)
                                           defs/gutter-char-lower-seven-eighths
                                           " "))
+
+
+        ;; TODO experimental :marquee-tab theme --------------------------------
+        ;; 
+        ;;   ┌──────────────────────────────────┐
+        ;; ┌─┘  Your Header Message goes here   └─────────────
+        ;;
+        ;;
+        ;; ┌──────────────────────────────────┐
+        ;; │  Your Header Message goes here   └───────────────
+
+        tab?                 true
+        ;; 
+        ;; ---------------------------------------------------------------------
+
 
         sandwich-theme?      (= theme "sandwich")
         ;; This currently takes the first line of a multi-line label
@@ -1319,7 +1332,6 @@
                                 (char-repeat 2 hbc))
 
         ;; TODO  header-padding-left is not working
-
         top-line-str       (bling [bs
                                    (str (if (= theme "gutter")
                                           margin-left-str-0
@@ -1368,25 +1380,40 @@
                                                              border-top-weight)))
                                 (char-repeat (dec header-padding-left)
                                              (if (= theme "gutter") " " hbc))
-                                (if (or (= theme "gutter")
-                                        (and (= theme "sandwich")
-                                             (zero? header-padding-left)))
-                                  vbc
-                                  (t-shaped-border-char m :v+l))
+                                (cond tab?
+                                      (first-or-last-horizontal-border-char
+                                       (assoc m ::marquee-label true)
+                                       :bottom
+                                       :right
+                                       hbc)
+                                      (or (= theme "gutter")
+                                          (and (= theme "sandwich")
+                                               (zero? header-padding-left)))
+                                      vbc
+                                      :else
+                                      (t-shaped-border-char m :v+l))
                                 "  ")])
                    (bling [{:font-color :neutral} label])
                    "  ")
               
               sandwich-theme-header-gap-str
               (header-gap-str (merge m
-                                       {:header-with-label s
-                                        :border-top-char   hbc}))
+                                     {:header-with-label s
+                                      :border-top-char   hbc}))
 
               vertical-border-char
-              (bling [bs (if (and (= theme "sandwich")
-                                  (not (string/blank?
-                                        sandwich-theme-header-gap-str)))
+              (bling [bs (cond 
+                           tab?
+                           (first-or-last-horizontal-border-char
+                            (assoc m ::marquee-label true)
+                            :bottom
+                            :left
+                            hbc)
+                           (and (= theme "sandwich")
+                                (not (string/blank?
+                                      sandwich-theme-header-gap-str)))
                            (t-shaped-border-char m :v+r)
+                           :else
                            vbc)])]
 
 
@@ -1397,23 +1424,24 @@
                (when side-label (bling "  " [:italic side-label]))))]
 
        ;; The last line of the lines that comprise the marquee label
-       [(bling [bs
-                (str margin-left-str
-                     (if (= theme "sideline")
-                       (str vbc
-                            (char-repeat (dec header-padding-left) " "))
-                       (char-repeat header-padding-left " "))
-                     (first-or-last-horizontal-border-char
-                      (assoc m ::marquee-label true)
-                      :bottom
-                      :left
-                      hbc)
-                     top-and-bottom-mid
-                     (first-or-last-horizontal-border-char
-                      (assoc m ::marquee-label true)
-                      :bottom
-                      :right
-                      hbc))])])))))
+       (when-not tab?
+         [(bling [bs
+                  (str margin-left-str
+                        (if (= theme "sideline")
+                          (str vbc
+                              (char-repeat (dec header-padding-left) " "))
+                          (char-repeat header-padding-left " "))
+                        (first-or-last-horizontal-border-char
+                        (assoc m ::marquee-label true)
+                        :bottom
+                        :left
+                        hbc)
+                        top-and-bottom-mid
+                        (first-or-last-horizontal-border-char
+                        (assoc m ::marquee-label true)
+                        :bottom
+                        :right
+                        hbc))])]))))))
 
 (defn- gutter-label-line-zero? [m i]
   (and (= (:theme m) "gutter")
