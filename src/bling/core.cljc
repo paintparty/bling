@@ -1060,7 +1060,8 @@
     :or   {hifi-options                  nil
            truncate-form-to-single-line? ::unsupplied}}]
   (let [type                    (some-> type as-str (maybe-> #{"warning" "error"}))
-        file-info               (bling [:italic
+        file-info               (bling [{:font-style :italic
+                                         :color      :subtle}
                                         (ns-info-str opts)])
         gutter                  (some-> line str count spaces)
         text-decoration-color   (or (some->> type (get semantics-by-semantic-type))
@@ -1196,18 +1197,23 @@
                   (or (adjusted-sgr-strlen m :side-label) 0))
                0))]
     (if (pos-int? n)
-      (max n (:header-gap m)) 0)))
+      (max n (:header-gap m)) 
+      ;; Should this be zero or some header-gutter-min-width like 2, or header-gap value?
+      ;; Only applies to sandwich theme, when label and sidelabel are both long
+      3 #_(:header-gap m))))
 
 (defn- header-gap-str
   [{:keys [border-style-map
            theme
            border-top-char]
     :as m}]
-  (bling [border-style-map
-          (util/sjr (if (= theme "sideline")
-                      (:header-gap m)
-                      (resolve-header-gap m))
-                    border-top-char)]))
+  (if (= theme "sideline")
+    (bling [border-style-map
+            (util/sjr (:header-gap m) border-top-char)])
+    (if-let [n (some-> (resolve-header-gap m) (when-> pos?))]
+      (bling [border-style-map
+                (util/sjr n border-top-char)])
+      nil)))
 
 (defn- sideline-marquee-label
   [{:keys [padding-left
@@ -1300,15 +1306,25 @@
                                   (t-shaped-border-char m :v+l))
                                 "  ")])
                    (bling [{:font-color :neutral} label])
-                   "  "
-                   (bling [bs (if (= theme "sandwich")
-                                (t-shaped-border-char m :v+r)
-                                vbc)]))]
+                   "  ")
+              
+              sandwich-theme-header-gap-str
+              (header-gap-str (merge m
+                                       {:header-with-label s
+                                        :border-top-char   hbc}))
+
+              vertical-border-char
+              (bling [bs (if (and (= theme "sandwich")
+                                  (not (string/blank?
+                                        sandwich-theme-header-gap-str)))
+                           (t-shaped-border-char m :v+r)
+                           vbc)])]
+
+
           (str s
+               vertical-border-char
                (when (= theme "sandwich")
-                 (header-gap-str (merge m
-                                        {:header-with-label s
-                                         :border-top-char   hbc})))
+                 sandwich-theme-header-gap-str)
                (when side-label (bling "  " [:italic side-label]))))]
 
        ;; The last line of the lines that comprise the marquee label
