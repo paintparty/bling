@@ -260,15 +260,16 @@
 
 (defn- poi-text-underline-str [n str-index text-decoration-style]
   ;; "╱╲" <- pretty good look too
-  (str (string/join (repeat str-index " "))
-       (string/join (repeat n
-                            (case (some-> text-decoration-style as-str)
-                              "wavy" "^"
-                              "dashed" "-"
-                              "dotted" "•"
-                              "underline" "─"
-                              "double" "═"
-                              "^")))))
+  (when-not (= :none :text-decoration-style)
+    (str (string/join (repeat str-index " "))
+         (string/join (repeat n
+                              (case (some-> text-decoration-style as-str)
+                                "wavy" "^"
+                                "dashed" "-"
+                                "dotted" "•"
+                                "underline" "─"
+                                "double" "═"
+                                "^"))))))
 
 (def ^:private form-limit 33)
 
