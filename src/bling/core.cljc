@@ -509,12 +509,13 @@
            v)))
 
 (defn- et-vec? [x]
-  (boolean (and (vector? x)
-                (= 2 (count x))
-                (-> x
-                    (nth 0)
-                    (maybe-> #(or (keyword? %)
-                                  (map? %)))))))
+  (boolean (when-not (map-entry? x)
+             (and (vector? x)
+                  (= 2 (count x))
+                  (-> x
+                      (nth 0)
+                      (maybe-> #(or (keyword? %)
+                                    (map? %))))))))
 
 ;; Unicode characters ----------------------------------------------------------
 
@@ -675,6 +676,7 @@
               (maybe-> nameable?)
               name))))
 
+
 ;; Race-condition-free version of clojure.core/println,
 ;; Maybe useful to keep around if any weird behavior arises.
 #?(:clj
@@ -732,7 +734,7 @@
                          nil)]
         (when-let [underline-start
                    (or (when-let [n (maybe-> text-decoration-row-start pos-int?)]
-                         (maybe-> n #(< n (count ln))))
+                         (maybe-> n #(< % (count ln))))
                        (some-> ln
                                (string/split #"")
                                seq
@@ -742,7 +744,7 @@
                                first))]
           (let [underline-end (or (some-> text-decoration-row-end
                                           (maybe-> pos-int?)
-                                          (maybe-> #(> % (? underline-start))))
+                                          (maybe-> #(> % underline-start)))
                                   (-> ln count))
                 style         {:color text-decoration-color}
                 underline-ln  (bling (char-repeat underline-start " ")
@@ -1877,7 +1879,8 @@
             vertical-border-char-count
             horizontal-border-char])))
 
-(defn- zero-or-pos? [x] (some-> x (maybe-> int?) (> -1)))
+(defn- zero-or-pos? [x] 
+  (boolean (when (int? x) (> x -1) )))
 
 ;; TODO - support "fit-width"
 (defn- boxed-callout
@@ -2358,6 +2361,10 @@
 ;;      CC:::::::::::::::C     OO:::::::::::::OO  
 ;;        CCC::::::::::::C       OO:::::::::OO    
 ;;           CCCCCCCCCCCCC         OOOOOOOOO 
+
+
+
+;; TODO - Detect width and optionally use for sandwich theme
 
 (defn ^:public callout
   "
@@ -3019,23 +3026,34 @@
                 (as-str x))]
     (conj coll s)))
 
+
 ;; Hiccup w nested styles, supports :p elements ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn- tags->maps [coll]
   (walk/postwalk
    (fn [x]
-     (if-let [k (some-> x
-                        (maybe-> vector?)
-                        (nth 0 nil)
-                        (maybe-> keyword?))]
+     (if-let [k (when-not (map-entry? x)
+                  (some-> x
+                          (maybe-> vector?)
+                          (nth 0 nil)
+                          (maybe-> keyword?)))]
        (if (= [:br] x)
          "\n"
          (into [(-> k
                     name
                     (string/split #"\.")
                     (->> (reduce (partial tag->map true) {})))]
-               (rest x)))
-       x))
+               (let [rst (rest x)
+                     fst (nth rst 0 nil)]
+                 (if (and (= 1 (count rst))
+                          (et-vec? fst))
+                   [fst nil]
+                   rst))))
+       (if (and (et-vec? x)
+                (some-> x (nth 1 nil) et-vec?)
+                (= 2 (count x)))
+         (conj x nil)
+         x)))
    coll))
 
 (defn- get-style-map [x]
