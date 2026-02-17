@@ -16,7 +16,7 @@
    [fireworks.sample :refer [array-map-of-everything-cljc]]
    [clojure.pprint :refer [pprint]]
    #_[bling.sample :as sample]
-   [bling.util :as util :refer [maybe->> maybe->]]
+   [bling.util :as util :refer [maybe->> maybe-> when->]]
    [bling.defs]
    [bling.explain]
    [bling.fonts]
@@ -34,33 +34,44 @@
    [clojure.string :as string]
    ;; [taoensso.tufte :as tufte :refer [p profile]]
    [lasertag.core :refer [tag-map]]
-   
+
    ;; testing sequence of variants / options
    [bling.cycle]
 
    ;; impl ns for the stuff in the visual test suite 
-   [bling.visual-test-impl :refer [random-callouts bling-basics]]))
-
+   [bling.visual-test-impl :refer [random-callouts bling-basics]]
+   ))
 
 ;; (tufte/add-handler! :my-console-handler (tufte/handler:console))
 
-  
+#_(print-hifi
+ {:go []}
+ {:non-coll-mapkey-length-limit 30
+  :find                         (vec
+                                 (remove nil?
+                                         [{:path  [:go]
+                                           :class :highlight-error}
+                                          (when false
+                                            {})]))})
 ;;------------------------------------------------------------------------------
 ;; Testing sequence
 ;;------------------------------------------------------------------------------
 
+#_(bling.cycle/variants
+ bling.core/point-of-interest
+ {:print-desc?    true
+  :print-fn-call? false})
+
 (def filter-themes
-  #{
-    #_{:theme :sideline}
+  #{#_{:theme :sideline}
     #_{:theme :sandwich}
     #_{:theme           :sandwich
-     :border-notches? true}
+       :border-notches? true}
     #_{:theme :gutter}
     #_{:theme :boxed}})
 
 (def filter-options
-  #{
-    ;; :label
+  #{;; :label
     ;; :side-label
     :colorway
     ;; :border-style
@@ -78,56 +89,62 @@
 
 (def padding-frame-rate 75)
 
-#_(do 
-  ;; Test with :label-theme :marquee
-  
-  #_(bling.cycle/callout-option-sequences 
-   {:padding-frame-rate padding-frame-rate
-    :label-theme        :marquee
-    :filter-themes      filter-themes
-    :filter             filter-options})
+#_(do
+    ;; Test with :label-theme :marquee
 
-  ;; Test with :label-theme :simple
-  
-    #_
-    (bling.cycle/callout-option-sequences 
-     {:padding-frame-rate padding-frame-rate
-      :label-theme        :simple
-      :filter-themes      filter-themes
-      :filter             filter-options})
+    #_(bling.cycle/callout-option-sequences
+       {:padding-frame-rate padding-frame-rate
+        :label-theme        :marquee
+        :filter-themes      filter-themes
+        :filter             filter-options})
 
-  ;; Test with :theme :box
-  (bling.cycle/callout-option-sequences 
-   {:padding-frame-rate 75
-    :filter-themes      #{{:theme :boxed}}
-    :filter             filter-options}))
+    ;; Test with :label-theme :simple
+
+    #_(bling.cycle/callout-option-sequences
+       {:padding-frame-rate padding-frame-rate
+        :label-theme        :simple
+        :filter-themes      filter-themes
+        :filter             filter-options})
+
+    ;; Test with :theme :box
+    (bling.cycle/callout-option-sequences
+     {:padding-frame-rate 75
+      :filter-themes      #{{:theme :boxed}}
+      :filter             filter-options}))
 
 
-#_(let [m {:border-style    :solid
-         :label           "Hello"
-        ;;  :side-label      "foo.cljs:11:12"
-        ;;  :label-theme     :simple
-         :label-theme     :marquee
-         :theme :sideline-bold
-        ;;  :theme           :sandwich
-        ;;  :theme           :gutter
-        ;;  :theme           :boxed
-        ;;  :border-notches? true
+(let [m  {:border-style :solid
+          :label        (hifi 'bling.core/callout)
+         ;;  :side-label      "foo.cljs:11:12"
+         ;;  :label-theme     :simple
+          :label-theme  :marquee
+          :theme        :sideline-bold
+         ;;  :theme           :sandwich
+         ;;  :theme           :gutter
+         ;;  :theme           :boxed
+          :border-notches? true
+          :border-shape :round
          ;; :padding-inline  3
-        ;;  :padding-top     3
-        ;;  :margin-left     0
-         :colorway        :subtle
-        ;;  :min-width 30
-        ;;  :width 20
-        ;;  :margin-left 5
-        ;;  :width :auto
-         }
+         ;;  :padding-top     3
+         ;;  :margin-left     0
+          :colorway     :subtle
+         ;;  :min-width 30
+         ;;  :width 20
+         ;;  :margin-left 5
+         ;;  :width :auto
+          :find         {:path  [:label]
+                         :class :highlight-error-underlined}
+          }
       m2 (assoc m :theme :sandwich)]
 
-  (callout m (bling.hifi/hifi m))
-  
-  #_(callout m2 (bling.hifi/hifi m2))
-  )
+  (callout m
+           (bling.hifi/hifi m
+                            {
+                            ;;  :margin-inline-start 5
+                             :find                {:path  [:border-shape]
+                                                   :class :highlight-error}}))
+
+  #_(callout m2 (bling.hifi/hifi m2)))
 
 
 ;;------------------------------------------------------------------------------
