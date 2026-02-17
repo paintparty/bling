@@ -664,6 +664,67 @@
 
 ;; Formatting helper fns  ------------------------------------------------------
 
+;; TODO add metamap w schema
+(defn ^:public ns-info-str
+  [{:keys   [line
+             column
+             function-name
+             line-style
+             column-style
+             function-name-style
+             ns-name-style
+             style]
+    ns-name :ns
+    :or     {line-style          {}
+             column-style        {}
+             function-name-style {}
+             ns-name-style       {}
+             style               {}}}]
+  (when (and line column)
+    (symbol 
+     (bling [style
+             [ns-name-style
+              (if (nil? ns-name) "[unknown ns]" ns-name)]
+             [function-name-style 
+              (when function-name
+                (str "/" function-name))]
+             ":"
+             [line-style  line]
+             ":"
+             [column-style column]]))))
+
+;; TODO add metamap w schema
+(defn ^:public file-info-str
+  [{:keys [:file
+           :line
+           :column
+           :line-style
+           :column-style
+           :file-style
+           :style]
+    :or   {
+           style        {}}}]
+  (let [style        (or style {:color :subtle})
+        line-style   (or line-style style)
+        column-style (or column-style style)
+        file-style   (or file-style style)]
+    (when (and line column)
+      (bling [style
+              [file-style
+               (if (nil? file) "[unknown file]"
+                   (let [splits (-> file str (string/split #"/"))]
+                     (if (< 1 (count splits))
+                       (->> splits
+                            (take-last 2)
+                            (string/join "/")
+                            (str "FU"))
+                       (last splits))))]
+              ":"
+              [line-style  line]
+              ":"
+              [column-style column]]))))
+
+
 (defn- semantic-type [opts]
   (let [x (:colorway opts)]
     (cond
