@@ -994,14 +994,20 @@
                                 :file                  "myfile.core"
                                 :text-decoration-style :wavy
                                 :type                  :error})]]}
-                   #_{:desc  "FOO"
-                      :forms '[[(point-of-interest
-                                 {:form                  (+ 1 true)
-                                  :line                  42
-                                  :column                11
-                                  :file                  "myfile.core"
-                                  :text-decoration-style :wavy
-                                  :type                  :error})]]}]
+                   {:desc  "With styled file-info"
+                    :forms '[[(point-of-interest
+                               {:form                     (+ 1 true)
+                                :style                    {:color      :subtle
+                                                           :font-style :italic}
+                                :line                     42
+                                :line-style               {:color :red}
+                                :gutter-line-number-style {:color :red :font-style :italic}
+                                :column                   11
+                                ;; :column-style          {:color :orange}
+                                :file                     "myfile.core"
+                                ;; :file-style            {:color :orange}
+                                :text-decoration-style    :wavy
+                                :type                     :error})]]}]
 
    ;; TODO - Consider adding option for :file-info-style, which would be a map for bling
    ;; TODO - Consider adding option for :line-number-style, to decorate number in gutter, which would be a map for bling
