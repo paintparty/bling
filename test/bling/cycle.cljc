@@ -98,7 +98,7 @@
            second-arg-f
            merged-override-map
            public-f
-           wrapper-f
+           printing-f
            margin-top
            ::errors]}]
   (when animate? (clear-screen))
@@ -107,7 +107,7 @@
              call (if second-arg-f
                     (public-f m (second-arg-f merged-override-map))
                     (public-f m))]
-         (wrapper-f call)
+         (printing-f call)
          (when print-desc? (print-hifi (list fn-name m))))
        (catch #?(:cljs js/Object :clj Throwable)
               e
@@ -171,7 +171,7 @@
    {:keys [option-filter
            margin-top
            animate?
-           wrapper-f]}]
+           printing-f]}]
   (when (cond (set? option-filter)
               (or (not (seq option-filter))
                   (contains? option-filter k))
@@ -192,7 +192,7 @@
                 :print-desc? print-desc?
                 :public-f            public-f
                 :option-f            option-f
-                :wrapper-f           wrapper-f            
+                :printing-f           printing-f            
                 :merged-override-map merged-override-map
                 :animate?            false #_animate?
                 :margin-top          margin-top
@@ -383,9 +383,10 @@
            primary 
            secondary
            primary-filter
-           wrapper-f
+           printing-f
            secondary-filter]
     :or   {frame-rate     50
+           printing-f      println
            use-examples?  true
            print-header?  true
            print-fn-call? true
@@ -399,12 +400,12 @@
     (when (and use-examples? examples)
       (when print-header?
         (callout
-         {:label         (hifi public-f {:truncate? false})
-          :label-theme   :marquee
-          ;; :border-notches? true
-          :min-width     50
-          :margin-bottom 1
-          :theme         :sandwich}
+         {:label           (hifi public-f {:truncate? false})
+          :label-theme     :marquee
+          :border-notches? true
+          :min-width       50
+          :margin-bottom   2
+          :theme           :sandwich}
          nil
          ))
 
@@ -425,7 +426,7 @@
               (when print-fn-call?
                 (print-bling (print-hifi form)
                              [:subtle.italic '=>]))
-              (wrapper-f (apply public-f args)))))))
+              (printing-f (apply public-f args)))))))
     (if primary
       (let [w-variants         (options-with-variants options variant-coll-f)
             by-key             (reduce (fn [m v]
@@ -472,20 +473,23 @@
    ()
    :clj
    (defmacro variants 
-     {:desc    ["Intended for dynamic visual testing of functions that take an options map.\n\n"
-                "The first arg should be a symbol bound to function with a metadata map that contains an `:options`"
-                "entry in Malli `:map` schema syntax.\n\n"
-                "Based on this schema, a (potentially) multi-dimensional sequence"
-                "of option map variants are generated and each is passed to the"
-                "function in a separate call. These can be printed to std out,"
-                "sequentially, or in animation mode with a variable frame rate.\n\n"
-                "The second argument should be a map of options."]
+     {:desc    "Intended for dynamic visual testing of functions that take an options map.
+
+                The first arg should be a symbol bound to function with a metadata map that contains
+                an `:options` entry in Malli `:map` schema syntax.
+
+                Based on this schema, a (potentially) multi-dimensional sequence of option map
+                variants are generated and each is passed to the function in a separate call.
+                These can be printed to std out, sequentially, or in animation mode with a variable
+                frame rate.
+
+                The second argument should be a map of options."
       :options [:map
                 [:animate? {:optional true :default true :desc "Display each variant then clear std out before the next is printed."} :boolean]
                 [:use-examples? {:optional true :default true :desc "Uses all the examples from the `:examples` entry in the functions metadata map"} :boolean]
                 [:primary {:optional true :default nil :desc "The option that will be used as the primary variant"} :keyword]
                 [:secondary {:optional true :default nil :desc "The option that will be used as the secondary variant"} :keyword]
-                [:wrapper-f {:optional true :default println :desc "Function to wrap the result of the example variant call in. Typically a printing function such as `println`"} fn?]
+                [:printing-f {:optional true :default println :desc "Function to wrap the result of the example variant call in. Typically a printing function such as `println`"} fn?]
                 [:margin-top {:optional true :default 2 :desc "The number of newlines above variant output"} :int]
                 [:option-filter {:optional true :default nil :desc "A set of keywords that represents options to include. Can also be a predicate function that accepts a keyword (the option key)"} [:or [:set :keyword] fn?]]
 
@@ -498,10 +502,14 @@
 
                 ;; Todo - make this a vector situation do you can compose the args
                 [:second-arg-f {:default true :desc "Function that expects a map (the merged options map) and produced a value that will be used as the second arg."} fn?]]}
-     [f m]
-     `(options-sequences*
-       (-> ~f var meta)
-       ~m)))
+     ([f]
+      `(options-sequences*
+        (-> ~f var meta)
+        {}))
+     ([f m]
+      `(options-sequences*
+        (-> ~f var meta)
+        ~m))))
 
 
 (defn distinct-enums 
@@ -525,11 +533,13 @@
 ;; Figure out how to trigger an error and do reporting
 ;; Create a no-print mode
 ;; Use to generate a test suite from examples and variants
-
+;; Use variants function for callout
+;; Update callout metadata for generation
+;; 
 
 #_(variants
  point-of-interest
- {:wrapper-f        println
+ {:printing-f        println
 
   ;; :second-arg-f     (fn [merged-opts] nil) 
 
