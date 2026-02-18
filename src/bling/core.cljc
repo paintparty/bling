@@ -770,14 +770,52 @@
            "\\033\\[0?m"
           ))))
 
+(def highlight-style-ansi-sgr-regexes
+  (mapv ansi-sgr-pattern-re
+        [fireworks.defs/highlight-error-dark-sgr
+         fireworks.defs/highlight-error-light-sgr
+         fireworks.defs/highlight-universal-sgr]))
+
+(defn- reverse-index* [lines]
+  (first (keep-indexed 
+          (fn [i x]
+            (when 
+             (some #(re-find % x) highlight-style-ansi-sgr-regexes)
+              i))
+          (reverse lines))))
+
+(defn- replaced-with-underline-char
+  "Goes through all the highlight-style-ansi-sgr-regexes and replaces the
+   subtstring of the capture group with repeated underline chars."
+  [underline-char line]
+  ;; TODO - should we short-ciruit here?
+  (reduce
+   (fn [s ans-sgr-re]
+     (string/replace s
+                     ans-sgr-re 
+                     (fn [[_ s]] 
+                       (bling.util/char-repeat (count s) underline-char))))
+   line
+   highlight-style-ansi-sgr-regexes))
+
+(defn- decorated-underline
+  [replaced uc style]
+  (let [ansi-stripped       (string/replace replaced ansi/sgr-re "")
+        just-underline-char (string/replace ansi-stripped 
+                                            (re-pattern (str "[^\\" uc "]")) 
+                                            " ")]
+    (bling [style just-underline-char])))
+
 (defn ^:public with-ascii-decoration
-  {:desc     "Expects a string that was formatted with bling.hifi/hifi, with a `:find`
-   option that resulted in error highlighting. The resulting string might have
-   at least one line containing a substring that is ansi-sgr decorated with 
-   highlight-error styling, see fireworks.defs/highlight-error-dark-sgr & co.
-   
-   The last line with this highlight styling will get a new line inserted after
-   it with correctly-placed ansi-char-based underlines, such as \"^^^\"."
+  {:desc     "Expects a string that was formatted with bling.hifi/hifi, with a
+              `:find` option that resulted in error highlighting. The resulting
+              string might have at least one line containing a substring that is
+              ansi-sgr decorated with highlight-error styling, see
+              fireworks.defs/highlight-error-dark-sgr & co.
+              
+              The last line with this highlight styling will get a new line
+              inserted after it with correctly-placed ansi-char-based underlines,
+              such as \"^^^\"."
    :examples [^:no-print
               {:desc  "Basic example"
                :forms '[[(with-ascii-decoration 
@@ -798,59 +836,31 @@
    (with-ascii-decoration s nil))
   ([s {:keys [underline-char
               style
+
+              ;; TODO - put style back in add validation for style
               ;; target-style
-              line-start
-              line-end
-              column-start
-              column-end]
+
+
+              ;; TODO add main branch for when valid line-start etc supplied
+              ;;      this is for more of a precise positioning
+              ;; line-start
+              ;; line-end
+              ;; column-start
+              ;; column-end
+              
+              ]
        :or   {underline-char "^"
-              ;; target-style   {:background-color "#670013"
-              ;;                 :color            "#ffe0e0"
-              ;;                 :font-weight      :bold}
               style          {:color       :medium-red
                               :font-weight :bold}}}]
 
-   ;; TODO add validation for style
-   ;; TODO add main branch for when valid line-start etc supplied
-   (let [underline-char                (or (when-> underline-char 
-                                                   #(and (string? %)
-                                                         (= 1 (count %))))
-                                           "^")
-         ansi-sgr-pattern-dark-re      (ansi-sgr-pattern-re fireworks.defs/highlight-error-dark-sgr)
-         ansi-sgr-pattern-light-re     (ansi-sgr-pattern-re fireworks.defs/highlight-error-light-sgr)
-         ansi-sgr-pattern-universal-re (ansi-sgr-pattern-re fireworks.defs/highlight-universal-sgr)
-         lines                         (vec (string/split-lines s))
-         reverse-index                 (first (keep-indexed 
-                                               (fn [i x]
-                                                 (when (or (re-find ansi-sgr-pattern-dark-re x)
-                                                           (re-find ansi-sgr-pattern-light-re x)
-                                                           (re-find ansi-sgr-pattern-universal-re x))
-                                                   i))
-                                               (reverse lines)))]
+   (let [uc            (or (when-> underline-char util/string-of-1?) "^")
+         lines         (vec (string/split-lines s))
+         reverse-index (reverse-index* lines)]
      (when reverse-index
        (let [line-idx            (dec (- (count lines) reverse-index))
              line                (nth lines line-idx)
-             replaced            (let [f (fn [[_ s]] 
-                                           (bling.util/char-repeat 
-                                            (count s)
-                                            underline-char))]
-                                   (-> line
-                                       (string/replace 
-                                        ansi-sgr-pattern-dark-re 
-                                        f)
-                                       (string/replace 
-                                        ansi-sgr-pattern-light-re 
-                                        f)
-                                       (string/replace 
-                                        ansi-sgr-pattern-universal-re 
-                                        f)))
-             ansi-stripped       (string/replace replaced ansi/sgr-re "")
-             just-underline-char (string/replace ansi-stripped 
-                                                 (re-pattern (str "[^\\"
-                                                                  underline-char
-                                                                  "]")) 
-                                                 " ")
-             decorated           (bling [style just-underline-char])
+             replaced            (replaced-with-underline-char uc line)
+             decorated           (decorated-underline replaced uc style)
              with-inserted       (fireworks.util/insert-at lines
                                                            (inc line-idx)
                                                            decorated)]
