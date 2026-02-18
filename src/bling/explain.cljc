@@ -514,12 +514,15 @@
 (defn- poi-diagram-find-opts [path problem narrowed-map]
   (vec
    (remove nil?
-           [{:path  path 
-             :class (let [x (:value problem)]
-                      (if (and (coll? x)
-                               (< 8 (-> x str count)))
-                        :highlight-error
-                        :highlight-error-underlined))}
+           [{
+             :path                     path 
+             :class                    (let [x (:value problem)]
+                                         (if (and (coll? x)
+                                                  (< 8 (-> x str count)))
+                                           :highlight-error
+                                           :highlight-error
+                                           #_:highlight-error-underlined
+                                           ))}
             (when narrowed-map
               {:pred  #(= % (first path))
                :class :info-error})])))
@@ -582,11 +585,21 @@
                                     :type                          :error
                                     :line                          line
                                     :column                        column
+                                    :file-info-style               {:color      :subtle
+                                                                    :font-style :italic}
+                                    ;; :file-style                    {:color      :subtle
+                                    ;;                                 :font-style :italic}
+                                    ;; :line-style                    {:color      :subtle
+                                    ;;                                 :font-style :italic}
+                                    ;; :gutter-line-number-style      {:color      :subtle
+                                    ;;                                 :font-style :italic}
+                                    ;; :column-style                  {:color      :subtle
+                                    ;;                                 :font-style :italic}
                                     :truncate-form-to-single-line? false
                                     :form                          v
                                     :hifi-options                  opts
                                     :text-decoration-style         :none
-                                    :margin-top                    1})
+                                    :margin-top                    2})
                                   #"\n$"
                                   "")]
                 poi-diagram)
@@ -801,7 +814,8 @@
                (bling.core/file-info-str
                 (merge {:style      {:font-style :italic
                                      :color      :subtle}
-                        :line-style {:color :red}}
+                        #_#_:line-style {:color :red}
+                        }
                        explain-malli-opts)))
 
            compact?             

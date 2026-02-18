@@ -1,6 +1,6 @@
 (ns bling.core
   (:require [clojure.string :as string]
-            ;; [fireworks.core :refer [? !? ?> !?>]]
+            [fireworks.core :refer [? !? ?> !?>]]
             [fireworks.defs]
             [fireworks.util]
             [clojure.walk :as walk]
@@ -712,8 +712,7 @@
                      (if (< 1 (count splits))
                        (->> splits
                             (take-last 2)
-                            (string/join "/")
-                            (str "FU"))
+                            (string/join "/"))
                        (last splits))))]
               ":"
               [line-style  line]
@@ -1098,7 +1097,8 @@
                                                            :font-style :italic}
                                 :line                     42
                                 :line-style               {:color :red}
-                                :gutter-line-number-style {:color :red :font-style :italic}
+                                :gutter-line-number-style {:color      :red
+                                                           :font-style :italic}
                                 :column                   11
                                 ;; :column-style          {:color :orange}
                                 :file                     "myfile.core"
@@ -1107,19 +1107,17 @@
                                 :type                     :error})]]}
                    {:desc  "With problem highlight via :find option"
                     :forms '[[(point-of-interest
-                               {:form                     (+ 1 true)
-                                :hifi-options             {:find {:path [2]
-                                                                  :class :highlight-error}}
-                                :style                    {:color      :subtle
-                                                           :font-style :italic}
-                                :line                     42
-                                :column                   11
-                                :file                     "myfile.core"
-                                :text-decoration-style    :wavy
-                                :type                     :error})]]}]
+                               {:form                  (+ 1 true)
+                                :hifi-options          {:find {:path  [2]
+                                                               :class :highlight-error}}
+                                :style                 {:color      :subtle
+                                                        :font-style :italic}
+                                :line                  42
+                                :column                11
+                                :file                  "myfile.core"
+                                :text-decoration-style :wavy
+                                :type                  :error})]]}]
 
-   ;; TODO - Consider adding option for :file-info-style, which would be a map for bling
-   ;; TODO - Consider adding option for :line-number-style, to decorate number in gutter, which would be a map for bling
    :options       [:map
                    [:form
                     {:gen/elements ['(+ 1 1 (+ 5 6))
@@ -1134,11 +1132,31 @@
                      :desc         "File or namespace"}
                     :string]
 
+                   [:file-style
+                    {:optional     true
+                     :gen/elements [{:color :blue}]
+                     :desc         "File name style, in header of point-of-interest diagram"}
+                    :map]
+
                    [:line
                     {:optional     true
                      :gen/elements [12 22 33 555 77777]
                      :desc         "Line number"}
                     :int]
+
+                   [:line-style
+                    {:optional     true
+                     :gen/elements [{:color :blue}]
+                     :desc         "Line number style, in header of point-of-interest diagram"}
+                    :map]
+
+                   [:gutter-line-number-style
+                    {:optional     true
+                     :gen/elements [{:color       :subtle
+                                     :font-style  :italic
+                                     :font-weight :bold}]
+                     :desc         "Gutter line number style, in header of point-of-interest diagram"}
+                    :map]
 
                    [:column
                     {:optional     true
@@ -1146,12 +1164,42 @@
                      :desc         "Column number"}
                     :int]
 
+                   [:column-style
+                    {:optional     true
+                     :gen/elements [{:color :blue}]
+                     :desc         "Column number style, in header of point-of-interest diagram"}
+                    :map]
+
+                   [:file-info-style
+                    {:optional     true
+                     :gen/elements [{:color :blue}]
+                     :desc         "File info style, in header of point-of-interest diagram.
+                                    This will apply default styles to `:file-style` `:column-style`
+                                    and `:line-style`."}
+                    :map]
+
                    [:margin-block
                     {:optional true
                      :default  1
                      :gen/min  0
                      :gen/max  5
                      :desc     "Controls the number of blank lines above and below the diagram."}
+                    :int]
+
+                   [:margin-top
+                    {:optional true
+                     :default  1
+                     :gen/min  0
+                     :gen/max  5
+                     :desc     "Controls the number of blank lines above the diagram."}
+                    :int]
+
+                   [:margin-bottom
+                    {:optional true
+                     :default  1
+                     :gen/min  0
+                     :gen/max  5
+                     :desc     "Controls the number of blank lines below the diagram."}
                     :int]
 
                    [:type
@@ -1163,7 +1211,19 @@
                     {:optional true
                      :default  :neutral
                      :desc     "Controls the color of the underline."}
-                    [:enum :error "error" :warning "warning" :neutral "neutral" :magenta "magenta" :green "green" :negative "negative"]]
+                    [:enum
+                     :error
+                     "error"
+                     :warning
+                     "warning" 
+                     :neutral
+                     "neutral" 
+                     :magenta 
+                     "magenta" 
+                     :green 
+                     "green"
+                     :negative 
+                     "negative"]]
 
                    [:text-decoration-style
                     {:optional true
@@ -1229,6 +1289,8 @@
            header                        ; <- deprecated / undocumented
            body                          ; <- deprecated / undocumented
            margin-block
+           margin-top
+           margin-bottom
            text-decoration-color
            text-decoration-style
            gutter-line-number-style
@@ -1237,16 +1299,19 @@
            hifi-options]
     :as   opts
     :or   {hifi-options                  nil
-           gutter-line-number-style      {}
            truncate-form-to-single-line? ::unsupplied}}]
+
   (let [type                    (some-> type as-str (maybe-> #{"warning" "error"}))
-        file-info               (file-info-str opts)
+        file-info               (file-info-str (merge opts {:style (:file-info-style opts)}))
         gutter                  (some-> line str count spaces)
         text-decoration-color   (or (some->> type (get semantics-by-semantic-type))
                                     (some-> text-decoration-color
                                             as-str
                                             (maybe-> all-color-names))
                                     "neutral")
+        gutter-line-number-style      (or (when-> gutter-line-number-style map?)
+                                          (:file-info-style opts)
+                                          {})
         stringified             (stringified-form-with-line-based-decoration
                                  (assoc opts
                                         :text-decoration-color
@@ -1256,26 +1321,48 @@
                                         (list-formatted-as-fn-call hifi-options))
         form-is-coll-with-find? (and (coll? form)
                                      (some-> hifi-options :find :path vector?))
-        form-hifi               (or  stringified
+        form-hifi*              (or  stringified
                                      form-as-fn-call
                                      (bling.hifi/hifi form hifi-options))
 
         ;; maybe add squiggly underline line
-        form-hifi               (if (-> hifi-options :find)
-                                  (some-> form-hifi
-                                          (with-ascii-decoration
-                                           {:style {
-                                                    ;; :font-weight :bold
-                                                    :color       (keyword
-                                                                  text-decoration-color)}}))
-                                  form-hifi)
+        form-hifi               (or (when (-> hifi-options :find)
+                                      (some-> form-hifi*
+                                              (with-ascii-decoration
+                                                {:style {
+                                                         :font-weight :bold
+                                                         :color       (keyword
+                                                                       text-decoration-color)}})))
+                                    form-hifi*)
+
+        ;; TODO - form-hifi* in here prints strange
+        ;; _ (? (keyed [line
+        ;;              file
+        ;;              column
+        ;;              form
+        ;;              header                          ; <- deprecated / undocumented
+        ;;              body                            ; <- deprecated / undocumented
+        ;;              margin-block
+        ;;              text-decoration-color
+        ;;              text-decoration-style
+        ;;              gutter-line-number-style
+        ;;              type
+        ;;              truncate-form-to-single-line?
+        ;;              hifi-options
+        ;;              form-hifi*
+        ;;              form-hifi]))
+        
         header                  (str header)
         body                    (str body)
         mb*                     (or (some-> margin-block (maybe-> pos-int?))
                                     (if (some-> margin-block zero?)
                                       0
                                       1))
-        mb                      (char-repeat mb* "\n")
+        mbs*                    (or (when-> margin-top pos-int?) mb*)
+        mbe*                    (or (when-> margin-bottom pos-int?) mb*)
+
+        mbs                     (char-repeat mbs* "\n")
+        mbe                     (char-repeat mbe* "\n")
 
         ;; Fix for cljs
         diagram-char            #?(:cljs (fn [s] s) :clj #(bling [:subtle %]))
@@ -1316,20 +1403,21 @@
                                                              :contrast    :medium}
                                                             underline-str]]
                                       (if (and line column form)
-                                        [mb
-                                         gutter      (diagram-char " ┌─ ") file-info "\n"
+                                        [mbs
+                                         gutter      (diagram-char " ┌─── ") file-info "\n"
                                          gutter      (diagram-char " │ ") "\n"
                                          line-number (diagram-char " │ ") bolded-form "\n"
                                          gutter      (diagram-char " │ ") underline-styled
-                                         mb
+                                         mbe
                                          "\n"]
-                                        [mb
+                                        [mbs
                                          bolded-form "\n"
                                          underline-styled
-                                         mb]))
+                                         mbe]))
                                     (if (and line column form)
                                       (let [form-hifi-with-gutter
                                             (-> form-hifi
+                                                ?
                                                 (string/split #"\n")
                                                 (->> (map-indexed
                                                       (fn [i ln]
@@ -1338,12 +1426,12 @@
                                                                     (diagram-char " │ ")))
                                                              ln)))
                                                      (string/join "\n")))]
-                                        (vec (concat [mb
-                                                      gutter      (diagram-char " ┌─ ") file-info "\n"
+                                        (vec (concat [mbs
+                                                      gutter      (diagram-char " ┌─── ") file-info "\n"
                                                       gutter      (diagram-char " │ ") "\n"
                                                       line-number (diagram-char " │ ") form-hifi-with-gutter "\n"
                                                       gutter      (diagram-char " │ ")]
-                                                     [mb
+                                                     [mbe
                                                       "\n"])))
                                       form-hifi)))
         ret                     (apply bling
@@ -1440,7 +1528,7 @@
         ;; ┌──────────────────────────────────┐
         ;; │  Your Header Message goes here   └───────────────
 
-        tab?                 true
+        tab?                 false
         ;; 
         ;; ---------------------------------------------------------------------
 
