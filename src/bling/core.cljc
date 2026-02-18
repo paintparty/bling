@@ -1333,21 +1333,21 @@
     :or   {hifi-options                  nil
            truncate-form-to-single-line? ::unsupplied}}]
 
-  (let [type                    (some-> type as-str (maybe-> #{"warning" "error"}))
-        file-info               (file-info-str (merge opts {:style (:file-info-style opts)}))
-        gutter                  (some-> line str count spaces)
-        text-decoration-color   (or (some->> type (get semantics-by-semantic-type))
-                                    (some-> text-decoration-color
-                                            as-str
-                                            (maybe-> all-color-names))
-                                    "neutral")
-        gutter-line-number-style      (or (when-> gutter-line-number-style map?)
-                                          (:file-info-style opts)
-                                          {})
-        stringified             (stringified-form-with-line-based-decoration
-                                 (assoc opts
-                                        :text-decoration-color
-                                        text-decoration-color))
+  (let [type                     (some-> type as-str (maybe-> #{"warning" "error"}))
+        file-info                (file-info-str (merge opts {:style (:file-info-style opts)}))
+        gutter                   (some-> line str count spaces)
+        text-decoration-color    (or (some->> type (get semantics-by-semantic-type))
+                                     (some-> text-decoration-color
+                                             as-str
+                                             (maybe-> all-color-names))
+                                     "neutral")
+        gutter-line-number-style (or (when-> gutter-line-number-style map?)
+                                     (:file-info-style opts)
+                                     {})
+        stringified              (stringified-form-with-line-based-decoration
+                                  (assoc opts
+                                         :text-decoration-color
+                                         text-decoration-color))
         form-as-fn-call         (some-> form
                                         (when-> list?)
                                         (list-formatted-as-fn-call hifi-options))
@@ -1356,13 +1356,10 @@
         form-hifi*              (or  stringified
                                      form-as-fn-call
                                      (bling.hifi/hifi form hifi-options))
-
-        ;; maybe add squiggly underline line
         form-hifi               (or (when (-> hifi-options :find)
                                       (some-> form-hifi*
                                               (with-ascii-decoration
-                                                {:style {
-                                                         :font-weight :bold
+                                                {:style {:font-weight :bold
                                                          :color       (keyword
                                                                        text-decoration-color)}})))
                                     form-hifi*)
@@ -1449,7 +1446,6 @@
                                     (if (and line column form)
                                       (let [form-hifi-with-gutter
                                             (-> form-hifi
-                                                ?
                                                 (string/split #"\n")
                                                 (->> (map-indexed
                                                       (fn [i ln]
@@ -3005,13 +3001,32 @@
    :options  [:map
               [:type
                {:optional true
-                :desc     "Will set the label text (unless provided via `:label`). Will also set the `:colorway`, and override any provided `:colorway` value."}
+                :desc     "Will set the label text (unless provided via `:label`). Will also set the `:colorway`,
+                           and override any provided `:colorway` value."}
                [:enum :error "error" :warning "warning" :info "info"]]
 
               [:colorway
                {:optional true
                 :desc     "The color of the border, or gutter, depending on the value of `:theme`."}
-               [:enum :error "error" :warning "warning" :info "info" :positive "positive" :subtle "subtle" :magenta "magenta" :green "green" :negative "negative" :neutral "neutral"]]
+               [:enum
+                :error
+                "error"
+                :warning
+                "warning" 
+                :info 
+                "info" 
+                :positive 
+                "positive" 
+                :subtle
+                "subtle" 
+                :magenta 
+                "magenta" 
+                :green 
+                "green" 
+                :negative 
+                "negative" 
+                :neutral 
+                "neutral"]]
 
               #_[:sections
                  {:optional true
