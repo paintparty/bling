@@ -1,6 +1,8 @@
 (ns bling.core
   (:require [clojure.string :as string]
-            [fireworks.core :refer [? !? ?> !?>]]
+            ;; [fireworks.core :refer [? !? ?> !?>]]
+            [fireworks.defs]
+            [fireworks.util]
             [clojure.walk :as walk]
             [bling.ansi :as ansi :refer [strlen-minus-ansi-sgr]]
             [bling.browser]
@@ -755,6 +757,107 @@
 ;; P::::::::P             OO:::::::::OO   I::::::::I
 ;; PPPPPPPPPP               OOOOOOOOO     IIIIIIIIII
 
+(defn- ansi-sgr-pattern-re [ansi-sgr-needle]
+  (let [ansi-sgr-pattern (string/replace 
+                          ansi-sgr-needle
+                          #"^\033\[" "\\\\033\\\\["
+                          ;; #"^\033\[" ""
+                          )]
+    (re-pattern 
+     (str ansi-sgr-pattern
+          "((?:(?!\\033).)+)" 
+          ;; "((?!^\\033\\[0?m$)+)"
+          ;;  "([a-z:]+)"
+           "\\033\\[0?m"
+          ))))
+
+(defn ^:public with-ascii-decoration
+  {:desc     "Expects a string that was formatted with bling.hifi/hifi, with a `:find`
+   option that resulted in error highlighting. The resulting string might have
+   at least one line containing a substring that is ansi-sgr decorated with 
+   highlight-error styling, see fireworks.defs/highlight-error-dark-sgr & co.
+   
+   The last line with this highlight styling will get a new line inserted after
+   it with correctly-placed ansi-char-based underlines, such as \"^^^\"."
+   :examples [^:no-print
+              {:desc  "Basic example"
+               :forms '[[(with-ascii-decoration 
+                           (bling.core/bling
+                            [:red "Line 1" [:br]]
+                            [:blue "Line 2" [:br]]
+                            (bling.hifi/hifi
+                             {:foo {:bar [12345
+                                          :asfasdfasdfsdfasdfasz
+                                          'aafasfasd]}}
+                             {:find {:path  [:foo :bar]
+                                     :class :highlight-error }})
+                            "\n"
+                            "Another line"
+                            "\n"
+                            "Last"))]]}]}
+  ([s]
+   (with-ascii-decoration s nil))
+  ([s {:keys [underline-char
+              style
+              ;; target-style
+              line-start
+              line-end
+              column-start
+              column-end]
+       :or   {underline-char "^"
+              ;; target-style   {:background-color "#670013"
+              ;;                 :color            "#ffe0e0"
+              ;;                 :font-weight      :bold}
+              style          {:color       :medium-red
+                              :font-weight :bold}}}]
+
+   ;; TODO add validation for style
+   ;; TODO add main branch for when valid line-start etc supplied
+   (let [underline-char                (or (when-> underline-char 
+                                                   #(and (string? %)
+                                                         (= 1 (count %))))
+                                           "^")
+         ansi-sgr-pattern-dark-re      (ansi-sgr-pattern-re fireworks.defs/highlight-error-dark-sgr)
+         ansi-sgr-pattern-light-re     (ansi-sgr-pattern-re fireworks.defs/highlight-error-light-sgr)
+         ansi-sgr-pattern-universal-re (ansi-sgr-pattern-re fireworks.defs/highlight-universal-sgr)
+         lines                         (vec (string/split-lines s))
+         reverse-index                 (first (keep-indexed 
+                                               (fn [i x]
+                                                 (when (or (re-find ansi-sgr-pattern-dark-re x)
+                                                           (re-find ansi-sgr-pattern-light-re x)
+                                                           (re-find ansi-sgr-pattern-universal-re x))
+                                                   i))
+                                               (reverse lines)))]
+     (when reverse-index
+       (let [line-idx            (dec (- (count lines) reverse-index))
+             line                (nth lines line-idx)
+             replaced            (let [f (fn [[_ s]] 
+                                           (bling.util/char-repeat 
+                                            (count s)
+                                            underline-char))]
+                                   (-> line
+                                       (string/replace 
+                                        ansi-sgr-pattern-dark-re 
+                                        f)
+                                       (string/replace 
+                                        ansi-sgr-pattern-light-re 
+                                        f)
+                                       (string/replace 
+                                        ansi-sgr-pattern-universal-re 
+                                        f)))
+             ansi-stripped       (string/replace replaced ansi/sgr-re "")
+             just-underline-char (string/replace ansi-stripped 
+                                                 (re-pattern (str "[^\\"
+                                                                  underline-char
+                                                                  "]")) 
+                                                 " ")
+             decorated           (bling [style just-underline-char])
+             with-inserted       (fireworks.util/insert-at lines
+                                                           (inc line-idx)
+                                                           decorated)]
+         (string/join "\n" with-inserted))))))
+
+
 (defn- list-formatted-as-fn-call [x opts]
   (if (list? x)
     (-> x
@@ -1001,6 +1104,18 @@
                                 :file                     "myfile.core"
                                 ;; :file-style            {:color :orange}
                                 :text-decoration-style    :wavy
+                                :type                     :error})]]}
+                   {:desc  "With problem highlight via :find option"
+                    :forms '[[(point-of-interest
+                               {:form                     (+ 1 true)
+                                :hifi-options             {:find {:path [2]
+                                                                  :class :highlight-error}}
+                                :style                    {:color      :subtle
+                                                           :font-style :italic}
+                                :line                     42
+                                :column                   11
+                                :file                     "myfile.core"
+                                :text-decoration-style    :wavy
                                 :type                     :error})]]}]
 
    ;; TODO - Consider adding option for :file-info-style, which would be a map for bling
@@ -1144,6 +1259,16 @@
         form-hifi               (or  stringified
                                      form-as-fn-call
                                      (bling.hifi/hifi form hifi-options))
+
+        ;; maybe add squiggly underline line
+        form-hifi               (if (-> hifi-options :find)
+                                  (some-> form-hifi
+                                          (with-ascii-decoration
+                                           {:style {
+                                                    ;; :font-weight :bold
+                                                    :color       (keyword
+                                                                  text-decoration-color)}}))
+                                  form-hifi)
         header                  (str header)
         body                    (str body)
         mb*                     (or (some-> margin-block (maybe-> pos-int?))
@@ -1174,7 +1299,9 @@
 
         line-number             (bling [gutter-line-number-style line])
         diagram                 (when form
-                                  (if (or truncate? (not multi-line?))
+                                  (if (and (or truncate?
+                                               (not multi-line?))
+                                           (not (-> hifi-options :find)))
                                     (let [form-as-str      (-> form-hifi
                                                                (string/split #"\n")
                                                                first

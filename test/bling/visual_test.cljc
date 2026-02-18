@@ -13,6 +13,9 @@
                                  point-of-interest
                                  bling-colors*]]
    [fireworks.core :refer [? !? ?> !?> pprint] :rename {pprint fwpp}]
+   [fireworks.defs]
+   [fireworks.util]
+   [fireworks.state]
    [fireworks.sample :refer [array-map-of-everything-cljc]]
    [clojure.pprint :refer [pprint]]
    #_[bling.sample :as sample]
@@ -29,7 +32,7 @@
    [bling.fonts.isometric-1 :refer [isometric-1]]
    [bling.fontlib]
    [bling.banner]
-   [bling.hifi :refer [print-hifi hifi chopped]]
+  ;;  [bling.hifi :refer [print-hifi hifi chopped]]
    [malli.core :as m]
    [clojure.string :as string]
    ;; [taoensso.tufte :as tufte :refer [p profile]]
@@ -40,9 +43,34 @@
 
    ;; impl ns for the stuff in the visual test suite 
    [bling.visual-test-impl :refer [random-callouts bling-basics]]
-   ))
+   
+   [fireworks.ansi :as ansi]
+   [fireworks.state :as state]))
 
 ;; (tufte/add-handler! :my-console-handler (tufte/handler:console))
+
+
+;; [:br] should work stand-alone
+(!? (fireworks.defs/bling-sgr-color :dark-red))
+
+
+     
+;; (println
+;;  (bling.core/with-ascii-decoration 
+;;   (bling.core/bling
+;;    [:red "Line 1" [:br]]
+;;    [:blue "Line 2" [:br]]
+;;    (hifi {:foo {:bar [12345
+;;                       :asfasdfasdfsdfasdfasz
+;;                       'aafasfasd]}}
+;;          {:find {:path  [:foo :bar]
+;;                  :class :highlight-error }})
+;;    "\n"
+;;    "Another line"
+;;    "\n"
+;;    "Last")))
+
+
 
 #_(print-hifi
  {:go []}
@@ -53,11 +81,12 @@
                                            :class :highlight-error}
                                           (when false
                                             {})]))})
+
 ;;------------------------------------------------------------------------------
 ;; Testing sequence
 ;;------------------------------------------------------------------------------
 
-#_(bling.cycle/variants
+(bling.cycle/variants
  bling.core/point-of-interest
  {:print-desc?    true
   :print-fn-call? false})
@@ -113,36 +142,39 @@
       :filter             filter-options}))
 
 
-(let [m  {:border-style :solid
+#_(let [m  {:border-style :solid
           :label        (hifi 'bling.core/callout)
-         ;;  :side-label      "foo.cljs:11:12"
-         ;;  :label-theme     :simple
+          ;;  :side-label      "foo.cljs:11:12"
+          ;;  :label-theme     :simple
           :label-theme  :marquee
           :theme        :sideline-bold
-         ;;  :theme           :sandwich
-         ;;  :theme           :gutter
-         ;;  :theme           :boxed
+          ;;  :theme           :sandwich
+          ;;  :theme           :gutter
+          ;;  :theme           :boxed
           :border-notches? true
           :border-shape :round
-         ;; :padding-inline  3
-         ;;  :padding-top     3
-         ;;  :margin-left     0
+          ;; :padding-inline  3
+          ;;  :padding-top     3
+          ;;  :margin-left     0
           :colorway     :subtle
-         ;;  :min-width 30
-         ;;  :width 20
-         ;;  :margin-left 5
-         ;;  :width :auto
+          ;;  :min-width 30
+          ;;  :width 20
+          ;;  :margin-left 5
+          ;;  :width :auto
           :find         {:path  [:label]
                          :class :highlight-error-underlined}
           }
       m2 (assoc m :theme :sandwich)]
 
   (callout m
-           (bling.hifi/hifi m
-                            {
-                            ;;  :margin-inline-start 5
-                             :find                {:path  [:border-shape]
-                                                   :class :highlight-error}}))
+           (
+            bling.core/with-ascii-decoration
+            #_identity
+            (bling.hifi/hifi m
+                             {
+                              ;;  :margin-inline-start 5
+                              :find {:path  [:border-shape]
+                                     :class :highlight-error}})))
 
   #_(callout m2 (bling.hifi/hifi m2)))
 
