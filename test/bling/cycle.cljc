@@ -375,7 +375,7 @@
     :as      fvar-meta}
    {:keys [frame-rate
            variant-coll-f
-           use-examples?
+           run-examples?
            examples-filter
            print-desc?
            print-fn-call?
@@ -387,7 +387,7 @@
            secondary-filter]
     :or   {frame-rate     50
            printing-f      println
-           use-examples?  true
+           run-examples?  true
            print-header?  true
            print-fn-call? true
            print-desc?    true}
@@ -397,7 +397,7 @@
         margin-left     (when print-header? 2)
         margin-left-str (some-> margin-left (util/char-repeat " "))
         errors          (atom [])]
-    (when (and use-examples? examples)
+    (when (and run-examples? examples)
       (when print-header?
         (callout
          {:label           (hifi public-f {:truncate? false})
@@ -411,13 +411,14 @@
 
       ;; TODO validate examples vector
       (doseq [[i {:keys [desc forms] :as example}] (map-indexed vector examples)]
-        (when (or (not examples-filter)
-                  (when (fn? examples-filter)
-                    (examples-filter examples i example)))
-         (when (and print-desc? desc)
-           (print-bling 
-            #_margin-left-str
-            [:subtle.italic desc] "\n"))
+        (when (and (not (-> example meta :no-print))
+                   (or (not examples-filter)
+                       (when (fn? examples-filter)
+                         (examples-filter examples i example))))
+          (when (and print-desc? desc)
+            (print-bling 
+             #_margin-left-str
+             [:subtle.italic desc] "\n"))
           
           (doseq [[form result] forms]
             (when-let [args (and (list? form)
@@ -486,7 +487,7 @@
                 The second argument should be a map of options."
       :options [:map
                 [:animate? {:optional true :default true :desc "Display each variant then clear std out before the next is printed."} :boolean]
-                [:use-examples? {:optional true :default true :desc "Uses all the examples from the `:examples` entry in the functions metadata map"} :boolean]
+                [:run-examples? {:optional true :default true :desc "Runs all the examples from the `:examples` entry in the functions metadata map, except for ones that are tagged with `^no-print"} :boolean]
                 [:primary {:optional true :default nil :desc "The option that will be used as the primary variant"} :keyword]
                 [:secondary {:optional true :default nil :desc "The option that will be used as the secondary variant"} :keyword]
                 [:printing-f {:optional true :default println :desc "Function to wrap the result of the example variant call in. Typically a printing function such as `println`"} fn?]
