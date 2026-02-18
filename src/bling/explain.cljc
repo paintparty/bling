@@ -798,10 +798,11 @@
            
            file-info           
            (or (when (string? file-info-str) file-info-str)
-               (file-info-str* (merge {:style      {:font-style :italic
-                                                    :color      :subtle}
-                                       :line-style {:color :red}}
-                                      explain-malli-opts)))
+               (bling.core/file-info-str
+                (merge {:style      {:font-style :italic
+                                     :color      :subtle}
+                        :line-style {:color :red}}
+                       explain-malli-opts)))
 
            compact?             
            (= :compact spacing)
