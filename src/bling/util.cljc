@@ -73,26 +73,26 @@
 (defn get-terminal-width []
   #?(:js
      80
-    ;; TODO - Test this
-    ;;  (when (exists? js/process) 
-    ;;    (let [env            (some-> js/process .-env)
-    ;;          env            (when-not (nil? env) env)
-    ;;          stdout         (some-> js/process .-stdout)
-    ;;          stdout         (when-not (nil? stdout) stdout)
-    ;;          stderr         (some-> js/process .-stderr)
-    ;;          stderr         (when-not (nil? stderr) stderr)
-    ;;          stdout-columns (.-columns stdout)
-    ;;          stderr-columns (.-columns stderr)
-    ;;          env-columns    (.-columns env)
-    ;;          fallback       80
-    ;;          ret            (cond (pos-int? stdout-columns)
-    ;;                               stdout-columns
-    ;;                               (pos-int? stderr-columns)
-    ;;                               env-columns
-    ;;                               (js/parseInt env-columns 10)
-    ;;                               :else
-    ;;                               fallback)]
-    ;;      (if (pos-int? ret) ret fallback)))
+     ;; TODO - Test this
+     ;;  (when (exists? js/process) 
+     ;;    (let [env            (some-> js/process .-env)
+     ;;          env            (when-not (nil? env) env)
+     ;;          stdout         (some-> js/process .-stdout)
+     ;;          stdout         (when-not (nil? stdout) stdout)
+     ;;          stderr         (some-> js/process .-stderr)
+     ;;          stderr         (when-not (nil? stderr) stderr)
+     ;;          stdout-columns (.-columns stdout)
+     ;;          stderr-columns (.-columns stderr)
+     ;;          env-columns    (.-columns env)
+     ;;          fallback       80
+     ;;          ret            (cond (pos-int? stdout-columns)
+     ;;                               stdout-columns
+     ;;                               (pos-int? stderr-columns)
+     ;;                               env-columns
+     ;;                               (js/parseInt env-columns 10)
+     ;;                               :else
+     ;;                               fallback)]
+     ;;      (if (pos-int? ret) ret fallback)))
 
      :clj
      (try
@@ -129,3 +129,6 @@
 (defn char-repeat [n s]
   (when (pos-int? n)
     (string/join (repeat n (or s "")))))
+
+(defn string-of-1? [x]
+  (and (string? x) (= 1 (count x))))

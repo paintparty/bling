@@ -11,7 +11,8 @@
                                  print-bling
                                  callout
                                  point-of-interest
-                                 bling-colors*]]
+                                 bling-colors*
+                                 with-ascii-decoration]]
    [fireworks.core :refer [? !? ?> !?> pprint] :rename {pprint fwpp}]
    [fireworks.defs]
    [fireworks.util]
@@ -32,7 +33,7 @@
    [bling.fonts.isometric-1 :refer [isometric-1]]
    [bling.fontlib]
    [bling.banner]
-  ;;  [bling.hifi :refer [print-hifi hifi chopped]]
+   [bling.hifi :refer [print-hifi hifi chopped]]
    [malli.core :as m]
    [clojure.string :as string]
    ;; [taoensso.tufte :as tufte :refer [p profile]]
@@ -82,14 +83,47 @@
                                           (when false
                                             {})]))})
 
+#_(println (with-ascii-decoration 
+           (bling.core/bling
+            [:red "Line 1" [:br]]
+            [:blue "Line 2" [:br]]
+            (bling.hifi/hifi
+             {:foo {:bar [12345
+                          :asfasdfasdfsdfasdfasz
+                          'aafasfasd]}}
+             {:find {:path  [:foo :bar]
+                     :class :highlight-error }})
+            "\n"
+            "Another line"
+            "\n"
+            "Last")))
+
+(bling.explain/explain-malli*
+ [:map-of
+  [:or :keyword :int]
+  [:or :string :keyword]]
+ {"wtf"   :key
+  1     "hiasfdasdfasdfasdfasdfas"
+  :bars "hiasfdasdfasdfasdfasdfas"
+  }
+ (merge {
+         :display-schema? false
+         :form            {:foo :key :bar "hi"}
+         :spacing         :compact
+         :callout-opts    (assoc
+                           {} #_(file+line+col-map (meta &form))
+                           :label-theme
+                           :marquee)}
+        {} #_(file+line+col-map (meta &form))
+        #_opts))
+
 ;;------------------------------------------------------------------------------
 ;; Testing sequence
 ;;------------------------------------------------------------------------------
 
-(bling.cycle/variants
- bling.core/with-ascii-decoration
- {:print-desc?    true
-  :print-fn-call? false})
+;; TODO - Add highlights (primary, secondary and option) to the options map of
+;;        the printed function call.
+
 
 #_(bling.cycle/variants
  bling.core/point-of-interest
