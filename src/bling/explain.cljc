@@ -573,36 +573,48 @@
                                    (let [trimmed (select-keys v path)]
                                      (when (seq trimmed) trimmed)))
                     ;; v            (or narrowed-map v)
-                    opts         {:non-coll-mapkey-length-limit 
-                                  30
-                                  :find
-                                  (poi-diagram-find-opts path
-                                                         problem 
-                                                         narrowed-map)}
-                    poi-diagram  (string/replace
-                                  (bling.core/point-of-interest
-                                   {:file                          file
-                                    :type                          :error
-                                    :line                          line
-                                    :column                        column
-                                    :file-info-style               {:color      :subtle
-                                                                    :font-style :italic}
-                                    ;; :file-style                    {:color      :subtle
-                                    ;;                                 :font-style :italic}
-                                    ;; :line-style                    {:color      :subtle
-                                    ;;                                 :font-style :italic}
-                                    ;; :gutter-line-number-style      {:color      :subtle
-                                    ;;                                 :font-style :italic}
-                                    ;; :column-style                  {:color      :subtle
-                                    ;;                                 :font-style :italic}
-                                    :truncate-form-to-single-line? false
-                                    :form                          v
-                                    :hifi-options                  opts
-                                    :text-decoration-style         :none
-                                    :margin-top                    2})
-                                  #"\n$"
-                                  "")]
-                poi-diagram)
+                    opts            {:non-coll-mapkey-length-limit 30
+                                     :find                         (poi-diagram-find-opts path
+                                                                                          problem 
+                                                                                          narrowed-map)}
+                    poi-diagram     (string/replace
+                                     (bling.core/point-of-interest
+                                      {:file                          file
+                                       :type                          :error
+                                       :line                          line
+                                       :column                        column
+                                       :file-info-style               {:color      :subtle
+                                                                       :font-style :italic}
+                                       ;; :file-style                    {:color      :subtle
+                                       ;;                                 :font-style :italic}
+                                       ;; :line-style                    {:color      :subtle
+                                       ;;                                 :font-style :italic}
+                                       ;; :gutter-line-number-style      {:color      :subtle
+                                       ;;                                 :font-style :italic}
+                                       ;; :column-style                  {:color      :subtle
+                                       ;;                                 :font-style :italic}
+                                       :truncate-form-to-single-line? false
+                                       :form                          v
+                                       :hifi-options                  opts
+                                       :text-decoration-style         :none
+                                       :margin-top                    2})
+                                     #"\n$"
+                                     "")
+
+                    ;; Make a summary to print above the problem form with highlighting,
+                    ;; but only if the problem is of a certain profile
+                    problem-summary (cond
+                                      (:bad-map-entry-value? problem)
+                                      (let [k (-> problem :in last)]
+                                        (bling [:p "Invalid entry for " [:bold (hifi k)]]
+                                               "\n"))
+                                      
+                                      (:bad-map-entry-key? problem)
+                                      (let [k (-> problem :in last)]
+                                        (bling "Invalid map key." "\n\n\n")))]
+                (str 
+                 problem-summary
+                 poi-diagram))
               (assoc section-opts
                      :section-break?
                      (if preamble-section-body true false)))
