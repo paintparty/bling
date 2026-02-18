@@ -87,6 +87,11 @@
 ;;------------------------------------------------------------------------------
 
 (bling.cycle/variants
+ bling.core/with-ascii-decoration
+ {:print-desc?    true
+  :print-fn-call? false})
+
+#_(bling.cycle/variants
  bling.core/point-of-interest
  {:print-desc?    true
   :print-fn-call? false})
