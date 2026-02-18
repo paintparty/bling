@@ -882,6 +882,36 @@
                                             spaces))))
     x))
 
+(defn- stringified-form-underline-start* [text-decoration-row-start ln]
+  (or (when-let [n (maybe-> text-decoration-row-start pos-int?)]
+        (maybe-> n #(< % (count ln))))
+      (some-> ln
+              (string/split #"")
+              seq
+              (->> (keep-indexed
+                    (fn [i s]
+                      (when-not (= s " ") i))))
+              first)))
+
+(defn- stringified-form-underline-ln 
+  [underline-start style underline-end text-decoration-style]
+  (bling (char-repeat underline-start " ")
+         [style
+          (char-repeat (- underline-end
+                          underline-start)
+                       (case text-decoration-style
+                         :wavy
+                         "^"
+                         :solid
+                         "─"
+                         :dashed
+                         "-"
+                         :dotted
+                         "•"
+                         :double
+                         "═"
+                         "^"))]))
+
 (defn- stringified-form-with-line-based-decoration
   "If supplied value for `:form` is a multi-line string, and supplied value for
    `:text-decoration-relative-line-number` is a pos int, renders a multi-line
@@ -895,54 +925,46 @@
   (when-let [s (some-> form (when-> string?))]
     (if-let [lns (when (some-> text-decoration-relative-line-number
                                (maybe-> pos-int?))
-                   (some-> s string/split-lines seq))]
+                   (some-> s string/split-lines seq vec))]
       (when-let [ln (nth lns
                          (dec text-decoration-relative-line-number)
                          nil)]
         (when-let [underline-start
-                   (or (when-let [n (maybe-> text-decoration-row-start pos-int?)]
-                         (maybe-> n #(< % (count ln))))
-                       (some-> ln
-                               (string/split #"")
-                               seq
-                               (->> (keep-indexed
-                                     (fn [i s]
-                                       (when-not (= s " ") i))))
-                               first))]
-          (let [underline-end (or (some-> text-decoration-row-end
-                                          (maybe-> pos-int?)
-                                          (maybe-> #(> % underline-start)))
-                                  (-> ln count))
-                style         {:color text-decoration-color}
-                underline-ln  (bling (char-repeat underline-start " ")
-                                     [style
-                                      (char-repeat (- underline-end
-                                                      underline-start)
-                                                   (case text-decoration-style
-                                                     :wavy
-                                                     "^"
-                                                     :solid
-                                                     "─"
-                                                     :dashed
-                                                     "-"
-                                                     :dotted
-                                                     "•"
-                                                     :double
-                                                     "═"
-                                                     "^"))])
-                insert-at     (fn insert-at [vc i elem]
-                                (into (conj (subvec vc 0 i) elem)
-                                      (subvec vc i)))
-                new-lns       (assoc (insert-at (vec lns)
-                                                text-decoration-relative-line-number
-                                                underline-ln)
-                                     (dec text-decoration-relative-line-number)
-                                     (str (subs ln 0 underline-start)
-                                          (bling [style
-                                                  (subs ln
-                                                        underline-start
-                                                        underline-end)])
-                                          (subs ln underline-end (count ln))))]
+                   (stringified-form-underline-start*
+                    text-decoration-row-start 
+                    ln)]
+          (let [underline-end 
+                (or (some-> text-decoration-row-end
+                            (maybe-> pos-int?)
+                            (maybe-> #(> % underline-start)))
+                    (-> ln count))
+
+                style         
+                {:color text-decoration-color}
+
+                underline-ln  
+                (stringified-form-underline-ln
+                 underline-start 
+                 style 
+                 underline-end 
+                 text-decoration-style)
+
+                insert-at     
+                (fn insert-at [vc i elem]
+                  (into (conj (subvec vc 0 i) elem)
+                        (subvec vc i)))
+
+                new-lns
+                (assoc (insert-at lns
+                                  text-decoration-relative-line-number
+                                  underline-ln)
+                       (dec text-decoration-relative-line-number)
+                       (str (subs ln 0 underline-start)
+                            (bling [style
+                                    (subs ln
+                                          underline-start
+                                          underline-end)])
+                            (subs ln underline-end (count ln))))]
 
             (string/join "\n" new-lns))))
       s)))
