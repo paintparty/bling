@@ -95,15 +95,15 @@
 (defn- problem-path
   "This creates a path to the problem value within a data structure.
 
-   It takes into account if the problem is a missing key.
+   Takes into account if the problem is a missing key.
 
    If the problem is a key in a map-entry, it adds appends a special
    :fireworks.highlight/map-key to the path, which fireworks uses to properly
    highlight the map key"
-  [missing-keys? problem v]
+  [{:keys [missing-keys? problem v] :as opts}]
   (cond missing-keys?
         (:in problem)
-        (target-key? problem v)
+        (or (:target-key? opts) (target-key? problem v))
         (conj (:in problem) :fireworks.highlight/map-key)
         :else
         (:in problem)))
@@ -360,28 +360,42 @@
                           grouped-errors)]
     grouped-errors))
 
+(defn- map-entry-status [reduction-path value]
+  (let [map-entry-el?    (some->> reduction-path
+                                  pop
+                                  (reduce (fn [acc [f x]] 
+                                            (f acc x)) 
+                                          value)
+                                  map?)]
+    [(when map-entry-el? (some-> reduction-path last first (= find)))
+     (when map-entry-el? (some-> reduction-path last first (= get)))]))
 
 (defn- narrowed-problem-group
-  [schema bad-value in-path-for-group schema-path-for-group grouped-errors value]
-  (let [grouped-errors (regrouped-errors grouped-errors)
+  [schema 
+   bad-value 
+   in-path-for-group 
+   schema-path-for-group 
+   grouped-errors value]
+  (let [grouped-errors      (regrouped-errors grouped-errors)
         [parent-schema-form
          parent-schema 
-         junction-type] (parent-schema* schema grouped-errors)
-        error-type      junction-type
-        errors          (mapv error-summary grouped-errors)
-        ]
+         junction-type]     (parent-schema* schema grouped-errors)
+        error-type          junction-type
+        errors              (mapv error-summary grouped-errors)
+        reduction-path      (reduction-path value 
+                                          in-path-for-group 
+                                          bad-value)
+        [bad-map-entry-key?
+         bad-map-entry-value?]  (map-entry-status reduction-path value)]
     (merge {:value              bad-value
             :in                 in-path-for-group
-
             ;; Figure this out so you can pinpoint the offensive part of the
             ;; schema
             ;; :path/reduce        (reduction-path (m/form schema) 
             ;;                                     schema-path-for-group
             ;;                                     parent-schema-form)
-
-            :in/reduce          (reduction-path value 
-                                                in-path-for-group 
-                                                bad-value)
+            
+            :in/reduce          reduction-path
             :path/common        (->> grouped-errors
                                      (mapv :path) 
                                      common-root-path-max)
@@ -391,6 +405,8 @@
 
             :error-group-type   error-type}
            (some->> junction-type (hash-map :junction-type))
+           (when bad-map-entry-key? {:bad-map-entry-key? bad-map-entry-key?})
+           (when bad-map-entry-value? {:bad-map-entry-value? bad-map-entry-value?})
            (when (and (not junction-type) 
                       (= 1 (count grouped-errors)))
              (value-schema-details grouped-errors)))))
@@ -514,18 +530,30 @@
 (defn- poi-diagram-find-opts [path problem narrowed-map]
   (vec
    (remove nil?
-           [{
-             :path                     path 
-             :class                    (let [x (:value problem)]
-                                         (if (and (coll? x)
-                                                  (< 8 (-> x str count)))
-                                           :highlight-error
-                                           :highlight-error
-                                           #_:highlight-error-underlined
-                                           ))}
+           [{:path  path 
+             :class (let [x (:value problem)]
+                      (if (and (coll? x)
+                               (< 8 (-> x str count)))
+                        :highlight-error
+                        :highlight-error
+                        #_:highlight-error-underlined
+                        ))}
+
+            ;; If the path ends with something that is not an int, it is likely
+            ;; that problem value is mapentry value, and we can hightlight the 
+            ;; corrresponding key.
+            ;; TODO - make this an configurable option
+
+            (when (some-> path 
+                          last 
+                          #(and (not= :fireworks.highlight/map-key %)
+                                (not (int? %))))
+              {:path  (conj path :fireworks.highlight/map-key)
+               :class :highlight-info})
             (when narrowed-map
               {:pred  #(= % (first path))
-               :class :info-error})])))
+               :class :info-error})
+            ])))
 
 (defn- printed*
   [{:keys [preamble-section-body
@@ -565,13 +593,15 @@
               ;; bunched
               ;; what if value is crazy nested or after truncation?
               ;; macro version for filename
-              (let [path         (problem-path missing-keys? problem v)
-                    narrowed-map (when (and select-keys-in-problem-path?
-                                            (seq path)
-                                            (not-any? coll? path)
-                                            (map? v))
-                                   (let [trimmed (select-keys v path)]
-                                     (when (seq trimmed) trimmed)))
+              (let [path            (problem-path {:missing-keys? missing-keys?
+                                                   :problem       problem
+                                                   :v             v})
+                    narrowed-map    (when (and select-keys-in-problem-path?
+                                               (seq path)
+                                               (not-any? coll? path)
+                                               (map? v))
+                                      (let [trimmed (select-keys v path)]
+                                        (when (seq trimmed) trimmed)))
                     ;; v            (or narrowed-map v)
                     opts            {:non-coll-mapkey-length-limit 30
                                      :find                         (poi-diagram-find-opts path
@@ -651,7 +681,7 @@
                 (if-let [junction-form 
                          (when (contains? problem :junction-type)
                            (:parent-schema/form problem))]
-                  (hifi+ junction-form {:print-level 3})
+                  (hifi+ junction-form {:print-level 3 :non-coll-length-limit 44})
                   (hifi+ (get-satisfaction (!? problem))))
                 section-opts)))))
 
@@ -865,7 +895,7 @@
                  ;; (!? (m/form schema))
                  ;; (!? (me/error-value malli-ex-data {::me/mask-valid-values '...}))
                  ;; (!? (me/humanize malli-ex-data {::me/mask-valid-values '...}))
-                 (!? (narrow-problems malli-ex-data))
+                 (? (narrow-problems malli-ex-data))
                  )
                
                num-problems       
@@ -917,8 +947,6 @@
 
                    (when (and display-schema?
                               (not single-problem-top-level?))
-
-                     (->> problems first :path/common)
 
                      (section "Schema:"
                               (hifi+ (prune-schema-for-display malli-schema) 
