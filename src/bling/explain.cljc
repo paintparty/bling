@@ -1,4 +1,4 @@
-(ns bling.explain
+(ns ^:dev/always bling.explain
   (:require
    [bling.core :refer [bling callout]]
    [bling.hifi :refer [hifi]]
@@ -77,7 +77,7 @@
   (when s
     (string/join "\n"
                  (map #(str (string/join (repeat (or n 0) " "))  %)
-                      (string/split s
+                      (string/split (str s)
                                     #"\n")))))
 
 
@@ -383,27 +383,37 @@
         error-type          junction-type
         errors              (mapv error-summary grouped-errors)
         reduction-path      (reduction-path value 
-                                          in-path-for-group 
-                                          bad-value)
+                                            in-path-for-group 
+                                            bad-value)
         [bad-map-entry-key?
          bad-map-entry-value?]  (map-entry-status reduction-path value)]
-    (merge {:value              bad-value
-            :in                 in-path-for-group
+    (merge {:value                   bad-value
+            :in                      in-path-for-group
             ;; Figure this out so you can pinpoint the offensive part of the
             ;; schema
             ;; :path/reduce        (reduction-path (m/form schema) 
             ;;                                     schema-path-for-group
             ;;                                     parent-schema-form)
             
-            :in/reduce          reduction-path
-            :path/common        (->> grouped-errors
-                                     (mapv :path) 
-                                     common-root-path-max)
-            :parent-schema      parent-schema
-            :parent-schema/form parent-schema-form
-            :errors             errors
+            :in/reduce               reduction-path
+            :path/common             (->> grouped-errors
+                                          (mapv :path) 
+                                          common-root-path-max)
+            :parent-schema           parent-schema
+            :parent-schema/form      parent-schema-form
+            :errors                  errors
 
-            :error-group-type   error-type}
+            :schema/fq-name          (symbol (str (:ns (m/properties schema))
+                                                  "/"
+                                                  (:name (m/properties schema))))
+            :error-group-type        error-type
+            :composite-error-message (when-let [messages (and (contains? #{:or :and} error-type)
+                                                              (let [messages (keep :error/message errors)]
+                                                                (when (= (count messages)
+                                                                         (count errors))
+                                                                  messages)))]
+                                       (string/join (bling "\n" [:italic.subtle "  or"] "\n")
+                                                    messages))}
            (some->> junction-type (hash-map :junction-type))
            (when bad-map-entry-key? {:bad-map-entry-key? bad-map-entry-key?})
            (when bad-map-entry-value? {:bad-map-entry-value? bad-map-entry-value?})
@@ -585,7 +595,7 @@
     (concat
      (when preamble-section-body
        (section preamble-section-label
-                (bling indentation-str preamble-section-body)
+                (bling preamble-section-body)
                 (assoc section-opts :section-break? false)))
 
      (section highlighted-problem-section-label
@@ -627,23 +637,24 @@
                                        :form                          v
                                        :hifi-options                  opts
                                        :text-decoration-style         :none
-                                       :margin-top                    2})
+                                       :margin-top                    0})
                                      #"\n$"
                                      "")
 
                     ;; Make a summary to print above the problem form with highlighting,
                     ;; but only if the problem is of a certain profile
                     problem-summary (cond
-                                      (:bad-map-entry-value? problem)
+                                      (:bad-map-entry-value? (!? problem))
                                       (let [k (-> problem :in last)]
                                         (bling [:p "Invalid entry for " [:bold (hifi k)]]
-                                               "\n"))
+                                               #_"\n"))
                                       
                                       (:bad-map-entry-key? problem)
                                       (let [k (-> problem :in last)]
-                                        (bling "Invalid map key." "\n\n\n")))]
+                                        (bling "Invalid map key." #_"\n\n\n")))]
                 (str 
-                 problem-summary
+                 (some-> problem-summary 
+                         (str "\n\n"))
                  poi-diagram))
               (assoc section-opts
                      :section-break?
@@ -678,12 +689,19 @@
 
      (when must-satisfy?
        (section "Must satisfy:"
-                (if-let [junction-form 
-                         (when (contains? problem :junction-type)
-                           (:parent-schema/form problem))]
-                  (hifi+ junction-form {:print-level 3 :non-coll-length-limit 44})
-                  (hifi+ (get-satisfaction (!? problem))))
-                section-opts)))))
+                (or (indented-string indentation (:composite-error-message problem))
+                    (if-let [junction-form 
+                             (when (contains? problem :junction-type)
+                               (:parent-schema/form problem))]
+                      (hifi+ junction-form {:print-level           3
+                                            :non-coll-length-limit 44})
+                      (hifi+ (get-satisfaction (!? problem)))))
+                section-opts))
+     
+     (section "Fails schema:"
+              (indented-string indentation (:schema/fq-name problem))
+              section-opts)
+     )))
 
   
 
@@ -895,7 +913,7 @@
                  ;; (!? (m/form schema))
                  ;; (!? (me/error-value malli-ex-data {::me/mask-valid-values '...}))
                  ;; (!? (me/humanize malli-ex-data {::me/mask-valid-values '...}))
-                 (? (narrow-problems malli-ex-data))
+                 (!? (narrow-problems malli-ex-data))
                  )
                
                num-problems       
@@ -955,14 +973,15 @@
                                                :class :highlight-error}})
                               section-opts))
 
-                   "\n\n"
-
+                   ;; what is this?
+                  ;;  "\n\n"
+                   
                    ;; The result of calling malli.core/explain on the value.
                    ;; Defaults to false
                    (when (true? display-explain-data?)
-                     (section "Result of malli.core/explain:"
-                              (hifi+ (explain-data* malli-ex-data))
-                              section-opts))]))]
+                         (section "Result of malli.core/explain:"
+                                  (hifi+ (explain-data* malli-ex-data))
+                                  section-opts))]))]
            
            (callout 
             (!? (merge {:type                :error
