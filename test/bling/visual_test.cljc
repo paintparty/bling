@@ -12,7 +12,9 @@
                                  callout
                                  point-of-interest
                                  bling-colors*
-                                 with-ascii-decoration]]
+                                 with-ascii-decoration
+                                 with-floating-annotation
+                                 ]]
    [fireworks.core :refer [? !? ?> !?> pprint] :rename {pprint fwpp}]
    [fireworks.defs]
    [fireworks.util]
@@ -83,14 +85,33 @@
                                           (when false
                                             {})]))})
 
-#_(println (with-ascii-decoration 
+(println (with-ascii-decoration 
            (bling.core/bling
             [:red "Line 1" [:br]]
             [:blue "Line 2" [:br]]
             (bling.hifi/hifi
              {:foo {:bar [12345
                           :asfasdfasdfsdfasdfasz
-                          'aafasfasd]}}
+                          'aafasfasd]}
+              :bang 23
+              :bow 55}
+             {:find {:path  [:foo :bar]
+                     :class :highlight-error}})
+            "\n"
+            "Another line"
+            "\n"
+            "Last")))
+
+(println (point-of-interest
+           (bling.core/bling
+            [:red "Line 1" [:br]]
+            [:blue "Line 2" [:br]]
+            (bling.hifi/hifi
+             {:foo {:bar [12345
+                          :asfasdfasdfsdfasdfasz
+                          'aafasfasd]}
+              :bang 23
+              :bow 55}
              {:find {:path  [:foo :bar]
                      :class :highlight-error }})
             "\n"
@@ -98,24 +119,28 @@
             "\n"
             "Last")))
 
-(bling.explain/explain-malli*
+#_(bling.explain/explain-malli*
  [:map-of
   [:or :keyword :int]
   [:or :string :keyword]]
  {"wtf"   :key
   1     "hiasfdasdfasdfasdfasdfas"
-  :bars "hiasfdasdfasdfasdfasdfas"
-  }
- (merge {
-         :display-schema? false
-         :form            {:foo :key :bar "hi"}
+  :bars "hiasfdasdfasdfasdfasdfas"}
+ (merge {:display-schema? false
+         :form            {:foo :key
+                           :bar "hi"}
          :spacing         :compact
-         :callout-opts    (assoc
-                           {} #_(file+line+col-map (meta &form))
-                           :label-theme
-                           :marquee)}
-        {} #_(file+line+col-map (meta &form))
-        #_opts))
+         :callout-opts    (assoc {} 
+                                 :label-theme
+                                 :marquee)}
+        {}))
+
+#_(print-bling
+ [:italic 
+  "Result of malli.core/explain, "
+  " entry:"])
+
+
 
 ;;------------------------------------------------------------------------------
 ;; Testing sequence

@@ -1,4 +1,4 @@
-(ns bling.core
+(ns ^:dev/always bling.core
   (:require [clojure.string :as string]
             [fireworks.core :refer [? !? ?> !?>]]
             [fireworks.defs]
@@ -759,15 +759,13 @@
 (defn- ansi-sgr-pattern-re [ansi-sgr-needle]
   (let [ansi-sgr-pattern (string/replace 
                           ansi-sgr-needle
-                          #"^\033\[" "\\\\033\\\\["
-                          ;; #"^\033\[" ""
-                          )]
+                          #"^\033\["
+                          #?(:cljs "\\033\\[" 
+                             :clj "\\\\033\\\\["))]
     (re-pattern 
      (str ansi-sgr-pattern
           "((?:(?!\\033).)+)" 
-          ;; "((?!^\\033\\[0?m$)+)"
-          ;;  "([a-z:]+)"
-           "\\033\\[0?m"
+          "\\033\\[0?m"
           ))))
 
 (def highlight-style-ansi-sgr-regexes
@@ -806,6 +804,56 @@
                                             " ")]
     (bling [style just-underline-char])))
 
+
+
+(defn ^:public with-floating-annotation
+  {:desc     "Expects a string that was formatted with bling.hifi/hifi, with a
+              `:find` option that resulted in error highlighting. The resulting
+              string might have at least one line containing a substring that is
+              ansi-sgr decorated with highlight-error styling, see
+              fireworks.defs/highlight-error-dark-sgr & co.
+              
+              The last line with this highlight styling will get a floating
+              annotation to the right. Expects a short, single line of text."
+   :examples [^:no-print
+              {:desc  "Basic example"
+               :forms '[[(with-floating-annotation
+                           (bling.core/bling
+                            [:red "Line 1" [:br]]
+                            [:blue "Line 2" [:br]]
+                            (bling.hifi/hifi
+                             {:foo {:bar [12345
+                                          :asfasdfasdfsdfasdfasz
+                                          'aafasfasd]}}
+                             {:find {:path  [:foo :bar]
+                                     :class :highlight-error }})
+                            "\n"
+                            "Another line"
+                            "\n"
+                            "Last"))]]}]}
+  ([s]
+   (with-floating-annotation s nil))
+  ([s
+    {:keys [annotation-text
+            offset
+            style]
+     :or   {style {:color       :red
+                   :font-weight :bold}
+            annotation-text "<- Problem here"}}]
+
+   (let [offset        (or (when-> offset pos-int?) 3)
+         lines         (vec (string/split-lines s))
+         reverse-index (reverse-index* lines)]
+     (when reverse-index
+       (let [line-idx      (dec (- (count lines) reverse-index))
+             line          (nth lines line-idx)
+             annotated     (str line (bling (util/char-repeat offset " ")
+                                            [style annotation-text]))
+             with-inserted (fireworks.util/insert-at lines
+                                                     (inc line-idx)
+                                                     annotated)]
+         (string/join "\n" with-inserted))))))
+
 (defn ^:public with-ascii-decoration
   {:desc     "Expects a string that was formatted with bling.hifi/hifi, with a
               `:find` option that resulted in error highlighting. The resulting
@@ -835,11 +883,12 @@
   ([s]
    (with-ascii-decoration s nil))
   ([s {:keys [underline-char
+              floating-annotation
               style
 
-              ;; TODO - put style back in add validation for style
+              ;; TODO - put target style back in add validation for style
               ;; target-style
-
+              
 
               ;; TODO add main branch for when valid line-start etc supplied
               ;;      this is for more of a precise positioning
@@ -857,13 +906,13 @@
          lines         (vec (string/split-lines s))
          reverse-index (reverse-index* lines)]
      (when reverse-index
-       (let [line-idx            (dec (- (count lines) reverse-index))
-             line                (nth lines line-idx)
-             replaced            (replaced-with-underline-char uc line)
-             decorated           (decorated-underline replaced uc style)
-             with-inserted       (fireworks.util/insert-at lines
-                                                           (inc line-idx)
-                                                           decorated)]
+       (let [line-idx      (dec (- (count lines) reverse-index))
+             line          (nth lines line-idx)
+             replaced      (replaced-with-underline-char uc line)
+             decorated     (decorated-underline replaced uc style)
+             with-inserted (fireworks.util/insert-at lines
+                                                     (inc line-idx)
+                                                     decorated)]
          (string/join "\n" with-inserted))))))
 
 
@@ -1328,41 +1377,58 @@
            gutter-line-number-style
            type
            truncate-form-to-single-line?
-           hifi-options]
+           hifi-options
+           with-ascii-decoration?
+           ascii-decoration-font-weight
+           ascii-decoration-color
+           with-floating-annotation?
+           floating-annotation-text
+           floating-annotation-color
+           floating-annotation-font-weight]
     :as   opts
     :or   {hifi-options                  nil
+           with-ascii-decoration?        true
            truncate-form-to-single-line? ::unsupplied}}]
 
-  (let [type                     (some-> type as-str (maybe-> #{"warning" "error"}))
-        file-info                (file-info-str (merge opts {:style (:file-info-style opts)}))
-        gutter                   (some-> line str count spaces)
-        text-decoration-color    (or (some->> type (get semantics-by-semantic-type))
-                                     (some-> text-decoration-color
-                                             as-str
-                                             (maybe-> all-color-names))
-                                     "neutral")
-        gutter-line-number-style (or (when-> gutter-line-number-style map?)
-                                     (:file-info-style opts)
-                                     {})
-        stringified              (stringified-form-with-line-based-decoration
-                                  (assoc opts
-                                         :text-decoration-color
-                                         text-decoration-color))
-        form-as-fn-call         (some-> form
-                                        (when-> list?)
-                                        (list-formatted-as-fn-call hifi-options))
-        form-is-coll-with-find? (and (coll? form)
-                                     (some-> hifi-options :find :path vector?))
-        form-hifi*              (or  stringified
-                                     form-as-fn-call
-                                     (bling.hifi/hifi form hifi-options))
-        form-hifi               (or (when (-> hifi-options :find)
-                                      (some-> form-hifi*
-                                              (with-ascii-decoration
-                                                {:style {:font-weight :bold
-                                                         :color       (keyword
-                                                                       text-decoration-color)}})))
-                                    form-hifi*)
+  (let [type                         (some-> type as-str (maybe-> #{"warning" "error"}))
+        file-info                    (file-info-str (merge opts {:style (:file-info-style opts)}))
+        gutter                       (some-> line str count spaces)
+        text-decoration-color        (or (some->> type (get semantics-by-semantic-type))
+                                         (some-> text-decoration-color
+                                                 as-str
+                                                 (maybe-> all-color-names))
+                                         "neutral")
+        ascii-decoration-font-weight (or ascii-decoration-font-weight :bold)
+        ascii-decoration-color       (or ascii-decoration-color text-decoration-color)
+        gutter-line-number-style     (or (when-> gutter-line-number-style map?)
+                                         (:file-info-style opts)
+                                         {})
+        stringified                  (stringified-form-with-line-based-decoration
+                                      (assoc opts
+                                             :text-decoration-color
+                                             text-decoration-color))
+        form-as-fn-call              (some-> form
+                                             (when-> list?)
+                                             (list-formatted-as-fn-call hifi-options))
+        form-is-coll-with-find?      (and (coll? form)
+                                          (some-> hifi-options :find :path vector?))
+        form-hifi*                   (or  stringified
+                                          form-as-fn-call
+                                          (bling.hifi/hifi form hifi-options))
+        form-hifi                    (or (when (-> hifi-options :find)
+                                           (cond-> form-hifi*
+
+                                             with-ascii-decoration?
+                                             (with-ascii-decoration
+                                               {:style {:font-weight ascii-decoration-font-weight
+                                                        :color       ascii-decoration-color}})
+
+                                             with-floating-annotation?
+                                             (with-floating-annotation
+                                               {:annotation-text floating-annotation-text
+                                                :style           {:font-weight floating-annotation-font-weight
+                                                                  :color       floating-annotation-color}})))
+                                         form-hifi*)
 
         ;; TODO - form-hifi* in here prints strange
         ;; _ (? (keyed [line
