@@ -6,10 +6,10 @@
             [clojure.walk :as walk]
             [bling.ansi :as ansi :refer [strlen-minus-ansi-sgr]]
             [bling.browser]
-            [bling.hifi]
+            [bling.hifi :refer [hifi]]
             [bling.defs :as defs]
             [bling.macros :refer [let-map keyed]]
-            [bling.util :as util :refer [maybe-> when-> char-repeat]]
+            [bling.util :as util :refer [maybe-> when-> when->> char-repeat]]
             #?(:cljs [bling.js-env :refer [node?]])
             ;; TODO - eliminate goog.object req
             #?(:cljs [goog.object])))
@@ -515,6 +515,13 @@
 
 ;; Unicode characters ----------------------------------------------------------
 
+(def text-decoration-styles
+  {:wavy   "^"
+   :solid  "─"
+   :dashed "-"
+   :dotted "•"
+   :double "═"})
+
 (def ^:private bdc
   {:h   {:double     "═"
          :bold       "━"
@@ -660,34 +667,17 @@
 
 ;; Formatting helper fns  ------------------------------------------------------
 
-;; TODO add metamap w schema
-(defn ^:public ns-info-str
-  [{:keys   [line
-             column
-             function-name
-             line-style
-             column-style
-             function-name-style
-             ns-name-style
-             style]
-    ns-name :ns
-    :or     {line-style          {}
-             column-style        {}
-             function-name-style {}
-             ns-name-style       {}
-             style               {}}}]
-  (when (and line column)
-    (symbol 
-     (bling [style
-             [ns-name-style
-              (if (nil? ns-name) "[unknown ns]" ns-name)]
-             [function-name-style 
-              (when function-name
-                (str "/" function-name))]
-             ":"
-             [line-style  line]
-             ":"
-             [column-style column]]))))
+(defn- quick-warning-callout
+  [message ns-sym fn-sym]
+  (callout {:colorway :yellow
+            :theme    :gutter}
+           (bling [:yellow "WARNING" " - "]
+                  message
+                  "\n"
+                  [:italic [:gray "in "]
+                   [:medium-blue ns-sym]
+                   [:medium-blue "/"] 
+                   [:blue fn-sym]])))
 
 ;; TODO add metamap w schema
 (defn ^:public file-info-str
@@ -733,28 +723,53 @@
               name))))
 
 
-;; Race-condition-free version of clojure.core/println,
-;; Maybe useful to keep around if any weird behavior arises.
-#?(:clj
-   (defn- safe-println [& more]
-     (.write *out* (str (clojure.string/join " " more) "\n"))))
+                                                                           
+;; HHHHHHHHH     HHHHHHHHHIIIIIIIIII      GGGGGGGGGGGGGHHHHHHHHH     HHHHHHHHH
+;; H:::::::H     H:::::::HI::::::::I   GGG::::::::::::GH:::::::H     H:::::::H
+;; H:::::::H     H:::::::HI::::::::I GG:::::::::::::::GH:::::::H     H:::::::H
+;; HH::::::H     H::::::HHII::::::IIG:::::GGGGGGGG::::GHH::::::H     H::::::HH
+;;   H:::::H     H:::::H    I::::I G:::::G       GGGGGG  H:::::H     H:::::H  
+;;   H:::::H     H:::::H    I::::IG:::::G                H:::::H     H:::::H  
+;;   H::::::HHHHH::::::H    I::::IG:::::G                H::::::HHHHH::::::H  
+;;   H:::::::::::::::::H    I::::IG:::::G    GGGGGGGGGG  H:::::::::::::::::H  
+;;   H:::::::::::::::::H    I::::IG:::::G    G::::::::G  H:::::::::::::::::H  
+;;   H::::::HHHHH::::::H    I::::IG:::::G    GGGGG::::G  H::::::HHHHH::::::H  
+;;   H:::::H     H:::::H    I::::IG:::::G        G::::G  H:::::H     H:::::H  
+;;   H:::::H     H:::::H    I::::I G:::::G       G::::G  H:::::H     H:::::H  
+;; HH::::::H     H::::::HHII::::::IIG:::::GGGGGGGG::::GHH::::::H     H::::::HH
+;; H:::::::H     H:::::::HI::::::::I GG:::::::::::::::GH:::::::H     H:::::::H
+;; H:::::::H     H:::::::HI::::::::I   GGG::::::GGG:::GH:::::::H     H:::::::H
+;; HHHHHHHHH     HHHHHHHHHIIIIIIIIII      GGGGGG   GGGGHHHHHHHHH     HHHHHHHHH
+                                                                           
+                                                                           
 
-;; PPPPPPPPPPPPPPPPP        OOOOOOOOO     IIIIIIIIII
-;; P::::::::::::::::P     OO:::::::::OO   I::::::::I
-;; P::::::PPPPPP:::::P  OO:::::::::::::OO I::::::::I
-;; PP:::::P     P:::::PO:::::::OOO:::::::OII::::::II
-;;   P::::P     P:::::PO::::::O   O::::::O  I::::I  
-;;   P::::P     P:::::PO:::::O     O:::::O  I::::I  
-;;   P::::PPPPPP:::::P O:::::O     O:::::O  I::::I  
-;;   P:::::::::::::PP  O:::::O     O:::::O  I::::I  
-;;   P::::PPPPPPPPP    O:::::O     O:::::O  I::::I  
-;;   P::::P            O:::::O     O:::::O  I::::I  
-;;   P::::P            O:::::O     O:::::O  I::::I  
-;;   P::::P            O::::::O   O::::::O  I::::I  
-;; PP::::::PP          O:::::::OOO:::::::OII::::::II
-;; P::::::::P           OO:::::::::::::OO I::::::::I
-;; P::::::::P             OO:::::::::OO   I::::::::I
-;; PPPPPPPPPP               OOOOOOOOO     IIIIIIIIII
+;; Annotation and text-decoration start ----------------------------------------
+
+;; TODO - maybe this should happen at comptime and produce a map, so that 
+;; hifi is not called x number of times at runtime?
+(defn- sgr-highlighting-tags 
+  {:desc     "Given a style map and a `supports-color-level` int, produces a
+              vector of opening and closing ansi-sgr tags for that style, when
+              used with bling.hifi/hifi printing with highlighting via `:find`
+              option"
+   :examples [^:no-print
+              {:desc  "foo"
+               :forms '[[(let [m {:background-color "#670013"
+                                  :color            "#ffe0e0"
+                                  :font-weight      :bold}]
+                           (sgr-highlighting-tags
+                            (hifi {:a 1 :b 3} 
+                                  {:find {:path [:b] :style m}})
+                            m))
+                         ["\033[38;2;255;224;224;1;48;2;103;0;19m"
+                          "\033m"]]]}]}
+  [m n]
+  (let [s (hifi '_ 
+                {:find                 {:pred #(= % '_) :style m}
+                 :supports-color-level n})
+        i (string/index-of s "_")]
+    [(subs s 0 i)
+     (subs s (inc i))]))
 
 (defn- ansi-sgr-pattern-re [ansi-sgr-needle]
   (let [ansi-sgr-pattern (string/replace 
@@ -765,443 +780,384 @@
     (re-pattern 
      (str ansi-sgr-pattern
           "((?:(?!\\033).)+)" 
-          "\\033\\[0?m"
-          ))))
+          "\\033\\[0?m"))))
 
-(def highlight-style-ansi-sgr-regexes
-  (mapv ansi-sgr-pattern-re
-        [fireworks.defs/highlight-error-dark-sgr
-         fireworks.defs/highlight-error-light-sgr
-         fireworks.defs/highlight-universal-sgr]))
+(defn- reverse-index* 
+  [opening-tag lines]
+  (some->> lines
+           reverse
+           (keep-indexed 
+            (fn [i line]
+              (when (string/index-of line opening-tag)
+                i)))
+           first))
 
-(defn- reverse-index* [lines]
-  (first (keep-indexed 
-          (fn [i x]
-            (when 
-             (some #(re-find % x) highlight-style-ansi-sgr-regexes)
-              i))
-          (reverse lines))))
+(defn- underline-char-replace 
+  [uc [_ s]] 
+  (bling.util/char-repeat
+   (count s)
+   uc))
 
-(defn- replaced-with-underline-char
-  "Goes through all the highlight-style-ansi-sgr-regexes and replaces the
-   subtstring of the capture group with repeated underline chars."
-  [underline-char line]
-  ;; TODO - should we short-ciruit here?
-  (reduce
-   (fn [s ans-sgr-re]
-     (string/replace s
-                     ans-sgr-re 
-                     (fn [[_ s]] 
-                       (bling.util/char-repeat (count s) underline-char))))
-   line
-   highlight-style-ansi-sgr-regexes))
+(defn- underline-stub 
+  [line ansi-sgr-re uc]
+  (-> line
+      (string/replace ansi-sgr-re (partial underline-char-replace uc))
+      (string/replace ansi/sgr-re "")
+      (string/replace (re-pattern (str "[^\\" uc "]")) 
+                      " ")))
 
-(defn- decorated-underline
-  [replaced uc style]
-  (let [ansi-stripped       (string/replace replaced ansi/sgr-re "")
-        just-underline-char (string/replace ansi-stripped 
-                                            (re-pattern (str "[^\\" uc "]")) 
-                                            " ")]
-    (bling [style just-underline-char])))
+(defn- opening-sgr-tag [s target-highlight-style]
+  (some (fn [m]
+          (some (fn [vc]
+                  ;; (println)
+                  ;; (?sgr s)
+                  ;; (?sgr (first vc))
+                  ;; (?sgr (second vc))
+                  (when (string/index-of s (first vc)) vc))
+                (!? {:print-with println}
+                 (mapv (partial sgr-highlighting-tags m)
+                         [3 2 1]))))
+        (cond 
+          (map? target-highlight-style)
+          [target-highlight-style]
+
+          (= target-highlight-style :highlight-error)
+          [fireworks.defs/highlight-universal
+           fireworks.defs/highlight-error-dark
+           fireworks.defs/highlight-error-light
+           fireworks.defs/highlight-error-underlined-dark
+           fireworks.defs/highlight-error-underlined-light]
+
+          (= target-highlight-style :highlight-warning)
+          [fireworks.defs/highlight-universal
+           fireworks.defs/highlight-warning-dark
+           fireworks.defs/highlight-warning-light
+           fireworks.defs/highlight-warning-underlined-dark
+           fireworks.defs/highlight-warning-underlined-light]
+
+          (contains? #{:highlight-info :highlight} target-highlight-style)
+          [fireworks.defs/highlight-universal
+           fireworks.defs/highlight-dark
+           fireworks.defs/highlight-light]
+
+          :else
+          [fireworks.defs/highlight-universal
+           fireworks.defs/highlight-error-dark
+           fireworks.defs/highlight-error-light
+           fireworks.defs/highlight-error-underlined-dark
+           fireworks.defs/highlight-error-underlined-light
+           fireworks.defs/highlight-dark
+           fireworks.defs/highlight-light
+           fireworks.defs/highlight-warning-dark
+           fireworks.defs/highlight-warning-underlined-dark
+           fireworks.defs/highlight-warning-light
+           fireworks.defs/highlight-warning-underlined-light])))
 
 
+;; TODO - A truncate-form fn that will truncate stringified form, lopping off
+;;        top, bottom, or both with proper ellipsis
 
-(defn ^:public with-floating-annotation
-  {:desc     "Expects a string that was formatted with bling.hifi/hifi, with a
-              `:find` option that resulted in error highlighting. The resulting
-              string might have at least one line containing a substring that is
-              ansi-sgr decorated with highlight-error styling, see
-              fireworks.defs/highlight-error-dark-sgr & co.
-              
-              The last line with this highlight styling will get a floating
-              annotation to the right. Expects a short, single line of text."
-   :examples [^:no-print
-              {:desc  "Basic example"
-               :forms '[[(with-floating-annotation
-                           (bling.core/bling
-                            [:red "Line 1" [:br]]
-                            [:blue "Line 2" [:br]]
-                            (bling.hifi/hifi
-                             {:foo {:bar [12345
-                                          :asfasdfasdfsdfasdfasz
-                                          'aafasfasd]}}
-                             {:find {:path  [:foo :bar]
-                                     :class :highlight-error }})
-                            "\n"
-                            "Another line"
-                            "\n"
-                            "Last"))]]}]}
+#_(defn ^:public truncate-form []
+ )
+
+(defn ^:public highlighted-location
+  {:desc    "Gets position of last occurence of highlighting in a potentially
+             multi-line string. Designed to pinpoint highlighting that was
+             applied to a form using bling.hifi/hifi (with `:find` option).
+   
+             If an `:underline-char` option is supplied, the map returned will
+             include a string that can be used as a distinct line with an ascii
+             underline for the supplied stringified form. This underline line is
+             optionally decorated with a supplied `:text-decoration-style` map.
+
+             If a `:floating-annotation-text` option is supplied, the string
+             will be annotated. This string is optionally decorated with a
+             supplied `:floating-annotation-style` map."
+   :options [:map
+             [:target-highlight-style
+              {:optional true
+               :desc     "Highlight style used to identify the location"}
+              :keyword]
+             [:class
+              {:optional true
+               :desc     "Highlight style class "}
+              [:enum 
+               :highlight-error-dark 
+               :highlight-error-light
+               :highlight-error-universal]]]}
   ([s]
-   (with-floating-annotation s nil))
-  ([s
-    {:keys [annotation-text
-            offset
-            style]
-     :or   {style {:color       :red
-                   :font-weight :bold}
-            annotation-text "<- Problem here"}}]
+   (highlighted-location s nil))
+  ([s 
+    target-highlight-style]
+   (when-let [[opening-tag _] 
+              (opening-sgr-tag s target-highlight-style)]
+     (let [lines         (-> s string/split-lines vec)
+           reverse-index (reverse-index* opening-tag lines)]
+       (when reverse-index
+         (let [line-index  (dec (- (count lines) reverse-index))
+               line        (nth lines line-index)
+               uc          "〠"
+               ansi-sgr-re (ansi-sgr-pattern-re opening-tag)
+               replaced    (underline-stub line ansi-sgr-re uc)
+               offset      (string/index-of replaced uc)
+               last-index  (string/last-index-of replaced uc)
+               width       (inc (- (or last-index
+                                       (count replaced))
+                                   (or offset 0)))]
+           (merge {:line-index line-index
+                   :offset     offset
+                   :width      width})))))))
 
-   (let [offset        (or (when-> offset pos-int?) 3)
-         lines         (vec (string/split-lines s))
-         reverse-index (reverse-index* lines)]
-     (when reverse-index
-       (let [line-idx      (dec (- (count lines) reverse-index))
-             line          (nth lines line-idx)
-             annotated     (str line (bling (util/char-repeat offset " ")
-                                            [style annotation-text]))
-             with-inserted (fireworks.util/insert-at lines
-                                                     (inc line-idx)
-                                                     annotated)]
-         (string/join "\n" with-inserted))))))
+;; TODO - Add some warnings
+(defn ^:public with-floating-label
+  {:desc    "Annotates the line at supplied index with floating label. This
+             label is optionally decorated with a supplied
+             `:floating-annotation-style` map."
+   :options [:map
+             [:line-index
+              {:required true
+               :desc     "Index of the line to be labeled"}
+              :pos-int]
+             [:label-text
+              {:required true
+               :desc     "The text of the floating annotation."}
+              :string]
+             [:label-style
+              {:optional true
+               :desc     "Controls the style of the floating annotation"}
+              :map]
+             [:label-offset
+              {:optional true
+               :default  3
+               :desc     "Controls offset of the floating annotation"}
+              :pos-int]]}
+  [s {:keys [line-index label-text label-style offset]}]
+  (if-let [text (when (pos-int? line-index) (when-> label-text string?))]
+    (let [lines            (-> s string/split-lines vec)
+          line             (nth lines line-index)
+          style            (or (when-> label-style map?) {})
+          offset           (or (when-> offset pos-int?) 3)
+          labeled          (str line
+                                (bling (util/char-repeat offset " ")
+                                       [style text]))
+          with-labeled     (assoc lines line-index labeled)
+          with-labeled-str (string/join "\n" with-labeled)]
+      with-labeled-str)
+    s))
 
-(defn ^:public with-ascii-decoration
-  {:desc     "Expects a string that was formatted with bling.hifi/hifi, with a
-              `:find` option that resulted in error highlighting. The resulting
-              string might have at least one line containing a substring that is
-              ansi-sgr decorated with highlight-error styling, see
-              fireworks.defs/highlight-error-dark-sgr & co.
-              
-              The last line with this highlight styling will get a new line
-              inserted after it with correctly-placed ansi-char-based underlines,
-              such as \"^^^\"."
-   :examples [^:no-print
-              {:desc  "Basic example"
-               :forms '[[(with-ascii-decoration 
-                           (bling.core/bling
-                            [:red "Line 1" [:br]]
-                            [:blue "Line 2" [:br]]
-                            (bling.hifi/hifi
-                             {:foo {:bar [12345
-                                          :asfasdfasdfsdfasdfasz
-                                          'aafasfasd]}}
-                             {:find {:path  [:foo :bar]
-                                     :class :highlight-error }})
-                            "\n"
-                            "Another line"
-                            "\n"
-                            "Last"))]]}]}
-  ([s]
-   (with-ascii-decoration s nil))
-  ([s {:keys [underline-char
-              floating-annotation
-              style
+(defn- underline-width+offset 
+  [{:keys [line-index offset width]} lines line]
+  (let [line-count (ansi/strlen-minus-ansi-sgr
+                    (nth lines line-index))
+        offset     (or (some-> offset 
+                               (when-> pos-int?)
+                               (when-> #(< % line-count)))
+                       (some->> line
+                                (re-find #"^ +")
+                                count)
+                       0)
+        width      (or (when-> width pos-int?) 
+                       (- line-count offset))
+        width      (if (< line-count (+ offset width))
+                     1
+                     width)]
+    [width offset]))
 
-              ;; TODO - put target style back in add validation for style
-              ;; target-style
-              
+(defn ^:public with-ascii-underline
+  {:doc     "If supplied value for `:form` is a multi-line string, and supplied
+             value for `:line-index` is an integer less than the number of lines
+             present, inserts an ascii underline below the specified row."
+   :options [:map
+             [:line-index
+              {:required true
+               :desc     "Index of the line to receive the underline text-decoration."}
+              :pos-int]
 
-              ;; TODO add main branch for when valid line-start etc supplied
-              ;;      this is for more of a precise positioning
-              ;; line-start
-              ;; line-end
-              ;; column-start
-              ;; column-end
-              
-              ]
-       :or   {underline-char "^"
-              style          {:color       :medium-red
-                              :font-weight :bold}}}]
+             [:offset
+              {:required true
+               :desc     "Controls offset, in columns, of the underline.
+                          If not provided, defaults to index of first non-blank character in line first."}
+              :pos-int]
 
-   (let [uc            (or (when-> underline-char util/string-of-1?) "^")
-         lines         (vec (string/split-lines s))
-         reverse-index (reverse-index* lines)]
-     (when reverse-index
-       (let [line-idx      (dec (- (count lines) reverse-index))
-             line          (nth lines line-idx)
-             replaced      (replaced-with-underline-char uc line)
-             decorated     (decorated-underline replaced uc style)
-             with-inserted (fireworks.util/insert-at lines
-                                                     (inc line-idx)
-                                                     decorated)]
-         (string/join "\n" with-inserted))))))
+             [:width
+              {:required true
+               :default  3
+               :desc     "Controls the width, in columns, of the underline.
+                          If not provided, defaults to the length of the line, minus leading blank spaces"}
+              :pos-int]
+
+             [:underline-char
+              {:optional true
+               :desc     "Char used to build the ascii underline.
+                          Overrides `:text-decoration-style`"}
+              :keyword]
+
+             [:text-decoration-color
+              {:optional true
+               :desc     "Controls the color of the underline."}
+              :keyword]
+
+             [:text-decoration-weight
+              {:optional true
+               :desc     "Controls the font-weight of the underline."}
+              [:enum :normal "normal" :bold "bold"]]
+
+             [:text-decoration-style
+              {:optional true
+               :default  :wavy
+               :desc     "Controls the ascii char used to construct the underline."}
+              [:enum :wavy :solid :dashed :dotted :double]]]}
+  [s 
+   {:keys [line-index 
+           underline-char 
+           text-decoration-style 
+           text-decoration-color 
+           text-decoration-weight]
+    :or   {text-decoration-style :wavy}
+    :as   opts}]
+  (if (and (number? line-index)
+           (or (pos-int? line-index)
+               (zero? line-index)))
+    (let [lines (-> s string/split-lines vec)]
+      (if-not (> line-index (count lines))
+        (let [line                 (nth lines line-index) 
+              [width offset]       (underline-width+offset opts lines line)
+              uc                   (or (some-> underline-char
+                                               (when-> string?)
+                                               (when-> #(= (count %) 1)))
+                                       (get text-decoration-styles
+                                            text-decoration-style))
+              line-with-underline (bling [{:color       text-decoration-color
+                                           :font-weight text-decoration-weight}
+                                          (str (util/char-repeat offset " ")
+                                               (util/char-repeat width uc))])
+              with-underline      (fireworks.util/insert-at 
+                                   lines
+                                   (inc line-index)
+                                   line-with-underline)
+              with-underline-str  (string/join "\n" with-underline)]
+          with-underline-str)
+        s))
+    s))
 
 
-(defn- list-formatted-as-fn-call [x opts]
-  (if (list? x)
-    (-> x
-        (bling.hifi/hifi opts)
-        (string/replace-first #"\n" "")
-        (string/replace #"\n$" "")
-        (string/replace #"^\(|\)$" "")
-        (string/replace #"\n" (str "\n" (-> x
-                                            first
-                                            name
-                                            count
-                                            inc
-                                            spaces))))
-    x))
+;; Highlighted location end ----------------------------------------------------
 
-(defn- stringified-form-underline-start* [text-decoration-row-start ln]
-  (or (when-let [n (maybe-> text-decoration-row-start pos-int?)]
-        (maybe-> n #(< % (count ln))))
-      (some-> ln
-              (string/split #"")
-              seq
-              (->> (keep-indexed
-                    (fn [i s]
-                      (when-not (= s " ") i))))
-              first)))
 
-(defn- stringified-form-underline-ln 
-  [underline-start style underline-end text-decoration-style]
-  (bling (char-repeat underline-start " ")
-         [style
-          (char-repeat (- underline-end
-                          underline-start)
-                       (case text-decoration-style
-                         :wavy
-                         "^"
-                         :solid
-                         "─"
-                         :dashed
-                         "-"
-                         :dotted
-                         "•"
-                         :double
-                         "═"
-                         "^"))]))
 
-(defn- stringified-form-with-line-based-decoration
-  "If supplied value for `:form` is a multi-line string, and supplied value for
-   `:text-decoration-relative-line-number` is a pos int, renders a multi-line
-   string with an ascii underline below the specified row."
-  [{:keys [form
-           text-decoration-relative-line-number
-           text-decoration-row-start
-           text-decoration-row-end
-           text-decoration-color
-           text-decoration-style]}]
-  (when-let [s (some-> form (when-> string?))]
-    (if-let [lns (when (some-> text-decoration-relative-line-number
-                               (maybe-> pos-int?))
-                   (some-> s string/split-lines seq vec))]
-      (when-let [ln (nth lns
-                         (dec text-decoration-relative-line-number)
-                         nil)]
-        (when-let [underline-start
-                   (stringified-form-underline-start*
-                    text-decoration-row-start 
-                    ln)]
-          (let [underline-end 
-                (or (some-> text-decoration-row-end
-                            (maybe-> pos-int?)
-                            (maybe-> #(> % underline-start)))
-                    (-> ln count))
 
-                style         
-                {:color text-decoration-color}
+;; Race-condition-free version of clojure.core/println,
+;; Maybe useful to keep around if any weird behavior arises.
+#?(:clj
+   (defn- safe-println [& more]
+     (.write *out* (str (clojure.string/join " " more) "\n"))))
 
-                underline-ln  
-                (stringified-form-underline-ln
-                 underline-start 
-                 style 
-                 underline-end 
-                 text-decoration-style)
+;; PPPPPPPPPPPPPPPPP         OOOOOOOOO      IIIIIIIIII
+;; P::::::::::::::::P      OO:::::::::OO    I::::::::I
+;; P::::::PPPPPP:::::P   OO:::::::::::::OO  I::::::::I
+;; PP:::::P     P:::::P O:::::::OOO:::::::O II::::::II
+;;   P::::P     P:::::P O::::::O   O::::::O   I::::I  
+;;   P::::P     P:::::P O:::::O     O:::::O   I::::I  
+;;   P::::PPPPPP:::::P  O:::::O     O:::::O   I::::I  
+;;   P:::::::::::::PP   O:::::O     O:::::O   I::::I  
+;;   P::::PPPPPPPPP     O:::::O     O:::::O   I::::I  
+;;   P::::P             O:::::O     O:::::O   I::::I  
+;;   P::::P             O:::::O     O:::::O   I::::I  
+;;   P::::P             O::::::O   O::::::O   I::::I  
+;; PP::::::PP           O:::::::OOO:::::::O II::::::II
+;; P::::::::P            OO:::::::::::::OO  I::::::::I
+;; P::::::::P              OO:::::::::OO    I::::::::I
+;; PPPPPPPPPP                OOOOOOOOO      IIIIIIIIII
 
-                insert-at     
-                (fn insert-at [vc i elem]
-                  (into (conj (subvec vc 0 i) elem)
-                        (subvec vc i)))
 
-                new-lns
-                (assoc (insert-at lns
-                                  text-decoration-relative-line-number
-                                  underline-ln)
-                       (dec text-decoration-relative-line-number)
-                       (str (subs ln 0 underline-start)
-                            (bling [style
-                                    (subs ln
-                                          underline-start
-                                          underline-end)])
-                            (subs ln underline-end (count ln))))]
+(defn ^:public stringified
+  ([form]
+   (stringified form nil))
+  ([form {:keys [height width printing-fn]}]
+   (let [width  (when-> width pos-int?)
+         height (when-> width pos-int?)
+         as-str (or (when (fn? printing-fn)
+                      (with-out-str (printing-fn form)))
+                    (str form))]
+     (as-> as-str $
+       (string/split $ #"\n")
+       (take (or height (count $)) $)
+       (mapv
+        #(if width
+           (if (< width (count %))
+             (-> (subs % 0 width) 
+                 (str "..."))
+             %)
+           %)
+        $)
+       (string/join "\n" $)))))
 
-            (string/join "\n" new-lns))))
-      s)))
 
-;; Line and point of interest public fns  -------------------------------------
+;; Line and point of interest public fns  --------------------------------------
+
+;; TODO - Add feature for leading and trailing line numbers
+;;      - Add additonal header template with tab?
+;;      - alt char for gutter border?
 
 (defn ^:public point-of-interest
-  "Formatted and decorated diagram of a form with line, column, and file info.
-   
-   Provides the namespace, column, and line number and a potentially truncated
-   representation of the specific form of interest.
-   
-   The `:line`, `:column`, and `:form` options must all be present in
-   order for the namespece info diagram to be rendered. If the `:form` option
-   is supplied, but any of the others are omitted, only the form will be rendered
-   (with an underline and no line-info diagram).
-   
-   If the form is provided is a collection or list, it will be pretty-printed
-   as a potentially multi-line list.
-   If `:truncate-form-to-single-line?` is `true`, the form is truncated and underlined.
-   If you would like to print a multi-line form with individual subforms highlighted,
-   there are two approaches:
-   
-       1) Pass the collection as-is and supply an option map that includes
-          something like:
-          `{:hifi-options {:find {:path [1 1] :class :highlight-error}}}`
-   
-       2) Pass as a pre-formatted string (indentation, etc) and supply an option map
-          that includes something like:
-          `{:text-decoration-relative-line-number 2
-            :text-decoration-row-start 3
-            :text-decoration-row-end 3}
-   
-   By default, the diagram is created with a leading and trailing newlines.
-   This can be set to zero, or increased, with the `:margin-block` option.
-   
-   Basic Example
-   ```clojure
-   (point-of-interest
-    {:text-decoration-style :wavy,
-     :file \"myfile.core\",
-     :type :error,
-     :column 11,
-     :line 42,
-     :form (+ 1 true)})
-   ```
-   
-   All the options:
-   
-   * **`:file`**
-       - `string?`
-       - Optional.
-       - File or namespace
-   
-   * **`:line`**
-       - `int?`
-       - Optional.
-       - Line number
-   
-   * **`:column`**
-       - `int?`
-       - Optional.
-       - Column number
-   
-   * **`:margin-block`**
-       - `int?`
-       - Optional.
-       - Defaults to `1`.
-       - Controls the number of blank lines above and below the diagram.
-   
-   * **`:type`**
-       - `#{\"warning\" \"error\" :warning :error}`
-       - Optional.
-       - Automatically sets the `:text-decoration-color`.
-   
-   * **`:text-decoration-color`**
-       - `#{\"neutral\" \"magenta\" \"warning\" :neutral :green \"negative\" :negative \"error\" :warning \"green\" :error :magenta}`
-       - Optional.
-       - Defaults to `:neutral`.
-       - Controls the color of the underline.
-   
-   * **`:text-decoration-style`**
-       - `#{\"dashed\" :double :wavy :solid \"wavy\" \"dotted\" \"solid\" \"double\" :dashed :dotted}`
-       - Optional.
-       - Defaults to `:wavy`.
-       - Controls the color of the underline.
-   
-   * **`:text-decoration-relative-line-number`**
-       - `pos-int?`
-       - Optional.
-       - Controls which line of the form gets decorated with an underline.
-         Only applies if form supplied is stringified and multi-line
-         Will underline the whole line, unless valid values are supplied
-         for `:text-decoration-row-start` and `:text-decoration-row-end`
-   
-   * **`:text-decoration-row-start`**
-       - `pos-int?`
-       - Optional.
-       - Controls which row the underline starts at.
-         Only applies if form supplied is stringified and multi-line
-   
-   * **`:text-decoration-row-end`**
-       - `pos-int?`
-       - Optional.
-       - Controls which row the underline ends at.
-         Only applies if form supplied is stringified and multi-line
-   
-   * **`:truncate-form-to-single-line?`**
-       - `boolean?`
-       - Optional.
-       - Defaults to `true`.
-       - Truncates the form to a single line.
-   
-   * **`:hifi-options`**
-       - `map?`
-       - Optional.
-       - Options map for hifi printing of form This only applies if form
-         is supplied as a collection More information about the available
-         options can be found [here](https://github.com/paintparty/fireworks?tab=readme-ov-file#options)
-         To highlight a subform at a specific path within the form, you can pass an option map such as:
-         `{:hifi-options {:find {:path  [1 1]
-                                 :class :highlight-error}}}`."
   {:tldr          "Formatted and decorated diagram of a form with line, column, and file info."
-   :desc          "Provides the namespace, column, and line number and a potentially truncated
-                   representation of the specific form of interest.
+   :desc          "Provides the namespace, column, and line number and a representation of the
+                   specific form of interest.
 
                    The `:line`, `:column`, and `:form` options must all be present in
-                   order for the namespece info diagram to be rendered. If the `:form` option
-                   is supplied, but any of the others are omitted, only the form will be rendered
-                   (with an underline and no line-info diagram).
+                   order for the info diagram to be rendered. If the `:form` option is supplied,
+                   but any of the others are omitted, only the form will be rendered.
 
-                   If the form is provided is a collection or list, it will be pretty-printed
-                   as a potentially multi-line list.
-                   If `:truncate-form-to-single-line?` is `true`, the form is truncated and underlined.
-                   If you would like to print a multi-line form with individual subforms highlighted,
-                   there are two approaches:
+                   If the form is provided is a collection, it will be stringified and truncated
+                   at 33 chars.
 
-                       1) Pass the collection as-is and supply an option map that includes
-                          something like:
-                          `{:hifi-options {:find {:path [1 1] :class :highlight-error}}}`
+                   If you would like to print a multi-line form, you can you can pre-format the
+                   `:form` value with `bling.core/stringified`, or `bling.hifi/hifi`.
 
-                       2) Pass as a pre-formatted string (indentation, etc) and supply an option map
-                          that includes something like:
-                          `{:text-decoration-relative-line-number 2
-                            :text-decoration-row-start 3
-                            :text-decoration-row-end 3}
+                   If you would like to print a multi-line form with individual subforms 
+                   highlighted, you can pre-format the `:form` value with some combo of
+                   bling.hifi/hifi (with `:find` option supplied),
+                   `bling.core/with-ascii-underline`, and `bling.core/with-floating-label.`
 
-                   By default, the diagram is created with a leading and trailing newlines.
-                   This can be set to zero, or increased, with the `:margin-block` option."
+                   By default, the diagram is created with a leading and trailing newlines,
+                   via a default value of `1` for `:margin-block`. This can be set to zero,
+                   or increased, with the `:margin-block` option."
    :examples      [{:desc  "Basic Example"
                     :forms '[[(point-of-interest
-                               {:form                  (+ 1 true)
-                                :line                  42
-                                :column                11
-                                :file                  "myfile.core"
-                                :text-decoration-style :wavy
-                                :type                  :error})]]}
+                               {:form   (+ 1 true)
+                                :line   42
+                                :column 11
+                                :file   "myfile.core" })]]}
                    {:desc  "With styled file-info"
                     :forms '[[(point-of-interest
                                {:form                     (+ 1 true)
-                                :style                    {:color      :subtle
+                                :header-file-name-style   {:color      :subtle
                                                            :font-style :italic}
                                 :line                     42
-                                :line-style               {:color :red}
+                                :header-line-number-style {:color :red}
                                 :gutter-line-number-style {:color      :red
                                                            :font-style :italic}
                                 :column                   11
                                 ;; :column-style          {:color :orange}
                                 :file                     "myfile.core"
                                 ;; :file-style            {:color :orange}
-                                :text-decoration-style    :wavy
-                                :type                     :error})]]}
-                   {:desc  "With problem highlight via :find option"
+                                })]]}
+                   {:desc  "With collection supplied as `:form`"
                     :forms '[[(point-of-interest
-                               {:form                  (+ 1 true)
-                                :hifi-options          {:find {:path  [2]
-                                                               :class :highlight-error}}
-                                :style                 {:color      :subtle
-                                                        :font-style :italic}
-                                :line                  42
-                                :column                11
-                                :file                  "myfile.core"
-                                :text-decoration-style :wavy
-                                :type                  :error})]]}]
+                               {:form                   {:a 1
+                                                         :b [333 444 555]
+                                                         :c "aadfasdfasdfads"
+                                                         :d "asdfasdfasdfasdfasdfasdf"}
+                                :header-file-info-style {:color      :subtle
+                                                         :font-style :italic}
+                                :line                   42
+                                :column                 11
+                                :file                   "myfile.core"})]]}]
 
    :options       [:map
                    [:form
-                    {:gen/elements ['(+ 1 1 (+ 5 6))
+                    {:gen/elements [
+                                    '(+ 1 1 (+ 5 6))
                                     '(+ 1 1 (+ 5 6))
                                     "(+ 9 8 \n   (+ 5 6))"]
                      :desc         "The form to draw attention to. Will be cast to string and truncated at 33 chars"}
@@ -1209,11 +1165,24 @@
 
                    [:file
                     {:optional     true
-                     :gen/elements ["foo.cljs" "barasdfasdfas_asdfs.cljs" "bar.cljs" nil]
+                     :gen/elements [
+                                    "foo.cljs"
+                                    "barasdfasdfas_asdfs.cljs" 
+                                    "bar.cljs" 
+                                    nil
+                                    ]
                      :desc         "File or namespace"}
                     :string]
 
-                   [:file-style
+                   [:header-file-info-style
+                    {:optional     true
+                     :gen/elements [{:color :blue}]
+                     :desc         "File info style, in header of point-of-interest diagram.
+                                    This will apply default styles to `:file-style` `:column-style`
+                                    and `:line-style`."}
+                    :map]
+
+                   [:header-file-name-style
                     {:optional     true
                      :gen/elements [{:color :blue}]
                      :desc         "File name style, in header of point-of-interest diagram"}
@@ -1225,7 +1194,7 @@
                      :desc         "Line number"}
                     :int]
 
-                   [:line-style
+                   [:header-line-number-style
                     {:optional     true
                      :gen/elements [{:color :blue}]
                      :desc         "Line number style, in header of point-of-interest diagram"}
@@ -1245,19 +1214,12 @@
                      :desc         "Column number"}
                     :int]
 
-                   [:column-style
+                   [:header-column-number-style
                     {:optional     true
                      :gen/elements [{:color :blue}]
                      :desc         "Column number style, in header of point-of-interest diagram"}
                     :map]
 
-                   [:file-info-style
-                    {:optional     true
-                     :gen/elements [{:color :blue}]
-                     :desc         "File info style, in header of point-of-interest diagram.
-                                    This will apply default styles to `:file-style` `:column-style`
-                                    and `:line-style`."}
-                    :map]
 
                    [:margin-block
                     {:optional true
@@ -1281,258 +1243,70 @@
                      :gen/min  0
                      :gen/max  5
                      :desc     "Controls the number of blank lines below the diagram."}
-                    :int]
-
-                   [:type
-                    {:optional true
-                     :desc     "Automatically sets the `:text-decoration-color`."}
-                    [:enum :error "error" :warning "warning"]]
-
-                   [:text-decoration-color
-                    {:optional true
-                     :default  :neutral
-                     :desc     "Controls the color of the underline."}
-                    [:enum
-                     :error
-                     "error"
-                     :warning
-                     "warning" 
-                     :neutral
-                     "neutral" 
-                     :magenta 
-                     "magenta" 
-                     :green 
-                     "green"
-                     :negative 
-                     "negative"]]
-
-                   [:text-decoration-style
-                    {:optional true
-                     :default  :wavy
-                     :desc     "Controls the color of the underline."}
-                    [:enum :wavy "wavy" :solid "solid" :dashed "dashed" :dotted "dotted" :double "double"]]
-
-                   [:text-decoration-relative-line-number
-                    {:optional true
-                     :gen/min  0
-                     :gen/max  5
-                     :desc     "Controls which line of the form gets decorated with an underline.
-                                Only applies if form supplied is stringified and multi-line
-                                Will underline the whole line, unless valid values are supplied
-                                for `:text-decoration-row-start` and `:text-decoration-row-end`"}
-                    :pos-int]
-
-                   [:text-decoration-row-start
-                    {:optional true
-                     :gen/min  0
-                     :gen/max  15
-                     :desc     "Controls which row the underline starts at.
-                                Only applies if form supplied is stringified and multi-line"}
-                    :pos-int]
-
-                   [:text-decoration-row-end
-                    {:optional true
-                     :gen/min  0
-                     :gen/max  15
-                     :desc     "Controls which row the underline ends at.
-                                Only applies if form supplied is stringified and multi-line"}
-                    :pos-int]
-
-                   [:truncate-form-to-single-line?
-                    {:optional true
-                     :default  true
-                     :desc     "Truncates the form to a single line."}
-                    :boolean]
-
-                   [:hifi-options
-                    {:optional       true
-                     :gen/frame-rate 500
-                     :gen/elements   [{:find {:path  [1]
-                                              :class :highlight-error}}
-                                      {:find {:path  [1 1]
-                                              :class :highlight-error}}
-                                      {:find {:path  [3 1]
-                                              :class :highlight-error}}]
-                     :desc           "Options map for hifi printing of form This only applies if form
-                                      is supplied as a collection More information about the available
-                                      options can be found [here](https://github.com/paintparty/fireworks?tab=readme-ov-file#options)
-                                      To highlight a subform at a specific path within the form, you can pass an option map such as:
-                                      `{:hifi-options {:find {:path  [1 1]
-                                                              :class :highlight-error}}}`."}
-                    :map]]
+                    :int]]
    :clj-docstring [[:example "Example"]
                    :desc
                    :options]}
-  [{:keys [line
-           file
+  [{:keys [form
+           line
            column
-           form
-           header                        ; <- deprecated / undocumented
-           body                          ; <- deprecated / undocumented
+           header-file-info-style
+           header-file-name-style
+           header-line-number-style
+           header-column-number-style
            margin-block
            margin-top
            margin-bottom
-           text-decoration-color
-           text-decoration-style
-           gutter-line-number-style
-           type
-           truncate-form-to-single-line?
-           hifi-options
-           with-ascii-decoration?
-           ascii-decoration-font-weight
-           ascii-decoration-color
-           with-floating-annotation?
-           floating-annotation-text
-           floating-annotation-color
-           floating-annotation-font-weight]
-    :as   opts
-    :or   {hifi-options                  nil
-           with-ascii-decoration?        true
-           truncate-form-to-single-line? ::unsupplied}}]
-
-  (let [type                         (some-> type as-str (maybe-> #{"warning" "error"}))
-        file-info                    (file-info-str (merge opts {:style (:file-info-style opts)}))
-        gutter                       (some-> line str count spaces)
-        text-decoration-color        (or (some->> type (get semantics-by-semantic-type))
-                                         (some-> text-decoration-color
-                                                 as-str
-                                                 (maybe-> all-color-names))
-                                         "neutral")
-        ascii-decoration-font-weight (or ascii-decoration-font-weight :bold)
-        ascii-decoration-color       (or ascii-decoration-color text-decoration-color)
-        gutter-line-number-style     (or (when-> gutter-line-number-style map?)
-                                         (:file-info-style opts)
-                                         {})
-        stringified                  (stringified-form-with-line-based-decoration
-                                      (assoc opts
-                                             :text-decoration-color
-                                             text-decoration-color))
-        form-as-fn-call              (some-> form
-                                             (when-> list?)
-                                             (list-formatted-as-fn-call hifi-options))
-        form-is-coll-with-find?      (and (coll? form)
-                                          (some-> hifi-options :find :path vector?))
-        form-hifi*                   (or  stringified
-                                          form-as-fn-call
-                                          (bling.hifi/hifi form hifi-options))
-        form-hifi                    (or (when (-> hifi-options :find)
-                                           (cond-> form-hifi*
-
-                                             with-ascii-decoration?
-                                             (with-ascii-decoration
-                                               {:style {:font-weight ascii-decoration-font-weight
-                                                        :color       ascii-decoration-color}})
-
-                                             with-floating-annotation?
-                                             (with-floating-annotation
-                                               {:annotation-text floating-annotation-text
-                                                :style           {:font-weight floating-annotation-font-weight
-                                                                  :color       floating-annotation-color}})))
-                                         form-hifi*)
-
-        ;; TODO - form-hifi* in here prints strange
-        ;; _ (? (keyed [line
-        ;;              file
-        ;;              column
-        ;;              form
-        ;;              header                          ; <- deprecated / undocumented
-        ;;              body                            ; <- deprecated / undocumented
-        ;;              margin-block
-        ;;              text-decoration-color
-        ;;              text-decoration-style
-        ;;              gutter-line-number-style
-        ;;              type
-        ;;              truncate-form-to-single-line?
-        ;;              hifi-options
-        ;;              form-hifi*
-        ;;              form-hifi]))
-        
-        header                  (str header)
-        body                    (str body)
-        mb*                     (or (some-> margin-block (maybe-> pos-int?))
-                                    (if (some-> margin-block zero?)
-                                      0
-                                      1))
-        mbs*                    (or (when-> margin-top pos-int?) mb*)
-        mbe*                    (or (when-> margin-bottom pos-int?) mb*)
-
-        mbs                     (char-repeat mbs* "\n")
-        mbe                     (char-repeat mbe* "\n")
-
-        ;; Fix for cljs
-        diagram-char            #?(:cljs (fn [s] s) :clj #(bling [:subtle %]))
-
-        truncate?               (case truncate-form-to-single-line?
-                                  true
-                                  true
-
-                                  false
-                                  false
-
-                                  ::unsupplied
-                                  (if (or stringified
-                                          form-as-fn-call
-                                          form-is-coll-with-find?)
-                                    false
-                                    true)
-                                  true)
-
-        multi-line?             (some->> form-hifi (re-find #"\n") boolean)
-
-        line-number             (bling [gutter-line-number-style line])
-        diagram                 (when form
-                                  (if (and (or truncate?
-                                               (not multi-line?))
-                                           (not (-> hifi-options :find)))
-                                    (let [form-as-str      (-> form-hifi
-                                                               (string/split #"\n")
-                                                               first
-                                                               (str (if multi-line? "..." "")))
-                                          underline-str    (poi-text-underline-str
-                                                            (strlen-minus-ansi-sgr form-as-str)
-                                                            0
-                                                            text-decoration-style)
-                                          bolded-form      form-as-str
-                                          underline-styled [{:font-weight :normal
-                                                             :color       text-decoration-color
-                                                             :contrast    :medium}
-                                                            underline-str]]
-                                      (if (and line column form)
-                                        [mbs
-                                         gutter      (diagram-char " ┌─── ") file-info "\n"
-                                         gutter      (diagram-char " │ ") "\n"
-                                         line-number (diagram-char " │ ") bolded-form "\n"
-                                         gutter      (diagram-char " │ ") underline-styled
-                                         mbe
-                                         "\n"]
-                                        [mbs
-                                         bolded-form "\n"
-                                         underline-styled
-                                         mbe]))
-                                    (if (and line column form)
-                                      (let [form-hifi-with-gutter
-                                            (-> form-hifi
-                                                (string/split #"\n")
-                                                (->> (map-indexed
-                                                      (fn [i ln]
-                                                        (str (when (pos? i)
-                                                               (str gutter
-                                                                    (diagram-char " │ ")))
-                                                             ln)))
-                                                     (string/join "\n")))]
-                                        (vec (concat [mbs
-                                                      gutter      (diagram-char " ┌─── ") file-info "\n"
-                                                      gutter      (diagram-char " │ ") "\n"
-                                                      line-number (diagram-char " │ ") form-hifi-with-gutter "\n"
-                                                      gutter      (diagram-char " │ ")]
-                                                     [mbe
-                                                      "\n"])))
-                                      form-hifi)))
-        ret                     (apply bling
-                                       (util/concatv header
-                                                     diagram
-                                                     body))]
-    ret))
+           gutter-line-number-style]
+    :as   opts}]
+  ;; TODO validate input
+  (when form
+    (let [header-style (or (when-> header-file-info-style map?) {})
+          file-info    (file-info-str 
+                        (merge 
+                         opts
+                         {:file-style   (when-> header-file-name-style map?)
+                          :line-style   (when-> header-line-number-style map?)
+                          :column-style (when-> header-column-number-style map?)
+                          :style        header-style}))
+          form         (if-not (string? form) 
+                         (stringified form {:height 1 :width  33})
+                         form)
+          mb*          (or (some-> margin-block (maybe-> pos-int?))
+                           (if (some-> margin-block zero?)
+                             0
+                             1))
+          mbs*         (or (when-> margin-top pos-int?) mb*)
+          mbe*         (or (when-> margin-bottom pos-int?) mb*)
+          mbs          (char-repeat mbs* "\n")
+          mbe          (char-repeat mbe* "\n")
+          gutter-num   (bling [(or (when-> gutter-line-number-style
+                                           map?)
+                                   header-style
+                                   {})
+                               line])
+          gutter       (some-> line str count spaces)
+          border       #(bling [:subtle %])
+          diagram      (if (and line column form)
+                         (let [form-with-gutter
+                               (-> form
+                                   (string/split #"\n")
+                                   (->> (map-indexed
+                                         (fn [i ln]
+                                           (str (when (pos? i)
+                                                  (str gutter
+                                                       (border " │  ")))
+                                                ln)))
+                                        (string/join "\n")))]
+                           (-> [mbs
+                                gutter     (border " ┌──── ") file-info "\n"
+                                gutter     (border " │  ") "\n"
+                                gutter-num (border " │  ") form-with-gutter "\n"
+                                gutter     (border " │  ")]
+                               (concat [mbe "\n"])
+                               vec))
+                         form)]
+      (apply bling diagram))))
 
 ;; Enriched text public fns and helpers  --------------------------------------
 
