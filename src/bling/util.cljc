@@ -10,6 +10,14 @@
             (when (set? pred) (contains? pred x)))
     x))
 
+(defn ^:public when->>
+  "If (= (pred x) true), returns x, otherwise nil.
+   Useful in a `clojure.core/some->>` threading form."
+  [pred x]
+  (when (or (true? (pred x))
+            (when (set? pred) (contains? pred x)))
+    x))
+
 (defn ^:public maybe->
   "If `(= (pred x) true)`, returns x, otherwise nil.
    Useful in a `clojure.core/some->` threading form."
