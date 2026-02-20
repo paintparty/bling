@@ -90,11 +90,10 @@
   [base-m
    theme-m
    {:keys [animate?
-           print-desc?
            frame-rate
            fqfn-name
            fn-name
-           print-desc?
+           print-fn-call?
            second-arg-f
            merged-override-map
            public-f
@@ -108,7 +107,7 @@
                     (public-f m (second-arg-f merged-override-map))
                     (public-f m))]
          (printing-f call)
-         (when print-desc? (print-hifi (list fn-name m))))
+         (when print-fn-call? (print-hifi (list fn-name m))))
        (catch #?(:cljs js/Object :clj Throwable)
               e
          (swap! errors conj {:f fqfn-name
@@ -160,6 +159,7 @@
            fqfn-name
            fn-name
            print-desc?
+           printing-f
            option-f
            k
            om
@@ -170,8 +170,7 @@
            ::errors]}
    {:keys [option-filter
            margin-top
-           animate?
-           printing-f]}]
+           animate?]}]
   (when (cond (set? option-filter)
               (or (not (seq option-filter))
                   (contains? option-filter k))
@@ -189,12 +188,12 @@
                {:second-arg-f        second-arg-f
                 :fqfn-name           fqfn-name
                 :fn-name             fn-name
-                :print-desc? print-desc?
+                :print-desc?         print-desc?
                 :public-f            public-f
                 :option-f            option-f
-                :printing-f           printing-f            
+                :printing-f          printing-f            
                 :merged-override-map merged-override-map
-                :animate?            false #_animate?
+                :animate?            animate?
                 :margin-top          margin-top
                 :frame-rate          frame-rate
                 ::errors             errors}))))))
@@ -360,12 +359,12 @@
 
 
 (defn variant-coll [m k]
-  (->> m
-       k
-       :coll 
-       (map-indexed (fn [i v]
-                      (with-meta {k v}
-                                {::i i ::k k})))))
+  (!? :trace (->> m
+              k
+              :coll 
+              (map-indexed (fn [i v]
+                             (with-meta {k v}
+                               {::i i ::k k}))))))
 
 
 (defn options-sequences*
@@ -434,7 +433,9 @@
                                          (assoc m (:k v) v)) {} 
                                        w-variants)
             primary-variants   (variant-coll by-key primary)
-            secondary-variants (variant-coll by-key secondary)]
+            secondary-variants (some->> (when-> secondary keyword?)
+                                        (variant-coll
+                                         by-key))]
         (!? w-variants)
         (doseq [primary-variant-map (!? :+ primary-variants)]
             (when (if-not (fn? primary-filter)
@@ -457,6 +458,7 @@
                              :fn-name     fn-name
                              :fqfn-name   fqfn-name
                              :print-desc? print-desc?
+                             :printing-f  printing-f
                              :lap?        true
                              :option-f    (fn [x _] x)
                              :public-f    public-f

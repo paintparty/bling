@@ -12,9 +12,10 @@
                                  callout
                                  point-of-interest
                                  bling-colors*
-                                 with-ascii-decoration
-                                 with-floating-annotation
-                                 ]]
+                                 stringified
+                                 highlighted-location
+                                 with-floating-label
+                                 with-ascii-underline]]
    [fireworks.core :refer [? !? ?> !?> pprint] :rename {pprint fwpp}]
    [fireworks.defs]
    [fireworks.util]
@@ -22,7 +23,7 @@
    [fireworks.sample :refer [array-map-of-everything-cljc]]
    [clojure.pprint :refer [pprint]]
    #_[bling.sample :as sample]
-   [bling.util :as util :refer [maybe->> maybe-> when->]]
+   [bling.util :as util :refer [maybe->> maybe-> when-> when->>]]
    [bling.defs]
    [bling.explain]
    [bling.fonts]
@@ -52,72 +53,63 @@
 
 ;; (tufte/add-handler! :my-console-handler (tufte/handler:console))
 
-
-;; [:br] should work stand-alone
 (!? (fireworks.defs/bling-sgr-color :dark-red))
 
+#_(println
+ (let [s   (hifi {:a 1
+                  :b [333 444 555]
+                  :c "aadfasdfasdfads"
+                  :d "asdfasdfasdfasdfasdfasdf"} 
+                 {:find {:path [:b 1]
+                         ;;  :class :highlight-error
+                         ;;  :style fireworks.defs/highlight-error-dark
+                         }})
+       loc (highlighted-location s :highlight-error)]
+   (-> s
+       (with-floating-label {:label-text   "<- Foo"
+                             :label-offset 5 
+                             :label-style  {:color :red}
+                             :line-index   (:line-index loc)})
+       (with-ascii-underline (assoc {:line-index 1} #_loc :text-decoration-color :red)))))
 
-     
-;; (println
-;;  (bling.core/with-ascii-decoration 
-;;   (bling.core/bling
-;;    [:red "Line 1" [:br]]
-;;    [:blue "Line 2" [:br]]
-;;    (hifi {:foo {:bar [12345
-;;                       :asfasdfasdfsdfasdfasz
-;;                       'aafasfasd]}}
-;;          {:find {:path  [:foo :bar]
-;;                  :class :highlight-error }})
-;;    "\n"
-;;    "Another line"
-;;    "\n"
-;;    "Last")))
+;; \033[38;2;255;255;255;1;48;2;0;0;224m
+;; \033[38;5;231;1;48;5;20m
 
-
-
-#_(print-hifi
- {:go []}
- {:non-coll-mapkey-length-limit 30
-  :find                         (vec
-                                 (remove nil?
-                                         [{:path  [:go]
-                                           :class :highlight-error}
-                                          (when false
-                                            {})]))})
-
-(println (with-ascii-decoration 
-           (bling.core/bling
-            [:red "Line 1" [:br]]
-            [:blue "Line 2" [:br]]
-            (bling.hifi/hifi
-             {:foo {:bar [12345
-                          :asfasdfasdfsdfasdfasz
-                          'aafasfasd]}
-              :bang 23
-              :bow 55}
-             {:find {:path  [:foo :bar]
-                     :class :highlight-error}})
-            "\n"
-            "Another line"
-            "\n"
-            "Last")))
-
-(println (point-of-interest
-           (bling.core/bling
-            [:red "Line 1" [:br]]
-            [:blue "Line 2" [:br]]
-            (bling.hifi/hifi
-             {:foo {:bar [12345
-                          :asfasdfasdfsdfasdfasz
-                          'aafasfasd]}
-              :bang 23
-              :bow 55}
-             {:find {:path  [:foo :bar]
-                     :class :highlight-error }})
-            "\n"
-            "Another line"
-            "\n"
-            "Last")))
+#_(println (point-of-interest
+          {:form   (stringified {:a 1
+                                 :b [333 444 555]
+                                 :c "aadfasdfasdfads"
+                                 :d "asdfasdfasdfasdfasdfasdf"}
+                                {
+                                 :printing-fn pprint
+                                ;;  :height      3
+                                ;;  :width       "fu"
+                                 })
+           #_(let [s   (hifi {:a 1
+                              :b [333 444 555]
+                              :c "aadfasdfasdfads"
+                              :d "asdfasdfasdfasdfasdfasdf"} 
+                             {:find {:path [:b 1]}})
+                   loc (highlighted-location s :highlight-error)]
+               (-> s
+                   (with-floating-label {:label-text   "<- Foo"
+                                         :label-offset 5 
+                                         :label-style  {:color :red}
+                                         :line-index   (:line-index loc)})
+                   (with-ascii-underline 
+                     (assoc {:line-index 1}
+                            :text-decoration-color :red)))) 
+           :file   "foo"
+           :line   111
+           :column 33
+           #_(bling.hifi/hifi
+              {:foo {:bar [12345
+                           :asfasdfasdfsdfasdfasz
+                           'aafasfasd]}
+               :bang 23
+               :bow 55}
+              {:find {:path  [:foo :bar]
+                      :class :highlight-error}})}))
 
 #_(bling.explain/explain-malli*
  [:map-of
@@ -150,10 +142,12 @@
 ;;        the printed function call.
 
 
-#_(bling.cycle/variants
+(bling.cycle/variants
  bling.core/point-of-interest
- {:print-desc?    true
-  :print-fn-call? false})
+ {:animate?       true
+  :print-desc?    false
+  :print-fn-call? true
+  :primary        :form})
 
 (def filter-themes
   #{#_{:theme :sideline}
