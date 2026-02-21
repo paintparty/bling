@@ -931,12 +931,13 @@
                :default  3
                :desc     "Controls offset of the floating annotation"}
               :pos-int]]}
-  [s {:keys [line-index label-text label-style offset]}]
-  (if-let [text (when (pos-int? line-index) (when-> label-text string?))]
+  [s {:keys [line-index label-text label-style label-offset]}]
+  (if-let [text (when (nat-int? line-index)
+                  (when-> label-text string?))]
     (let [lines            (-> s string/split-lines vec)
           line             (nth lines line-index)
           style            (or (when-> label-style map?) {})
-          offset           (or (when-> offset pos-int?) 3)
+          offset           (or (when-> label-offset pos-int?) 3)
           labeled          (str line
                                 (bling (util/char-repeat offset " ")
                                        [style text]))
@@ -946,9 +947,8 @@
     s))
 
 (defn- underline-width+offset 
-  [{:keys [line-index offset width]} lines line]
-  (let [line-count (ansi/strlen-minus-ansi-sgr
-                    (nth lines line-index))
+  [{:keys [offset width]} line]
+  (let [line-count (ansi/strlen-minus-ansi-sgr line)
         offset     (or (some-> offset 
                                (when-> pos-int?)
                                (when-> #(< % line-count)))
@@ -1013,30 +1013,35 @@
            text-decoration-style 
            text-decoration-color 
            text-decoration-weight]
-    :or   {text-decoration-style :wavy}
+    :or   {text-decoration-style :wavy
+           line-index ::unsupplied}
     :as   opts}]
-  (if (and (number? line-index)
-           (or (pos-int? line-index)
-               (zero? line-index)))
-    (let [lines (-> s string/split-lines vec)]
-      (if-not (> line-index (count lines))
-        (let [line                 (nth lines line-index) 
-              [width offset]       (underline-width+offset opts lines line)
-              uc                   (or (some-> underline-char
-                                               (when-> string?)
-                                               (when-> #(= (count %) 1)))
-                                       (get text-decoration-styles
-                                            text-decoration-style))
-              line-with-underline (bling [{:color       text-decoration-color
-                                           :font-weight text-decoration-weight}
-                                          (str (util/char-repeat offset " ")
-                                               (util/char-repeat width uc))])
-              with-underline      (fireworks.util/insert-at 
-                                   lines
-                                   (inc line-index)
-                                   line-with-underline)
-              with-underline-str  (string/join "\n" with-underline)]
-          with-underline-str)
+  (if-let [lines (-> s (when-> string?) string/split-lines vec)]
+    (let [line-count (count lines)
+          line-index (if (and (= line-index ::unsupplied)
+                              (= line-count 1))
+                       0
+                       line-index)]
+      (if (nat-int? line-index)
+        (if-not (> line-index line-count)
+          (let [line                (nth lines line-index) 
+                [width offset]      (underline-width+offset opts line)
+                uc                  (or (some-> underline-char
+                                                (when-> string?)
+                                                (when-> #(= (count %) 1)))
+                                        (get text-decoration-styles
+                                             text-decoration-style))
+                line-with-underline (bling [{:color       text-decoration-color
+                                             :font-weight text-decoration-weight}
+                                            (str (util/char-repeat offset " ")
+                                                 (util/char-repeat width uc))])
+                with-underline      (fireworks.util/insert-at 
+                                     lines
+                                     (inc line-index)
+                                     line-with-underline)
+                with-underline-str  (string/join "\n" with-underline)]
+            with-underline-str)
+          s)
         s))
     s))
 
