@@ -75,7 +75,7 @@
 ;; \033[38;2;255;255;255;1;48;2;0;0;224m
 ;; \033[38;5;231;1;48;5;20m
 
-#_(println (point-of-interest
+(println (point-of-interest
           {:form   (stringified {:a 1
                                  :b [333 444 555]
                                  :c "aadfasdfasdfads"
@@ -142,7 +142,7 @@
 ;;        the printed function call.
 
 
-(bling.cycle/variants
+#_(bling.cycle/variants
  bling.core/point-of-interest
  {:animate?       true
   :print-desc?    false
