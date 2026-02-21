@@ -140,3 +140,7 @@
 
 (defn string-of-1? [x]
   (and (string? x) (= 1 (count x))))
+
+(defn insert-at [vc i elem]
+  (into (conj (subvec vc 0 i) elem)
+        (subvec vc i)))
