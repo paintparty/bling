@@ -570,10 +570,7 @@
                           #(and (not= :fireworks.highlight/map-key %)
                                 (not (int? %))))
               {:path  (conj path :fireworks.highlight/map-key)
-               :class :highlight-info})
-            (when narrowed-map
-              {:pred  #(= % (first path))
-               :class :info-error})])))
+               :class :highlight-info})])))
 
 (defn- poi-diagram 
   [form-with-label
@@ -599,7 +596,7 @@
   (let [path                (problem-path {:missing-keys? missing-keys?
                                            :problem       problem
                                            :v             v})
-        narrowed-map        (when (and select-keys-in-problem-path?
+        narrowed-map        (when (and true #_(? select-keys-in-problem-path?)
                                        (seq path)
                                        (not-any? coll? path)
                                        (map? v))
@@ -628,7 +625,10 @@
         ;; Make a summary to print above the problem form with highlighting,
         ;; but only if the problem is of a certain profile
         problem-summary     (cond
-                              (:bad-map-entry-value? (!? problem))
+                              (= :missing-keys (:error-group-type problem))
+                              (bling "Missing keys" )
+
+                              (:bad-map-entry-value? (? problem))
                               (let [k (-> problem :in last)]
                                 (bling [:p "Invalid entry for "
                                         [:bold (hifi k
@@ -643,7 +643,6 @@
 
 (defn- printed*
   [{:keys [highlighted-problem-section-label
-           highlight-missing-keys? 
            preamble-section-label 
            preamble-section-body 
            omit-sections 
@@ -692,9 +691,8 @@
                  "\n"
                  (mapv
                   #(hifi+ %
-                          (when highlight-missing-keys?
-                            {:find {:pred  (fn [val] (= val %))
-                                    :class :info-error}}))
+                          {:find {:pred  (fn [val] (= val %))
+                                  :class :info}})
                   (:missing-keys problem)))
                 section-opts))
 
@@ -848,6 +846,7 @@
      :options [:map
                {:name 'options
                 :desc "If three arguments are provided, the third should be a map with the following optional keys"}
+
                [:function-name
                 {:optional true
                  :desc     ["The name of the function that can be used to construct the source location."]}
@@ -887,6 +886,11 @@
                 {:optional true
                  :desc     ["A map of options for the underlying call to bling.core/callout."]}
                 :map]
+
+               [:hifi-opts
+                {:optional true
+                 :desc     ["The options map for bling.hifi/hifi"]}
+                :map]
                
                [:file
                 {:optional true
@@ -901,7 +905,34 @@
                [:column
                 {:optional true
                  :desc     ["The column number of the call site"]}
-                :int]]}
+                :int]
+               
+               [:highlighted-problem-section-label
+                {:optional true
+                 :desc     ["Label for the highlighted problem diagram"]}
+                :string]
+
+               [:section-body-indentation
+                {:optional true
+                 :desc     ["Number of spaces to indent the body of each section"]}
+                :pos-int]
+
+               [:preamble-section-label
+                {:optional true
+                 :desc     ["The label of the preamble section"]}
+                :string]
+
+               [:preamble-section-body
+                {:optional true
+                 :desc     ["The body of the preamble section"]}
+                :string]
+
+               [:success-message
+                {:optional true
+                 :desc     ["The message to display if value passes schema validation"]}
+                :string]
+
+               ]}
     ([schema v]
      (explain-malli* schema v nil))
     ([schema
@@ -909,7 +940,6 @@
       {:keys [highlighted-problem-section-label
               select-keys-in-problem-path?
               section-body-indentation
-              highlight-missing-keys?
               preamble-section-label
               preamble-section-body
               display-explain-data?
