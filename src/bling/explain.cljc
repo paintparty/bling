@@ -389,6 +389,7 @@
     (when (and ns-str name-str)
       (symbol (str ns-str "/" name-str)))))
 
+
 (defn- parent-schema-form*
   [parent-schema-form]
   (let [display-schema?
@@ -413,6 +414,7 @@
    [display-schema?
     parent-schema-form]))
 
+
 (defn- narrowed-problem-group
   [schema 
    bad-value 
@@ -426,13 +428,13 @@
         [parent-schema-form
          parent-schema 
          junction-type]        (parent-schema* schema grouped-errors)
-        [parent-schema-form
-         display-schema?]      (parent-schema-form* parent-schema-form)
+        [display-schema?
+         parent-schema-form]   (parent-schema-form* parent-schema-form)
         error-type             junction-type
         errors                 (mapv error-summary grouped-errors)
         reduction-path         (reduction-path value 
-                                                in-path-for-group 
-                                                bad-value)
+                                               in-path-for-group 
+                                               bad-value)
         [bad-map-entry-key?
          bad-map-entry-value?] (map-entry-status reduction-path value)]
     (merge {:value                   bad-value
@@ -453,8 +455,8 @@
             :composite-error-message (composite-error-message error-type errors)}
            (some->> display-schema? (hash-map ::display-schema?))
            (some->> junction-type (hash-map :junction-type))
-           (when bad-map-entry-key? {:bad-map-entry-key? bad-map-entry-key?})
-           (when bad-map-entry-value? {:bad-map-entry-value? bad-map-entry-value?})
+           (some->> bad-map-entry-key? (hash-map :bad-map-entry-key?))
+           (some->> bad-map-entry-value? (hash-map :bad-map-entry-value?))
            (when (and (not junction-type) 
                       (= 1 (count grouped-errors)))
              (value-schema-details grouped-errors)))))
@@ -716,7 +718,7 @@
 
      (when must-satisfy?
        (section "Must satisfy:"
-                (or (when-not (-> problem ::display-schema?)
+                (or (when-not (? (-> problem ::display-schema?))
                       (indented-string indentation
                                        (:composite-error-message problem)))
                     (if-let [junction-form 
@@ -1047,8 +1049,7 @@
                         :padding-top         callout-padding-block
                         :padding-bottom      callout-padding-block}
                        callout-opts))
-            (apply str (flatten printed-with-numbering)))
-           (:errors malli-ex-data))
+            (apply str (flatten printed-with-numbering))))
 
          ;; If validation was successful, and user supplied a success message
          (when-not (nil? success-message)
