@@ -1089,7 +1089,7 @@
        (take (or height (count $)) $)
        (mapv
         #(if width
-           (if (< width (count %))
+           (if (< (or width 0) (or (count %) 0))
              (-> (subs % 0 width) 
                  (str "..."))
              %)
