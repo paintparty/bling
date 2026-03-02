@@ -1656,7 +1656,7 @@
                :top
                :left
                border-top-char))]
-           (when header-padding-left?
+           (when (and (not (nil? label)) header-padding-left?)
              (bling [border-style-map
                      (util/sjr (dec header-padding-left)
                                border-top-char)]))
