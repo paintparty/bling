@@ -2317,7 +2317,7 @@
           first
           (shortened-label label-max-length)))
 
-(defn- supplied-coll-label-shortened [m label-length-limit]
+(defn- supplied-coll-label-shortened [m label-print-length]
   (some-> m
           :label
           (maybe-> coll?)
