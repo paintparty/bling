@@ -628,7 +628,7 @@
                               (= :missing-keys (:error-group-type problem))
                               (bling "Missing keys" )
 
-                              (:bad-map-entry-value? (? problem))
+                              (:bad-map-entry-value? problem)
                               (let [k (-> problem :in last)]
                                 (bling [:p "Invalid entry for "
                                         [:bold (hifi k
@@ -723,7 +723,7 @@
                              (when (contains? problem :junction-type)
                                (:parent-schema/form problem))]
                       (hifi+ junction-form {:print-level           3
-                                            :non-coll-length-limit 44})
+                                            :scalar-print-length 44})
                       (hifi+ (get-satisfaction (!? problem)))))
                 section-opts))
      
@@ -976,7 +976,7 @@
               (hifi+ v nil))
              ([v opts]
               (hifi v 
-                    (merge {:non-coll-mapkey-length-limit 30
+                    (merge {:scalar-mapkey-print-length 30
                             :margin-inline-start          indentation
                             :print-level                  12}
                            opts
@@ -1079,7 +1079,9 @@
                         :padding-top         callout-padding-block
                         :padding-bottom      callout-padding-block}
                        callout-opts))
-            (apply str (flatten printed-with-numbering))))
+            (apply str (flatten printed-with-numbering)))
+
+           problems)
 
          ;; If validation was successful, and user supplied a success message
          (when-not (nil? success-message)

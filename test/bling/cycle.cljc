@@ -599,7 +599,7 @@
    \"adsfasdfasfadsf\" 
    \"asfdsadfasdfasfd\"
    3 4 4 5 6 6 6 9 9 9 )"
-  :hifi-options {:coll-limit 10
+  :hifi-options {:print-length 10
                  :find       {:path  [4]
                               :class :highlight-error}}}))
 
@@ -614,7 +614,7 @@
                      "adsfasdfasfadsf" 
                      "asfdsadfasdfasfd"
                      3 4 4 5 6 6 6 9 9 9 )
-   :hifi-options {:coll-limit 10
+   :hifi-options {:print-length 10
                   :find {:path  [4]
                          :class :highlight-error}}}))
 
