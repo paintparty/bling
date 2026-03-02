@@ -2321,7 +2321,7 @@
   (some-> m
           :label
           (maybe-> coll?)
-          (util/shortened label-length-limit)))
+          (util/shortened label-print-length)))
 
 (defn- resolve-label
   [{:keys [label]
