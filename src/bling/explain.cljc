@@ -723,7 +723,7 @@
                              (when (contains? problem :junction-type)
                                (:parent-schema/form problem))]
                       (hifi+ junction-form {:print-level           3
-                                            :scalar-print-length 44})
+                                            :scalar-max-length 44})
                       (hifi+ (get-satisfaction (!? problem)))))
                 section-opts))
      
@@ -976,7 +976,7 @@
               (hifi+ v nil))
              ([v opts]
               (hifi v 
-                    (merge {:scalar-mapkey-print-length 30
+                    (merge {:scalar-mapkey-max-length 30
                             :margin-inline-start          indentation
                             :print-level                  12}
                            opts

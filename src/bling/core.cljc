@@ -2317,11 +2317,11 @@
           first
           (shortened-label label-max-length)))
 
-(defn- supplied-coll-label-shortened [m label-print-length]
+(defn- supplied-coll-label-shortened [m label-max-length]
   (some-> m
           :label
           (maybe-> coll?)
-          (util/shortened label-print-length)))
+          (util/shortened label-max-length)))
 
 (defn- resolve-label
   [{:keys [label]
