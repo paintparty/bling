@@ -89,9 +89,11 @@
 
 #_(require 'bling.hifi)
 
-#_(callout {:type  :info
-          :theme :sideline
-          :label-theme :marquee}
+(callout {:type  :info
+          ;; :theme :sideline
+          :theme :sandwich
+          ;; :label-theme :marquee
+          }
          (bling.core/bling
           "Example of callout body with Bling styling aasfasdf."
           "\n\n"
@@ -338,7 +340,7 @@
 ;;------------------------------------------------------------------------------
 
 (defn visual-test-suite []
-  (random-callouts)
+  #_(random-callouts)
   (bling-basics))
 
 #_(visual-test-suite)

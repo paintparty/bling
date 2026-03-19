@@ -2385,7 +2385,9 @@
     ; :"┌" and "└" (or similar) chars are use for the top-left and bottom left "corners" on the header and footer
     border-notches?      (if (true? (m :border-notches?))
                            true
-                           (if (= theme "sideline") true false))
+                           (if (contains? #{"sideline" "sandwich"} theme)
+                             true
+                             false))
 
     sideline-theme?    (contains? #{"sideline"} theme)
     label-theme        (default-opt m

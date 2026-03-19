@@ -482,125 +482,136 @@
                                      (str "Example callout, with :colorway of " colorway)
                                      (if callout-type
                                        (str "Example callout, with :type of " callout-type)
-                                       (str "Example callout," " default"))))]
+                                       (str "Example callout," " default")))
+                                   "\n"
+                                   "Theme is " theme
+                                   "\n"
+                                   "Label theme is " (:label-theme opts)
+                                   "\n"
+                                   "Label is \"" label "\""
+                                   )]
                  (callout merged-opts callout-body)))))]
 
      (print-fake-comment  ";; callout examples, {:label-theme :simple}")
 
-     (doseq [theme [:sideline :sideline-bold :gutter :simple]]
+     (doseq [theme [:sandwich]]
        (print-callout-examples theme {}))
 
-     (doseq [theme [:gutter]]
-       (print-callout-examples theme {}))
+     (doseq [theme [:sandwich]]
+       (print-callout-examples theme {:border-notches? false}))
 
-     (doseq [theme [:sideline]]
-       (print-callout-examples theme {:label-theme :marquee}))
+    ;;  (doseq [theme [:sideline :gutter :boxed]]
+    ;;    (print-callout-examples theme {}))
 
-     (doseq [theme [:sideline]]
-       (print-callout-examples theme {:label-theme :marquee
-                                      :side-label  "foo.core:11:24"})))
+    ;;  (doseq [theme [:sideline]]
+    ;;    (print-callout-examples theme {:label-theme :marquee}))
+
+    ;;  (doseq [theme [:sideline]]
+    ;;    (print-callout-examples theme {:label-theme :marquee
+    ;;                                   :side-label  "foo.core:11:24"}))
+     )
 
 
    ;; TODO make custom error and warning examples ------------------------------
-   (print-fake-comment
-    ";; Custom error and warning templates with a point-of-interest "
-    ";; diagram. Checkout Templates section in readme for more details.")
+   #_(do (print-fake-comment
+        ";; Custom error and warning templates with a point-of-interest "
+        ";; diagram. Checkout Templates section in readme for more details.")
 
-   (doseq [callout-opts
-           [{}
-            {:label-theme :marquee}
-            {:theme :sideline-bold}
-            {:label-theme :marquee
-             :theme       :sideline-bold}
-            {:theme :gutter}]]
-     ;;  :label "WARNING: Invalid arg value"
-     (doseq [t [:warning :error]]
-       (example-custom-callout
-        {:point-of-interest-opts (assoc poi-opts :type t)
-         :callout-opts           (assoc callout-opts :type t)})))
+       (doseq [callout-opts
+               [{}
+                {:label-theme :marquee}
+                {:theme :sideline-bold}
+                {:label-theme :marquee
+                 :theme       :sideline-bold}
+                {:theme :gutter}]]
+         ;;  :label "WARNING: Invalid arg value"
+         (doseq [t [:warning :error]]
+           (example-custom-callout
+            {:point-of-interest-opts (assoc poi-opts :type t)
+             :callout-opts           (assoc callout-opts :type t)})))
 
-   (callout
-    {:type         :warning
-     :theme        :gutter
-     :padding-left 4}
-    "Example callout, with :type of :warning, padding-left of 4.")
+       (callout
+        {:type         :warning
+         :theme        :gutter
+         :padding-left 4}
+        "Example callout, with :type of :warning, padding-left of 4.")
 
-   (callout
-    {:type         :warning
-     :theme        :boxed
-     :padding-left 3}
-    "Example callout, with :type of :warning, padding-left of 3.")
+       (callout
+        {:type         :warning
+         :theme        :boxed
+         :padding-left 3}
+        "Example callout, with :type of :warning, padding-left of 3.")
 
-   (callout
-    {:type         :info
-     :theme        :boxed
-     :max-width    110
-     :padding-left 3}
-    "Example callout, :theme of :boxed, :type of :warning, padding-left of 3.")
+       (callout
+        {:type         :info
+         :theme        :boxed
+         :max-width    110
+         :padding-left 3}
+        "Example callout, :theme of :boxed, :type of :warning, padding-left of 3.")
 
-   (callout
-    {:type         :warning
-     :theme        :boxed
-     :width        60
-     :padding-left 3}
-    "Example callout, :theme of :boxed, :type of :warning, padding-left of 3.")
+       (callout
+        {:type         :warning
+         :theme        :boxed
+         :width        60
+         :padding-left 3}
+        "Example callout, :theme of :boxed, :type of :warning, padding-left of 3.")
 
-   (callout
-    {:type         :warning
-     :label        "My Label"
-     :side-label   "My Side Label"
-     :theme        :boxed
-     :width        60
-     :padding-left 3}
-    "Example callout, :theme of :boxed, fixed width of 80 :type of :warning, padding-left of 3.")
+       (callout
+        {:type         :warning
+         :label        "My Label"
+         :side-label   "My Side Label"
+         :theme        :boxed
+         :width        60
+         :padding-left 3}
+        "Example callout, :theme of :boxed, fixed width of 80 :type of :warning, padding-left of 3.")
 
-   (callout
-    {:colorway     :neutral
-     :label        (bling [:bold.blue "My Label"])
-     :side-label   (bling [:bold.purple "My Side Label"])
-     :theme        :boxed
-     :width        50
-     :padding-left 3}
-    "Example callout, :theme of :boxed, :type of :warning, padding-left of 3.")
+       (callout
+        {:colorway     :neutral
+         :label        (bling [:bold.blue "My Label"])
+         :side-label   (bling [:bold.purple "My Side Label"])
+         :theme        :boxed
+         :width        50
+         :padding-left 3}
+        "Example callout, :theme of :boxed, :type of :warning, padding-left of 3.")
 
-   (callout
-    {:colorway     :neutral
-     :box-drawing-style :bold
-     :label        (bling [:bold.blue "My Label"])
-     :side-label   (bling [:bold.purple "My Side Label"])
-     :theme        :boxed
-     :width        60
-     :padding-left 3}
-    "Example callout, :theme of :boxed, :type of :warning, padding-left of 3.")
+       (callout
+        {:colorway     :neutral
+         :box-drawing-style :bold
+         :label        (bling [:bold.blue "My Label"])
+         :side-label   (bling [:bold.purple "My Side Label"])
+         :theme        :boxed
+         :width        60
+         :padding-left 3}
+        "Example callout, :theme of :boxed, :type of :warning, padding-left of 3.")
 
-   (callout
-    {:colorway          :neutral
-     :box-drawing-style :double
-     :label             (bling [:bold.blue "My Label"])
-     :side-label        (bling [:bold.purple "My Side Label"])
-     :theme             :boxed
-     :width             60
-     :padding-left      3}
-    "Example callout, :theme of :boxed, :type of :warning, padding-left of 3.")
+       (callout
+        {:colorway          :neutral
+         :box-drawing-style :double
+         :label             (bling [:bold.blue "My Label"])
+         :side-label        (bling [:bold.purple "My Side Label"])
+         :theme             :boxed
+         :width             60
+         :padding-left      3}
+        "Example callout, :theme of :boxed, :type of :warning, padding-left of 3.")
 
-   (callout
-    {:colorway          :neutral
-     :box-drawing-style :double
-     :label             (bling [:bold.blue "My Label"])
-     :side-label        (bling [:bold.purple "My Side Label"])
-     :theme             :boxed
-     :width             60
-     :padding-left      3}
-    "With some code inside\n\n"
-    (hifi {:a         "foo"
-           :b         2
-           :c         3
-           :aasdfsafs {:a        "foo"
-                       :b        2
-                       :c        3
-                       :adfasdfs "asdfsadsadf"
-                       :e        "asdfsadasfa"}
-           :e         "asdfsadf"}))))
+       (callout
+        {:colorway          :neutral
+         :box-drawing-style :double
+         :label             (bling [:bold.blue "My Label"])
+         :side-label        (bling [:bold.purple "My Side Label"])
+         :theme             :boxed
+         :width             60
+         :padding-left      3}
+        "With some code inside\n\n"
+        (hifi {:a         "foo"
+               :b         2
+               :c         3
+               :aasdfsafs {:a        "foo"
+                           :b        2
+                           :c        3
+                           :adfasdfs "asdfsadsadf"
+                           :e        "asdfsadasfa"}
+               :e         "asdfsadf"})))))
 
 
 (defn example-custom-callout
