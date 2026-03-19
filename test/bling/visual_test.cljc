@@ -29,7 +29,7 @@
    [fireworks.state]
    [fireworks.sample :refer [array-map-of-everything-cljc]]
    [clojure.pprint :refer [pprint]]
-   #_[bling.sample :as sample]
+   [bling.sample :as sample]
    [bling.util :as util :refer [maybe->> maybe-> when-> when->>]]
    [bling.defs]
    [bling.explain]
@@ -224,27 +224,6 @@
               {:find {:path  [:foo :bar]
                       :class :highlight-error}})}))
 
-#_(bling.explain/explain-malli*
- [:map-of
-  [:or :keyword :int]
-  [:or :string :keyword]]
- {"wtf"   :key
-  1     "hiasfdasdfasdfasdfasdfas"
-  :bars "hiasfdasdfasdfasdfasdfas"}
- (merge {:display-schema? false
-         :form            {:foo :key
-                           :bar "hi"}
-         :spacing         :compact
-         :callout-opts    (assoc {} 
-                                 :label-theme
-                                 :marquee)}
-        {}))
-
-#_(print-bling
- [:italic 
-  "Result of malli.core/explain, "
-  " entry:"])
-
 
 
 ;;------------------------------------------------------------------------------
@@ -356,7 +335,7 @@
 
 (defn visual-test-suite []
   #_(random-callouts)
-  (bling-basics))
+  #_(bling-basics))
 
 #_(visual-test-suite)
 
@@ -392,4 +371,20 @@
 
 
 
+
+#_(bling.explain/explain-malli*
+ [:map-of
+  [:or :keyword :int]
+  [:or :string :keyword]]
+ {"wtf"   :key
+  1     "hiasfdasdfasdfasdfasdfas"
+  :bars "hiasfdasdfasdfasdfasdfas"}
+ (merge {:display-schema? false
+         :form            {:foo :key
+                           :bar "hi"}
+         :spacing         :compact
+         :callout-opts    (assoc {} 
+                                 :label-theme
+                                 :marquee)}
+        {}))
 

@@ -34,7 +34,7 @@
                                                     ;; "src/bling/banner.cljc"
                                                 "src/bling/friends.cljc"
                                                             ;; 222
-                                                    ;; "src/bling/explain.cljc"
+                                                 "src/bling/explain.cljc"
                                                 
                                                 ]
                                       ;; :exclude              [bling.friends/friends]
