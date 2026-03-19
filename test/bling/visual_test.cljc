@@ -36,7 +36,7 @@
    [bling.fonts.isometric-1 :refer [isometric-1]]
    [bling.fontlib]
    [bling.banner]
-   [bling.hifi :refer [print-hifi hifi chopped]]
+  ;;  [bling.hifi :refer [print-hifi hifi chopped]]
    [malli.core :as m]
    [clojure.string :as string]
    ;; [taoensso.tufte :as tufte :refer [p profile]]
@@ -49,11 +49,107 @@
    [bling.visual-test-impl :refer [random-callouts bling-basics]]
    
    [fireworks.ansi :as ansi]
-   [fireworks.state :as state]))
+   [fireworks.state :as state]
+   [bling.browser :as browser]))
 
-;; (tufte/add-handler! :my-console-handler (tufte/handler:console))
 
-(!? (fireworks.defs/bling-sgr-color :dark-red))
+#_(let [js-console-array
+      (? :+ (-> (point-of-interest
+                 {:margin-top             1
+                  :header-file-info-style {:font-style :italic}
+                  :form                   (let [s (bling.hifi/hifi '(+ 1 true))]
+                                            (-> s
+                                                (with-ascii-underline 
+                                                  (assoc {:line-index 0}
+                                                         :text-decoration-color
+                                                         :red))))
+                  :file                   "foo"
+                  :line                   111
+                  :column                 33})
+                browser/ansi-sgr-string->browser-dev-console-array))
+
+      ;; [formatted & styles] 
+      ;; js-console-array
+
+      ]
+  ;; (? (->> formatted (re-seq #"%") count))
+  )
+
+
+#_(bling.core/print-bling
+ "Example of callout body with Bling styling."
+ "\n\n"
+ "Line with " [:bold.purple "bold purple"] " and " [:italic.blue "italic blue"] " text"
+ "\n\n"
+ [:p "Lines in a " [:blue ":p"] " hiccup tag will insert a trailing\n"
+  [:olive "\"\\n\\n\""] " for spacing between paragraphs."]
+ [:p
+  "Example hyperlink -> "
+  [{:href "https://github.com/paintparty/bling"} "Official Bling docs"]])
+
+#_(require 'bling.hifi)
+
+#_(callout {:type  :info
+          :theme :sideline
+          :label-theme :marquee}
+         (bling.core/bling
+          "Example of callout body with Bling styling aasfasdf."
+          "\n\n"
+          "Line with " [:bold.purple "bold purple"] " and " [:italic.blue "italic blue"] " text"
+          "\n\n"
+          [:p "Lines in a " [:blue ":p"] " hiccup tag will insert a trailing " [:olive "\"\\n\\n\""] ]
+          [:p "Example hyperlink -> " [{:href "https://github.com/paintparty/bling"} "Official Bling docs"]]))
+
+#_(bling.core/callout {:label           "duude"
+                    ;;  :type            :warning
+                    :theme           :sandwich
+                    ;;  :theme           :sideline
+                    ;;  :theme           :gutter
+                     :label-theme     :marquee
+                    ;;  :label-theme     :minimal
+                     :border-notches? true
+                     :border-shape    :round
+                     :side-label      "myreallylongadfsd.ns.core:44:2"
+                     :width           50}
+                    "Callout body"
+                    (point-of-interest
+          {:margin-top 1
+           :header-file-info-style {:font-style :italic}
+           :form (let [s (bling.hifi/hifi '(+ 1 true))]
+                   (-> s
+                       (with-ascii-underline 
+                         (assoc {:line-index 0}
+                                :text-decoration-color
+                                :red))))
+
+           #_(let [s   (hifi {:a 1
+                              :b [333 444 555]
+                              :c "aadfasdfasdfads"
+                              :d "asdfasdfasdfasdfasdfasdf"} 
+                             {:find {:path [:b 1]}})
+                   loc (highlighted-location s :highlight-error)]
+               (-> s
+                   (with-floating-label {:label-text   "<- Foo"
+                                         :label-offset 5 
+                                         :label-style  {:color :red}
+                                         :line-index   (:line-index loc)})
+                   (with-ascii-underline 
+                     (assoc {:line-index 1}
+                            :text-decoration-color :red)))) 
+           :file   "foo"
+           :line   111
+           :column 33
+           #_(bling.hifi/hifi
+              {:foo {:bar [12345
+                           :asfasdfasdfsdfasdfasz
+                           'aafasfasd]}
+               :bang 23
+               :bow 55}
+              {:find {:path  [:foo :bar]
+                      :class :highlight-error}})})
+                    "More information can go here.")
+
+
 
 #_(println
  (let [s   (hifi {:a 1
@@ -75,7 +171,7 @@
 ;; \033[38;2;255;255;255;1;48;2;0;0;224m
 ;; \033[38;5;231;1;48;5;20m
 
-(println (point-of-interest
+#_(println (point-of-interest
           {:form   (stringified {:a 1
                                  :b [333 444 555]
                                  :c "aadfasdfasdfads"
