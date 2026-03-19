@@ -1,3 +1,10 @@
+;; TODO release 
+
+;; deploy pages site
+
+;; TODO - fix hyperlink in boxed issue
+
+;; analytics?
 
 ;; Namespace for visual testing and sandbox dev during development
 
@@ -89,10 +96,16 @@
 
 #_(require 'bling.hifi)
 
-(callout {:type  :info
+#_(callout {
+          :type  :info
+          :border-notches? false
+          :border-shape :round
+          ;; :theme :boxed
           ;; :theme :sideline
-          :theme :sandwich
-          ;; :label-theme :marquee
+          ;; :theme :sandwich
+          ;;  :theme :gutter
+          :label-theme :marquee
+
           }
          (bling.core/bling
           "Example of callout body with Bling styling aasfasdf."
@@ -100,7 +113,9 @@
           "Line with " [:bold.purple "bold purple"] " and " [:italic.blue "italic blue"] " text"
           "\n\n"
           [:p "Lines in a " [:blue ":p"] " hiccup tag will insert a trailing " [:olive "\"\\n\\n\""] ]
-          [:p "Example hyperlink -> " [{:href "https://github.com/paintparty/bling"} "Official Bling docs"]]))
+
+          ;; TODO fix this error
+          #_[:p "Example hyperlink -> " [{:href "https://github.com/paintparty/bling"} "Official Bling docs"]]))
 
 #_(bling.core/callout {:label           "duude"
                     ;;  :type            :warning
@@ -274,7 +289,7 @@
 
 (def padding-frame-rate 75)
 
-#_(do
+(do
     ;; Test with :label-theme :marquee
 
     #_(bling.cycle/callout-option-sequences
@@ -292,7 +307,7 @@
         :filter             filter-options})
 
     ;; Test with :theme :box
-    (bling.cycle/callout-option-sequences
+    #_(bling.cycle/callout-option-sequences
      {:padding-frame-rate 75
       :filter-themes      #{{:theme :boxed}}
       :filter             filter-options}))

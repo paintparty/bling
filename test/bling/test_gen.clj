@@ -1,3 +1,5 @@
+;; TODO make generated tests print output for "expected" and "actual"
+
 (ns bling.test-gen
   (:require
    [fireworks.core :refer [? !? ?> !?> pprint]] ;; <-just for debugging
@@ -5,7 +7,7 @@
    [bling.sample :as sample :refer [callout+]]
    [clojure.string :as string]))
 
-(def visual-mode? #_true false)
+(def visual-mode? true #_false)
 
 (def theme "Alabaster Light")
 
@@ -53,7 +55,7 @@
                            :else
                            ~v)})
        (when visual-mode?
-         (? (quote ~sym) {:print-with pprint} ~v)))))
+         (? (quote ~sym) {:print-with println} ~v)))))
 
 
 (defn deftests-str 
@@ -133,6 +135,14 @@
         :append false))
 
 
+;; (deftest+ callout-info
+;;   (? {:print-with println}
+;;      (callout+ {:data?               true
+;;                 :print-example-call? true 
+;;                 :type                :info})))
+;; (deftests-str)
+;; (? :pp @tests)
+
 ;; UNCOMMENT TO GENERATE TESTS. Set write-tests? to true
 #_(do (deftest+ ^:pre-gen all-colors
       (vec (sample/all-the-colors*)))
@@ -157,17 +167,17 @@
     (deftest+ callout-error (callout+ {:data? true :print-example-call? false :type :error}))
     (deftest+ callout-positive-label (callout+ {:data? true :print-example-call? false :colorway :positive :label "SUCCESS!"}))
 
-    (deftest+ sideline-bold-callout-info (callout+ {:theme :sideline-bold :data? true :print-example-call? false :type :info}))
-    (deftest+ sideline-bold-callout-info-label (callout+ {:theme :sideline-bold :data? true :print-example-call? false :type  :info :label "My custom label"}))
-    (deftest+ sideline-bold-callout-warning (callout+ {:theme :sideline-bold :data? true :print-example-call? false :type :warning}))
-    (deftest+ sideline-bold-callout-error (callout+ {:theme :sideline-bold :data? true :print-example-call? false :type :error}))
-    (deftest+ sideline-bold-callout-positive-label (callout+ {:theme :sideline-bold :data? true :print-example-call? false :colorway :positive :label "SUCCESS!"}))
+    (deftest+ sideline-callout-info (callout+ {:theme :sideline :data? true :print-example-call? false :type :info}))
+    (deftest+ sideline-callout-info-label (callout+ {:theme :sideline :data? true :print-example-call? false :type  :info :label "My custom label"}))
+    (deftest+ sideline-callout-warning (callout+ {:theme :sideline :data? true :print-example-call? false :type :warning}))
+    (deftest+ sideline-callout-error (callout+ {:theme :sideline :data? true :print-example-call? false :type :error}))
+    (deftest+ sideline-callout-positive-label (callout+ {:theme :sideline :data? true :print-example-call? false :colorway :positive :label "SUCCESS!"}))
 
-    (deftest+ marquee-sideline-bold-callout-info (callout+ {:label-theme :marquee :theme :sideline-bold :data? true :print-example-call? false :type :info}))
-    (deftest+ marquee-sideline-bold-callout-info-label (callout+ {:label-theme :marquee :theme :sideline-bold :data? true :print-example-call? false :type  :info :label "My custom label"}))
-    (deftest+ marquee-sideline-bold-callout-warning (callout+ {:label-theme :marquee :theme :sideline-bold :data? true :print-example-call? false :type :warning}))
-    (deftest+ marquee-sideline-bold-callout-error (callout+ {:label-theme :marquee :theme :sideline-bold :data? true :print-example-call? false :type :error}))
-    (deftest+ marquee-sideline-bold-callout-positive-label (callout+ {:label-theme :marquee :theme :sideline-bold :data? true :print-example-call? false :colorway :positive :label "SUCCESS!"}))
+    (deftest+ marquee-sideline-callout-info (callout+ {:label-theme :marquee :theme :sideline :data? true :print-example-call? false :type :info}))
+    (deftest+ marquee-sideline-callout-info-label (callout+ {:label-theme :marquee :theme :sideline :data? true :print-example-call? false :type  :info :label "My custom label"}))
+    (deftest+ marquee-sideline-callout-warning (callout+ {:label-theme :marquee :theme :sideline :data? true :print-example-call? false :type :warning}))
+    (deftest+ marquee-sideline-callout-error (callout+ {:label-theme :marquee :theme :sideline :data? true :print-example-call? false :type :error}))
+    (deftest+ marquee-sideline-callout-positive-label (callout+ {:label-theme :marquee :theme :sideline :data? true :print-example-call? false :colorway :positive :label "SUCCESS!"}))
 
     (deftest+ gutter-callout-info (callout+ {:theme :gutter :data? true :print-example-call? false :type :info}))
     (deftest+ gutter-callout-info-label (callout+ {:theme :gutter :data? true :print-example-call? false :type  :info :label "My custom label"}))
@@ -177,7 +187,7 @@
 
     (deftests-str)
 
-    (def write-tests? false)
+    (def write-tests? true)
 
     (when write-tests? 
       (println "--- Writing new bling.core_test namespace --------------------")

@@ -2383,11 +2383,13 @@
                                       "boxed"}
                                     "sandwich")
     ; :"┌" and "└" (or similar) chars are use for the top-left and bottom left "corners" on the header and footer
-    border-notches?      (if (true? (m :border-notches?))
-                           true
-                           (if (contains? #{"sideline" "sandwich"} theme)
-                             true
-                             false))
+    border-notches?     (cond (= theme "sideline")
+                              true
+                              :else
+                              (if (false? (m :border-notches?))
+                                false
+                                true))
+    
 
     sideline-theme?    (contains? #{"sideline"} theme)
     label-theme        (default-opt m
