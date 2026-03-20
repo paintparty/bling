@@ -963,6 +963,7 @@
                      width)]
     [width offset]))
 
+;; TODO - add safety for index out-of-bounds
 (defn ^:public with-ascii-underline
   {:doc     "If supplied value for `:form` is a multi-line string, and supplied
              value for `:line-index` is an integer less than the number of lines
