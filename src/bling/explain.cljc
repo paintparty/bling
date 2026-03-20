@@ -9,7 +9,7 @@
    [malli.core :as m]
    [malli.util :as mu]
    [malli.error :as me])
-#?(:cljs
+  #?(:cljs
      (:require-macros [bling.explain])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -72,7 +72,6 @@
              :sym 'neg-int?
              :tag "negative integer"}})
 
-
 ;; TOD0 - consider changing this to accept a str instead of n, for perf
 (defn- indented-string [n s]
   (when s
@@ -80,7 +79,6 @@
                  (map #(str (string/join (repeat (or n 0) " "))  %)
                       (string/split (str s)
                                     #"\n")))))
-
 
 (defn- target-key? [problem v]
   (boolean
@@ -91,7 +89,6 @@
              [mek mev]  (when (map? m) (find m (last in)))]
          (and (not= mev (:value problem))
               (= mek (:value problem))))))))
-
 
 (defn- problem-path
   "This creates a path to the problem value within a data structure.
@@ -108,7 +105,6 @@
         (conj (:in problem) :fireworks.highlight/map-key)
         :else
         (:in problem)))
-
 
 (defn- section
   [label
@@ -140,7 +136,6 @@
               (when label section-header-break)
               v]))))
 
-
 (defn- explain-data*
   "Calls `malli.core/form` on all :schema objects, for readability"
   [malli-ex-data]
@@ -153,7 +148,6 @@
               malli-ex-data)]
     ret2))
 
-
 (defn- schema-error-message [schema]
   (some-> schema
           (when-> vector?)
@@ -161,22 +155,19 @@
           (when-> map?)
           :error/message))
 
-
 (defn- enum-schema? [schema]
   (and (vector? schema)
        (< 1 (count schema))
        (= :enum (first schema))))
 
-
 (defn- enum-schema->set [schema]
   (when (enum-schema? schema)
     (->> schema rest (into #{}))))
 
-
 (defn- get-satisfaction
   [problem]
   (let [frm (problem :value-schema/form)]
-    (or 
+    (or
      ;; Turns [:enum :foo :bar :baz] => #{:foo :bar :baz}
      (!? (some-> frm enum-schema->set))
 
@@ -197,14 +188,11 @@
 
 ;; Move this into core
 
-
-
 (defn- file-info*
   [{:keys [:file
            :line
            :column
-           :function-name
-           ]}]
+           :function-name]}]
   (when (and line column)
     (symbol (str (if (nil? file) "[unknown file]" file)
                  (when function-name (str "/" function-name))
@@ -212,7 +200,6 @@
                  (bling [:medium-red  line])
                  ":"
                  column))))
-
 
 (defn common-root-path-max [paths]
   (when (seq paths)
@@ -224,7 +211,6 @@
             (if (every? #(= element (nth % i)) paths)
               (recur (inc i))
               (vec (take i (first paths))))))))))
-
 
 (defn- reduction-path*
   [p acc x]
@@ -238,7 +224,6 @@
     :else
     acc))
 
-
 (defn- reduction-path
   [value in-path-for-group bad-value]
   (let [p (atom [])
@@ -249,12 +234,10 @@
               @p))]
     p))
 
-
 (defn error-summary [m]
-  (assoc m 
+  (assoc m
          :error/message (me/error-message m)
          :schema/form   (m/form (:schema m))))
-
 
 ;; you need to check this with the root path thing
 ;; parent schema only makes sense if all problems same path length
@@ -274,15 +257,13 @@
                                    (when-> #{:or :and}))]
     [parent-schema-form parent-schema junction-type]))
 
-
 (defn- callout-ln
   ([s v]
    (callout-ln s v nil))
   ([s v style]
-   (when-not (nil? v) 
+   (when-not (nil? v)
      [:p [:italic (str s ": ")]
       [(or style :blue) v]])))
-
 
 (defn- ancestor-path? [grouped in-path-for-group]
   (let [debug?        false]
@@ -302,7 +283,7 @@
                    ancestor-path?    (boolean (some-> common-root-path*
                                                       (= in-path-for-group)))]
                (when debug?
-                 (callout 
+                 (callout
                   (apply bling
                          (remove
                           nil?
@@ -316,19 +297,17 @@
                ancestor-path?))
           grouped)))
 
-
 (defn- value-schema-details [v]
   (when-let [value-schema (some-> v first :schema)]
     (let [value-schema-form    (m/form value-schema)
           {:keys [fn sym tag]} (get core-preds-by-keyword value-schema-form)]
-      (into {}  
+      (into {}
             (remove (comp nil? val)
-                    {:value-schema      value-schema 
+                    {:value-schema      value-schema
                      :value-schema/form value-schema-form
                      :value-schema/fn   fn
                      :value-schema/sym  sym
                      :value-schema/tag  tag})))))
-
 
 (defn schema-path-siblings [filtered]
   (let [grouped-by-path-count (group-by (fn [[k]] (count k)) filtered)
@@ -338,8 +317,7 @@
             first
             second)))
 
-
-(defn regrouped-errors 
+(defn regrouped-errors
   "This is intended to reduce the number of errors that are reported.
 
    Should only work when:
@@ -350,11 +328,11 @@
   [grouped-errors]
   (let [paths-by-count* (group-by #(-> % :path drop-last vec) grouped-errors)
         grouped-errors  (if (< 1 (count paths-by-count*))
-                          (let [filtered  (reduce-kv (fn [m k v] 
+                          (let [filtered  (reduce-kv (fn [m k v]
                                                        (if (< 1 (count v))
-                                                         (assoc m k v) 
+                                                         (assoc m k v)
                                                          m))
-                                                     {} 
+                                                     {}
                                                      paths-by-count*)]
                             (when (seq filtered)
                               (or (schema-path-siblings filtered)
@@ -366,8 +344,8 @@
   (let [map-entry-el?    (some->> reduction-path
                                   (when->> #(not (empty? %)))
                                   pop
-                                  (reduce (fn [acc [f x]] 
-                                            (f acc x)) 
+                                  (reduce (fn [acc [f x]]
+                                            (f acc x))
                                           value)
                                   map?)]
     [(when map-entry-el? (some-> reduction-path last first (= find)))
@@ -385,10 +363,9 @@
 (defn- fq-schema-name [schema]
   (let [{ns-str   :ns
          name-str :name}
-        (m/properties schema)] 
+        (m/properties schema)]
     (when (and ns-str name-str)
       (symbol (str ns-str "/" name-str)))))
-
 
 (defn- parent-schema-form*
   [parent-schema-form]
@@ -401,39 +378,38 @@
         parent-schema-form
         (if display-schema?
           (if-let [m (some-> parent-schema-form
-                            (when-> vector?)
-                            second
-                            (when-> map?)
-                            (dissoc ::display-schema?))]
+                             (when-> vector?)
+                             second
+                             (when-> map?)
+                             (dissoc ::display-schema?))]
             (if (empty? m)
               (into [(first parent-schema-form)]
                     (subvec parent-schema-form 2))
               (insert-at parent-schema-form 1 m))
             parent-schema-form)
           parent-schema-form)]
-   [display-schema?
-    parent-schema-form]))
-
+    [display-schema?
+     parent-schema-form]))
 
 (defn- narrowed-problem-group
-  [schema 
-   bad-value 
-   in-path-for-group 
-   schema-path-for-group 
+  [schema
+   bad-value
+   in-path-for-group
+   schema-path-for-group
    grouped-errors value]
   (let [grouped-errors         (regrouped-errors grouped-errors)
         common-path            (->> grouped-errors
-                                    (mapv :path) 
+                                    (mapv :path)
                                     common-root-path-max)
         [parent-schema-form
-         parent-schema 
+         parent-schema
          junction-type]        (parent-schema* schema grouped-errors)
         [display-schema?
          parent-schema-form]   (parent-schema-form* parent-schema-form)
         error-type             junction-type
         errors                 (mapv error-summary grouped-errors)
-        reduction-path         (reduction-path value 
-                                               in-path-for-group 
+        reduction-path         (reduction-path value
+                                               in-path-for-group
                                                bad-value)
         [bad-map-entry-key?
          bad-map-entry-value?] (map-entry-status reduction-path value)]
@@ -457,10 +433,9 @@
            (some->> junction-type (hash-map :junction-type))
            (some->> bad-map-entry-key? (hash-map :bad-map-entry-key?))
            (some->> bad-map-entry-value? (hash-map :bad-map-entry-value?))
-           (when (and (not junction-type) 
+           (when (and (not junction-type)
                       (= 1 (count grouped-errors)))
              (value-schema-details grouped-errors)))))
-
 
 (defn- narrow-problems
   [{:keys [value schema errors]
@@ -470,7 +445,7 @@
   (!? errors)
   (let [[missing-key-errors errors]
         (util/partition-by-pred #(-> % :type (= :malli.core/missing-key)) errors)
-        
+
         missing-key-errors-grouped
         (!? (group-by #(-> % :in pop) missing-key-errors))
 
@@ -480,38 +455,37 @@
            (conj vc
                  {:missing-keys     (mapv #(-> % :in last) v)
                   :error-group-type :missing-keys
-                  :in               k 
+                  :in               k
                   :value            (get-in value k)
                   :errors           v}))
          []
          missing-key-errors-grouped)
 
         ;; Erros are grouped if both the erroneous values and location in the schema are the same
-        grouped 
+        grouped
         (group-by #(select-keys % [:in :value]) errors)
 
         ;; Filter out errors that are ancestors of other errors so that we only report directly erroneous results ala m/humanize
-        narrowed-problem-groups* 
+        narrowed-problem-groups*
         (!? (reduce-kv
-            (fn [vc
-                 {in-path-for-group :in
-                  path-for-group    :path
-                  bad-value         :value} 
-                 grouped-errors]
-              (if (ancestor-path? grouped in-path-for-group)
-                vc
-                (conj vc
-                      (narrowed-problem-group schema 
-                                              bad-value
-                                              in-path-for-group
-                                              path-for-group
-                                              grouped-errors
-                                              value))))
-            []
-            grouped))]
+             (fn [vc
+                  {in-path-for-group :in
+                   path-for-group    :path
+                   bad-value         :value}
+                  grouped-errors]
+               (if (ancestor-path? grouped in-path-for-group)
+                 vc
+                 (conj vc
+                       (narrowed-problem-group schema
+                                               bad-value
+                                               in-path-for-group
+                                               path-for-group
+                                               grouped-errors
+                                               value))))
+             []
+             grouped))]
     (into (!? narrowed-missing-key-errors)
           (!? narrowed-problem-groups*))))
-
 
 (defn- prune-schema-for-display
   "Truncates the `:registry` entry. If a schema node has an options map with
@@ -520,23 +494,23 @@
   [malli-schema]
   (walk/prewalk
    (fn [x]
-     (cond 
+     (cond
        (and (vector? x)
             (= (first x) :schema)
             (some-> x
                     second
                     (when-> map?)
                     (when-> #(= 1 (count %)))
-                    (when-> 
+                    (when->
                      #(contains? % :registry))))
        (assoc x 1 {:registry {'... '...}})
-       
+
        (and (vector? x)
             (some-> x
                     second
                     (when-> map?)
-                    
-                    (when-> 
+
+                    (when->
                      #(contains? % :error/message))))
        (if (< 1 (-> x second count))
          (assoc x 1 (-> x
@@ -551,34 +525,33 @@
 (defn- poi-diagram-find-opts [path problem narrowed-map]
   (vec
    (remove nil?
-           [{:path  path 
+           [{:path  path
              :class (let [x (:value problem)]
                       (if (and (coll? x)
                                (< 8 (-> x str count)))
                         :highlight-error
                         :highlight-error
-                        #_:highlight-error-underlined
-                        ))}
+                        #_:highlight-error-underlined))}
 
             ;; If the path ends with something that is not an int, it is likely
             ;; that problem value is mapentry value, and we can hightlight the 
             ;; corrresponding key.
             ;; TODO - make this an configurable option
 
-            (when (some-> path 
-                          last 
+            (when (some-> path
+                          last
                           #(and (not= :fireworks.highlight/map-key %)
                                 (not (int? %))))
               {:path  (conj path :fireworks.highlight/map-key)
                :class :highlight-info})])))
 
-(defn- poi-diagram 
+(defn- poi-diagram
   [form-with-label
    {:keys [file line column]
     :as   opts}]
   (string/replace
    (bling.core/point-of-interest
-    (assoc opts 
+    (assoc opts
            :form                   form-with-label
            :margin-top             0
            :header-file-info-style {:color      :subtle
@@ -587,10 +560,10 @@
    ""))
 
 (defn- highlighted-problem-section-body
-  [{:keys [select-keys-in-problem-path? 
-           missing-keys? 
-           problem 
-           hifi+ 
+  [{:keys [select-keys-in-problem-path?
+           missing-keys?
+           problem
+           hifi+
            v]
     :as opts}]
   (let [path                (problem-path {:missing-keys? missing-keys?
@@ -626,7 +599,7 @@
         ;; but only if the problem is of a certain profile
         problem-summary     (cond
                               (= :missing-keys (:error-group-type problem))
-                              (bling "Missing keys" )
+                              (bling "Missing keys")
 
                               (:bad-map-entry-value? problem)
                               (let [k (-> problem :in last)]
@@ -634,7 +607,7 @@
                                         [:bold (hifi k
                                                      {:find {:pred #(= % k)}})]]
                                        #_"\n"))
-                              
+
                               (:bad-map-entry-key? problem)
                               (let [k (-> problem :in last)]
                                 (bling "Invalid map key" #_"\n\n\n")))]
@@ -643,11 +616,11 @@
 
 (defn- printed*
   [{:keys [highlighted-problem-section-label
-           preamble-section-label 
-           preamble-section-body 
-           omit-sections 
-           section-opts 
-           indentation 
+           preamble-section-label
+           preamble-section-body
+           omit-sections
+           section-opts
+           indentation
            hifi+]
     :as opts}
    i
@@ -673,11 +646,11 @@
               ;; bunched
               ;; what if value is crazy nested or after truncation?
               ;; macro version for filename
-              (highlighted-problem-section-body 
+              (highlighted-problem-section-body
                (assoc opts
                       :missing-keys?
-                      missing-keys? 
-                      :problem 
+                      missing-keys?
+                      :problem
                       problem))
               (assoc section-opts
                      :section-break?
@@ -698,9 +671,9 @@
 
      (when-not (contains? omit-sections :problem-value)
        (when-not missing-keys?
-         (section "Problem value:" 
+         (section "Problem value:"
                   ;; TODO - do you need this pre-formatting?
-                  (let [s (hifi+ (:value problem) 
+                  (let [s (hifi+ (:value problem)
                                  {:find {:path  []
                                          :class :highlight-error}})]
                     (if (string/index-of s "\n")
@@ -719,14 +692,14 @@
                 (or (when-not (? (-> problem ::display-schema?))
                       (indented-string indentation
                                        (:composite-error-message problem)))
-                    (if-let [junction-form 
+                    (if-let [junction-form
                              (when (contains? problem :junction-type)
                                (:parent-schema/form problem))]
                       (hifi+ junction-form {:print-level           3
                                             :scalar-max-length 44})
                       (hifi+ (get-satisfaction (!? problem)))))
                 section-opts))
-     
+
      (when-let [schema-fq-name (:schema/fq-name problem)]
        (section "Fails schema:"
                 (indented-string indentation (hifi schema-fq-name))
@@ -737,7 +710,7 @@
   (if (< 1 (count printed))
     (interleave
      printed
-     (-> (for [i (range (count printed))] 
+     (-> (for [i (range (count printed))]
            ["\n\n\n"
             (bling [:subtle.italic
                     (str "---- Error #"
@@ -752,7 +725,7 @@
 
 (defn- maybe-display-schema
   [multiple-problems? problems schema display-schema? display-explain-data? hifi+ malli-schema section-opts malli-ex-data]
-  (let [single-problem-top-level? 
+  (let [single-problem-top-level?
         (or (and (not multiple-problems?)
                  (= (-> problems first :parent-schema)
                     (-> problems first :value-schema))
@@ -762,8 +735,7 @@
             (and (of-one? problems)
                  (= (-> problems first :parent-schema)
                     (-> problems first :value-schema))))]
-    [
-     ;; The schema passed to bling.explain/explain-malli
+    [     ;; The schema passed to bling.explain/explain-malli
      ;; Defaults to true, displaying schema
      ;; If `display-explain-data?` is `true`, it does not print, as it would be
      ;; redundant given that malli.core/explain-data includes the schema
@@ -777,7 +749,7 @@
                 (not single-problem-top-level?))
 
        (section "Schema:"
-                (hifi+ (prune-schema-for-display malli-schema) 
+                (hifi+ (prune-schema-for-display malli-schema)
                        ;; TODO - use new :path/reduce and create subtle :class for :find highlighting to pinpoint section of spec that is offended
                        #_{:find {:path  [2 2 1 2 1 2 1 2 1]
                                  :class :highlight-error}})
@@ -789,407 +761,386 @@
                 (hifi+ (explain-data* malli-ex-data))
                 section-opts))]))
 
-  
+(defn ^:public explain-malli*
+  ([schema v]
+   (explain-malli* schema v nil))
+  ([schema
+    v
+    {:keys [highlighted-problem-section-label
+            select-keys-in-problem-path?
+            section-body-indentation
+            preamble-section-label
+            preamble-section-body
+            display-explain-data?
+            section-label-style
+            omit-section-labels
+            display-schema?
+            success-message
+            file-info-str
+            omit-sections
+            callout-opts
+            hifi-opts
+            spacing
+            column
+            file
+            line]
+     :or   {success-message :bling.explain/explain-malli-success
+            section-label-style {:font-style :italic :color :subtle}}
+     :as   opts}]
 
-  (defn ^:public explain-malli*
-  ;;   "Prints a Malli validation error \"callout\" block via bling.core/callout. 
-   
-  ;;  Within the block, the value is pretty-printed, potentially with syntax coloring. The problem value is highlighted with the `:highlight-error` class of the active fireworks theme, or the `:highlight-error-underlined` class, if the value is not a collection.
-   
-  ;;  If three arguments are provided, the third should be a map with the following optional keys:
-   
-  ;;  * **`:function-name`**
-  ;;      - `string?`
-  ;;      - Optional.
-  ;;      - The name of the function that can be used to construct the source location.
-   
-  ;;  * **`:file`**
-  ;;      - `[:or :pos-int :string]`
-  ;;      - Optional.
-  ;;      - The file name that can be used to construct the source location.
-   
-  ;;  * **`:line`**
-  ;;      - `[:or :pos-int :string]`
-  ;;      - Optional.
-  ;;      - The line number that can be used to construct the source location.
-   
-  ;;  * **`:column`**
-  ;;      - `[:or :pos-int :string]`
-  ;;      - Optional.
-  ;;      - The column number that can be used to construct the source location.
-   
-  ;;  * **`:spacing`**
-  ;;      - `#{\"compact\" :compact}`
-  ;;      - Optional.
-  ;;      - If the value of `:spacing` is set to `:compact`, the callout is compacted vertically.
-   
-  ;;  * **`:display-schema?`**
-  ;;      - `boolean?`
-  ;;      - Optional.
-  ;;      - Displays the schema passed to the underlying call to `malli.core/explain`.
-   
-  ;;  * **`:display-explain-data?`**
-  ;;      - `boolean?`
-  ;;      - Optional.
-  ;;      - Displays the output of `malli.core/explain` within the callout block.
-   
-  ;;  * **`:callout-opts`**
-  ;;      - `map?`
-  ;;      - Optional.
-  ;;      - A map of options for the underlying call to bling.core/callout."
-  ;;   {:desc    "Prints a Malli validation error \"callout\" block via bling.core/callout.
-  ;;              \n\n
-  ;;              Within the block, the value is pretty-printed, potentially with syntax
-  ;;              coloring. The problem value is highlighted with the `:highlight-error`
-  ;;              class of the active fireworks theme, or the `:highlight-error-underlined`
-  ;;              class, if the value is not a collection."
-  ;;    :options [:map
-  ;;              {:name 'options
-  ;;               :desc "If three arguments are provided, the third should be a map with the following optional keys"}
+   (let [{problems     :errors
+          malli-schema :schema
+          :as          malli-ex-data}
+         (m/explain schema v)
 
-  ;;              [:function-name
-  ;;               {:optional true
-  ;;                :desc     ["The name of the function that can be used to construct the source location."]}
-  ;;               :string]
+         indentation
+         (or section-body-indentation 2)
 
-  ;;              [:spacing
-  ;;               {:optional true
-  ;;                :desc     ["If the value of `:spacing` is set to `:compact`, the callout is compacted vertically."]}
-  ;;               [:enum :compact "compact"]]
+         indentation-str
+         (string/join (repeat (or indentation 0) " "))
 
-  ;;              [:display-schema?
-  ;;               {:optional true
-  ;;                :desc     ["Displays the schema passed to the underlying call to `malli.core/explain`."]}
-  ;;               :boolean]
+         hifi+
+         (fn hifi+
+           ([v]
+            (hifi+ v nil))
+           ([v opts]
+            (hifi v
+                  (merge {:scalar-mapkey-max-length 30
+                          :margin-inline-start          indentation
+                          :print-level                  12}
+                         opts
+                         hifi-opts))))
 
-  ;;              [:display-explain-data?
-  ;;               {:optional true
-  ;;                :desc     ["Displays the output of `malli.core/explain` within the callout block."]}
-  ;;               :boolean]
+         explain-malli-opts
+         opts
 
-  ;;              [:callout-opts
-  ;;               {:optional true
-  ;;                :desc     ["A map of options for the underlying call to bling.core/callout."]}
-  ;;               :map]
+         file-info
+         (or (when (string? file-info-str) file-info-str)
+             (bling.core/file-info-str
+              (merge {:style {:font-style :italic
+                              :color      :subtle}}
+                     explain-malli-opts)))
 
-  ;;              [:hifi-opts
-  ;;               {:optional true
-  ;;                :desc     ["The options map for bling.hifi/hifi"]}
-  ;;               :map]
-               
-  ;;              [:file
-  ;;               {:optional true
-  ;;                :desc     ["The file name of the call site"]}
-  ;;               :string]
+         compact?
+         (= :compact spacing)
 
-  ;;              [:line
-  ;;               {:optional true
-  ;;                :desc     ["The line number of the call site"]}
-  ;;               :int]
+         ultra-compact?
+         (= :ultra-compact spacing)
 
-  ;;              [:column
-  ;;               {:optional true
-  ;;                :desc     ["The column number of the call site"]}
-  ;;               :int]
-               
-  ;;              [:highlighted-problem-section-label
-  ;;               {:optional true
-  ;;                :desc     ["Label for the highlighted problem diagram"]}
-  ;;               :string]
+         display-schema?
+         (and (not (true? display-explain-data?))
+              (not (false? display-schema?)))
 
-  ;;              [:section-body-indentation
-  ;;               {:optional true
-  ;;                :desc     ["Number of spaces to indent the body of each section"]}
-  ;;               :pos-int]
+         omit-sections
+         (some->> omit-sections
+                  seq
+                  (into #{}))
 
-  ;;              [:preamble-section-label
-  ;;               {:optional true
-  ;;                :desc     ["The label of the preamble section"]}
-  ;;               :string]
+         omit-section-labels
+         (some->> omit-section-labels
+                  seq
+                  (into #{}))
 
-  ;;              [:preamble-section-body
-  ;;               {:optional true
-  ;;                :desc     ["The body of the preamble section"]}
-  ;;               :string]
+         section-opts
+         {:compact?            compact?
+          :ultra-compact?      ultra-compact?
+          :label-style         section-label-style
+          :omit-section-labels omit-section-labels}]
+     (if (seq problems)
+       (let [problems
+             (narrow-problems malli-ex-data)
 
-  ;;              [:success-message
-  ;;               {:optional true
-  ;;                :desc     ["The message to display if value passes schema validation"]}
-  ;;               :string]
+             num-problems
+             (count problems)
 
-  ;;              ]}
-    ([schema v]
-     (explain-malli* schema v nil))
-    ([schema
-      v
-      {:keys [highlighted-problem-section-label
-              select-keys-in-problem-path?
-              section-body-indentation
-              preamble-section-label
-              preamble-section-body
-              display-explain-data?
-              section-label-style
-              omit-section-labels
-              display-schema?
-              success-message
-              file-info-str
-              omit-sections
-              callout-opts
-              hifi-opts
-              spacing
-              column
-              file
-              line]
-       :or   {success-message :bling.explain/explain-malli-success
-              section-label-style {:font-style :italic :color :subtle}}
-       :as   opts}]
+             multiple-problems?
+             (< 1 num-problems)
 
-     (let [{problems     :errors
-            malli-schema :schema
-            :as          malli-ex-data}
-           (m/explain schema v)
+             printed
+             (map-indexed (partial printed*
+                                   (merge opts
+                                          {:indentation-str indentation-str
+                                           :section-opts    section-opts
+                                           :v               v
+                                           :hifi+           hifi+
+                                           :omit-sections   omit-sections
+                                           :indentation     indentation}))
+                          problems)
 
-           indentation
-           (or section-body-indentation 2)
+             printed-with-numbering
+             (concat
+              (maybe-interleaved-with-section-separators printed)
 
-           indentation-str
-           (string/join (repeat (or indentation 0) " "))
-           
-           hifi+
-           (fn hifi+ 
-             ([v]
-              (hifi+ v nil))
-             ([v opts]
-              (hifi v 
-                    (merge {:scalar-mapkey-max-length 30
-                            :margin-inline-start          indentation
-                            :print-level                  12}
-                           opts
-                           hifi-opts))))
-           
-           explain-malli-opts   
-           opts
-           
-           file-info           
-           (or (when (string? file-info-str) file-info-str)
-               (bling.core/file-info-str
-                (merge {:style {:font-style :italic
-                                :color      :subtle}}
-                       explain-malli-opts)))
+              (maybe-display-schema multiple-problems?
+                                    problems
+                                    schema
+                                    display-schema?
+                                    display-explain-data?
+                                    hifi+
+                                    malli-schema
+                                    section-opts
+                                    malli-ex-data))
 
-           compact?             
-           (= :compact spacing)
+             callout-padding-block
+             (cond ultra-compact? 0 compact? 1 :else 1)
 
-           ultra-compact?       
-           (= :ultra-compact spacing)
-           
-           display-schema?     
-           (and (not (true? display-explain-data?))
-                (not (false? display-schema?)))
+             callout-margin-block
+             #?(:cljs 0 :clj 1) ;; <- TODO cljs default of 0 should be isolated to browser
 
-           omit-sections       
-           (some->> omit-sections
-                    seq
-                    (into #{}))
+             callout-label
+             (str "Malli Schema Error"
+                  (when multiple-problems? "s")
+                  (when multiple-problems?
+                    (str " (" num-problems ")")))]
 
-           omit-section-labels 
-           (some->> omit-section-labels
-                    seq
-                    (into #{}))
+         (callout
+          (!? (merge {:type                :error
+                      :theme               :sandwich
+                      :label-theme         :simple
+                      :label               callout-label
+                      :side-label          file-info
+                      :margin-top          callout-margin-block
+                      :margin-bottom       callout-margin-block
+                      ;; :min-width           60
+                      :border-notches?     true
+                      :header-padding-left 3
+                      :padding-left        2
+                      :padding-top         callout-padding-block
+                      :padding-bottom      callout-padding-block}
+                     callout-opts))
+          (apply str (flatten printed-with-numbering)))
 
-           section-opts        
-           {:compact?            compact?
-            :ultra-compact?      ultra-compact?
-            :label-style         section-label-style
-            :omit-section-labels omit-section-labels}]
-       (if (seq problems)
-         (let [problems 
-               (narrow-problems malli-ex-data)
-               
-               num-problems       
-               (count problems)
+         problems)
 
-               multiple-problems? 
-               (< 1 num-problems)
+       ;; If validation was successful, and user supplied a success message
+       (when-not (nil? success-message)
+         (case success-message
 
-               printed
-               (map-indexed (partial printed*
-                                     (merge opts
-                                            {:indentation-str indentation-str
-                                             :section-opts    section-opts
-                                             :v               v
-                                             :hifi+           hifi+
-                                             :omit-sections   omit-sections
-                                             :indentation     indentation}))
-                            problems)
-               
-               printed-with-numbering
-               (concat
-                (maybe-interleaved-with-section-separators printed)
-                
-                (maybe-display-schema multiple-problems?
-                                      problems 
-                                      schema 
-                                      display-schema? 
-                                      display-explain-data? 
-                                      hifi+ 
-                                      malli-schema 
-                                      section-opts 
-                                      malli-ex-data))
-
-               callout-padding-block
-               (cond ultra-compact? 0 compact? 1 :else 1)
-
-               callout-margin-block
-               #?(:cljs 0 :clj 1) ;; <- TODO cljs default of 0 should be isolated to browser
-               
-               callout-label
-               (str "Malli Schema Error"
-                    (when multiple-problems? "s")
-                    (when multiple-problems?
-                      (str " (" num-problems ")")))]
-           
-           (callout 
-            (!? (merge {:type                :error
-                        :theme               :sandwich
-                        :label-theme         :simple
-                        :label               callout-label              
-                        :side-label          file-info
-                        :margin-top          callout-margin-block
-                        :margin-bottom       callout-margin-block
-                        ;; :min-width           60
-                        :border-notches?     true
-                        :header-padding-left 3
-                        :padding-left        2
-                        :padding-top         callout-padding-block
-                        :padding-bottom      callout-padding-block}
-                       callout-opts))
-            (apply str (flatten printed-with-numbering)))
-
-           problems)
-
-         ;; If validation was successful, and user supplied a success message
-         (when-not (nil? success-message)
-           (case success-message
-
-             ::explain-malli-success-verbose
-             (callout (merge {:colorway       :positive
-                              :label-theme    :simple
-                              :padding-top    1
-                              :padding-bottom 1}
-                             callout-opts
-                             {:label "Malli Schema Validation Success"})
-                      (bling (when file-info-str
-                               [:p [:italic "Source:"]])
-                             (when file-info-str 
-                               [:p
-                                indentation-str
-                                file-info-str])
-                             [:p [:italic "Value:"]]
-                             [:p (hifi v {:margin-inline-start 2})]
-                             [:p [:italic "Schema:"]]
-                             (hifi schema {:margin-inline-start 2})))
-
-             ::explain-malli-success-simple
-             (println (str "Malli schema validation success"
+           ::explain-malli-success-verbose
+           (callout (merge {:colorway       :positive
+                            :label-theme    :simple
+                            :padding-top    1
+                            :padding-bottom 1}
+                           callout-opts
+                           {:label "Malli Schema Validation Success"})
+                    (bling (when file-info-str
+                             [:p [:italic "Source:"]])
                            (when file-info-str
-                             (str " @ " file-info-str))))
-             (println success-message)))))))
-  
-  (defmacro ^:public explain-malli
-    {:desc    "Prints a Malli validation error \"callout\" block via bling.core/callout.
-               \n\n
-               Within the block, the value is pretty-printed, potentially with syntax
-               coloring. The problem value is highlighted with the `:highlight-error`
-               class of the active fireworks theme, or the `:highlight-error-underlined`
-               class, if the value is not a collection."
-     :options [:map
-               {:name 'options
-                :desc "If three arguments are provided, the third should be a map with the following optional keys"}
+                             [:p
+                              indentation-str
+                              file-info-str])
+                           [:p [:italic "Value:"]]
+                           [:p (hifi v {:margin-inline-start 2})]
+                           [:p [:italic "Schema:"]]
+                           (hifi schema {:margin-inline-start 2})))
 
-               [:function-name
-                {:optional true
-                 :desc     ["The name of the function that can be used to construct the source location."]}
-                :string]
+           ::explain-malli-success-simple
+           (println (str "Malli schema validation success"
+                         (when file-info-str
+                           (str " @ " file-info-str))))
+           (println success-message)))))))
 
-               [:spacing
-                {:optional true
-                 :desc     ["If the value of `:spacing` is set to `:compact`, the callout is compacted vertically."]}
-                [:enum :compact "compact"]]
+(defmacro ^:public explain-malli
+  "
+   
+   Prints a Malli validation error \"callout\" block via bling.core/callout.
+   
+   
+   
+   Within the block, the value is pretty-printed, potentially with syntax
+   coloring. The problem value is highlighted with the `:highlight-error`
+   class of the active fireworks theme, or the `:highlight-error-underlined`
+   class, if the value is not a collection.
+   
+   
+   
+   If three arguments are provided, the third should be a map
+                        with the following optional keys:
+   
+   * **`:function-name`**
+       - `string?`
+       - Optional.
+       - The name of the function that can be used to construct
+         the source location.
+   
+   * **`:spacing`**
+       - `#{\"compact\" :compact}`
+       - Optional.
+       - If the value of `:spacing` is set to `:compact`, the
+         callout is compacted vertically.
+   
+   * **`:display-schema?`**
+       - `boolean?`
+       - Optional.
+       - Displays the schema passed to the underlying call to
+         `malli.core/explain`.
+   
+   * **`:display-explain-data?`**
+       - `boolean?`
+       - Optional.
+       - Displays the output of `malli.core/explain` within the
+         callout block.
+   
+   * **`:callout-opts`**
+       - `map?`
+       - Optional.
+       - A map of options for the underlying call to
+         bling.core/callout.
+   
+   * **`:hifi-opts`**
+       - `map?`
+       - Optional.
+       - The options map for bling.hifi/hifi
+   
+   * **`:file`**
+       - `string?`
+       - Optional.
+       - The file name of the call site.
+         This value be automatially supplied by the macro,
+         so only use if you want to manually override
+   
+   * **`:line`**
+       - `int?`
+       - Optional.
+       - The line number of the call site.
+         This value be automatially supplied by the macro,
+         so only use if you want to manually override.
+   
+   * **`:column`**
+       - `int?`
+       - Optional.
+       - The column number of the call site.
+         This value be automatially supplied by the macro,
+         so only use if you want to manually override.
+   
+   * **`:highlighted-problem-section-label`**
+       - `string?`
+       - Optional.
+       - Label for the highlighted problem diagram
+   
+   * **`:section-body-indentation`**
+       - `pos-int?`
+       - Optional.
+       - Number of spaces to indent the body of each section
+   
+   * **`:preamble-section-label`**
+       - `string?`
+       - Optional.
+       - The label of the preamble section
+   
+   * **`:preamble-section-body`**
+       - `string?`
+       - Optional.
+       - The body of the preamble section
+   
+   * **`:success-message`**
+       - `string?`
+       - Optional.
+       - The message to display if value passes schema validation"
+  {:desc    "Prints a Malli validation error \"callout\" block via bling.core/callout.
+             \n\n
+             Within the block, the value is pretty-printed, potentially with syntax
+             coloring. The problem value is highlighted with the `:highlight-error`
+             class of the active fireworks theme, or the `:highlight-error-underlined`
+             class, if the value is not a collection."
+   :options [:map
+             {:name 'options
+              :desc "If three arguments are provided, the third should be a map
+                     with the following optional keys"}
 
-               [:display-schema?
-                {:optional true
-                 :desc     ["Displays the schema passed to the underlying call to `malli.core/explain`."]}
-                :boolean]
+             [:function-name
+              {:optional true
+               :desc     "The name of the function that can be used to construct
+                          the source location."}
+              :string]
 
-               [:display-explain-data?
-                {:optional true
-                 :desc     ["Displays the output of `malli.core/explain` within the callout block."]}
-                :boolean]
+             [:spacing
+              {:optional true
+               :desc     "If the value of `:spacing` is set to `:compact`, the
+                          callout is compacted vertically."}
+              [:enum :compact "compact"]]
 
-               [:callout-opts
-                {:optional true
-                 :desc     ["A map of options for the underlying call to bling.core/callout."]}
-                :map]
+             [:display-schema?
+              {:optional true
+               :desc     "Displays the schema passed to the underlying call to
+                          `malli.core/explain`."}
+              :boolean]
 
-               [:hifi-opts
-                {:optional true
-                 :desc     ["The options map for bling.hifi/hifi"]}
-                :map]
-               
-               [:file
-                {:optional true
-                 :desc     ["The file name of the call site"]}
-                :string]
+             [:display-explain-data?
+              {:optional true
+               :desc     "Displays the output of `malli.core/explain` within the
+                          callout block."}
+              :boolean]
 
-               [:line
-                {:optional true
-                 :desc     ["The line number of the call site"]}
-                :int]
+             [:callout-opts
+              {:optional true
+               :desc     "A map of options for the underlying call to
+                          bling.core/callout."}
+              :map]
 
-               [:column
-                {:optional true
-                 :desc     ["The column number of the call site"]}
-                :int]
-               
-               [:highlighted-problem-section-label
-                {:optional true
-                 :desc     ["Label for the highlighted problem diagram"]}
-                :string]
+             [:hifi-opts
+              {:optional true
+               :desc     "The options map for bling.hifi/hifi"}
+              :map]
 
-               [:section-body-indentation
-                {:optional true
-                 :desc     ["Number of spaces to indent the body of each section"]}
-                :pos-int]
+             [:file
+              {:optional true
+               :desc     "The file name of the call site.
+                          This value be automatially supplied by the macro,
+                          so only use if you want to manually override"}
+              :string]
 
-               [:preamble-section-label
-                {:optional true
-                 :desc     ["The label of the preamble section"]}
-                :string]
+             [:line
+              {:optional true
+               :desc     "The line number of the call site.
+                          This value be automatially supplied by the macro,
+                          so only use if you want to manually override."}
+              :int]
 
-               [:preamble-section-body
-                {:optional true
-                 :desc     ["The body of the preamble section"]}
-                :string]
+             [:column
+              {:optional true
+               :desc     "The column number of the call site.
+                          This value be automatially supplied by the macro,
+                          so only use if you want to manually override."}
+              :int]
 
-               [:success-message
-                {:optional true
-                 :desc     ["The message to display if value passes schema validation"]}
-                :string]
+             [:highlighted-problem-section-label
+              {:optional true
+               :desc     "Label for the highlighted problem diagram"}
+              :string]
 
-               ]}
-    ([schema v]
-     (let [{:keys [file line column]} (meta &form)]
-       `(bling.explain/explain-malli* ~schema
-                                      ~v
-                                      {:file   ~file
-                                       :line   ~line
-                                       :column ~column})))
-    ([schema v opts]
-     (let [{:keys [file line column]} (meta &form)] 
-       `(bling.explain/explain-malli* ~schema
-                                      ~v
-                                      (merge {:file   ~file
-                                              :line   ~line
-                                              :column ~column}
-                                             ~opts)))))
+             [:section-body-indentation
+              {:optional true
+               :desc     "Number of spaces to indent the body of each section"}
+              :pos-int]
+
+             [:preamble-section-label
+              {:optional true
+               :desc     "The label of the preamble section"}
+              :string]
+
+             [:preamble-section-body
+              {:optional true
+               :desc     "The body of the preamble section"}
+              :string]
+
+             [:success-message
+              {:optional true
+               :desc     "The message to display if value passes schema validation"}
+              :string]]}
+
+  ([schema v]
+   (let [{:keys [file line column]} (meta &form)]
+     `(bling.explain/explain-malli* ~schema
+                                    ~v
+                                    {:file   ~file
+                                     :line   ~line
+                                     :column ~column})))
+  ([schema v opts]
+   (let [{:keys [file line column]} (meta &form)]
+     `(bling.explain/explain-malli* ~schema
+                                    ~v
+                                    (merge {:file   ~file
+                                            :line   ~line
+                                            :column ~column}
+                                           ~opts)))))

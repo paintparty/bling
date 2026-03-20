@@ -30,9 +30,9 @@
                                  }
                     :task       (exec 'docstring.api/docstring)
                     :exec-args  {:source-paths [
-                                                    "src/bling/core.cljc"
-                                                    ;; "src/bling/banner.cljc"
-                                                "src/bling/friends.cljc"
+                                                    ;; "src/bling/core.cljc"
+                                                    "src/bling/banner.cljc"
+                                                ;; "src/bling/friends.cljc"
                                                             ;; 222
                                                  "src/bling/explain.cljc"
                                                 
