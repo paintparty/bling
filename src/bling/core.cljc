@@ -1016,7 +1016,7 @@
     :or   {text-decoration-style :wavy
            line-index ::unsupplied}
     :as   opts}]
-  (if-let [lines (-> s (when-> string?) string/split-lines vec)]
+  (if-let [lines (some-> s (when-> string?) string/split-lines vec)]
     (let [line-count (count lines)
           line-index (if (and (= line-index ::unsupplied)
                               (= line-count 1))
