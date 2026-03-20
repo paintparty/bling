@@ -1,0 +1,21 @@
+;; shadow-cljs configuration
+{:deps
+ {:aliases [:dev]}
+
+ :dev-http
+ {8020 "public"}
+
+ :builds
+ {:demo
+  {:devtools    {:log false}
+   :target      :browser
+   :modules     {:main {:init-fn bling.demo.browser/init}}
+   :build-hooks [(shadow.cljs.build-report/hook {:output-to "tmp/report.html"})]
+   :release     {:build-options {:ns-aliases {bling.core     bling.stubs.core
+                                              bling.explain  bling.stubs.explain
+                                              bling.hifi     bling.stubs.hifi
+                                              fireworks.core fireworks.stubs.core
+                                              ;; fireworks.pp   fireworks.stubs.pp
+                                              }}}}}
+ }
+                 

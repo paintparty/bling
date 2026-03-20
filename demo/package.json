@@ -1,0 +1,16 @@
+{
+  "name": "bling-demo",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "npx shadow-cljs watch demo",
+    "release": "npx shadow-cljs release demo",
+    "clean": "rm -rf public/js node_modules .shadow-cljs .cpcache"
+  },
+  "devDependencies": {
+    "shadow-cljs": "^3.3.5"
+  },
+  "dependencies": {
+    "react": "17.0.2",
+    "react-dom": "17.0.2"
+  }
+}

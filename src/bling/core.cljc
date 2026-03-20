@@ -1,18 +1,18 @@
-;; Adds about 12kb to a cljs bundle
-
-(ns bling.core
+(ns ^:dev/always bling.core
   (:require [clojure.string :as string]
+            [fireworks.core :refer [? !? ?> !?>]]
+            [fireworks.defs]
+            [fireworks.util]
             [clojure.walk :as walk]
-            [bling.ansi :as ansi :refer [adjusted-char-count]]
+            [bling.ansi :as ansi :refer [strlen-minus-ansi-sgr]]
             [bling.browser]
-            [bling.hifi]
+            [bling.hifi :refer [hifi]]
             [bling.defs :as defs]
             [bling.macros :refer [let-map keyed]]
-            [bling.util :as util :refer [maybe->]]
+            [bling.util :as util :refer [maybe-> when-> when->> char-repeat]]
             #?(:cljs [bling.js-env :refer [node?]])
             ;; TODO - eliminate goog.object req
             #?(:cljs [goog.object])))
-
 
 (declare xterm-colors-by-id)
 
@@ -102,29 +102,19 @@
 ;; support "dark-orange to force dark"
 ;; support "light-orange to force light"
 
-
 ;; TODO - Move to colors namespace?
 (def ^:private bling-colors-dark
   (apply
    array-map
    ["red"     {:sgr 124 :css "#af0000"}
-
-    "orange"  {:sgr 172 :css "#d78700"}
-
+    "orange"  {:sgr 166 :css "#d75f00"}
     "yellow"  {:sgr 136 :css "#af8700"}
-
     "olive"   {:sgr 100 :css "#878700"}
-
     "green"   {:sgr 28 :css "#008700"}
-
     "blue"    {:sgr 26 :css "#005fd7"}
-
     "purple"  {:sgr 129 :css "#af00ff"}
-
     "magenta" {:sgr 163 :css "#d700af"}
-
     "gray"    {:sgr 244 :css "#808080"}
-
     "black"   {:sgr 16}
     "white"   {:sgr 231}]))
 
@@ -133,19 +123,12 @@
   (apply
    array-map
    ["red"     {:sgr 203 :css "#ff5f5f"}
-
-    "orange"  {:sgr 214 :css "#ffaf00"}
-
+    "orange"  {:sgr 208 :css "#ff8700"}
     "yellow"  {:sgr 220 :css "#ffd700"}
-
     "olive"   {:sgr 143 :css "#afaf5f"}
-
     "green"   {:sgr 82 :css "#5fff00"}
-
     "blue"    {:sgr 81 :css "#5fd7ff"}
-
     "purple"  {:sgr 147 :css "#afafff"}
-
     "magenta" {:sgr 213 :css "#ff87ff"}
     "gray"    {:sgr 249 :css "#b2b2b2"}
     "black"   {:sgr 16}
@@ -159,8 +142,8 @@
    ["red"        {:sgr      196
                   :css      "#ff0000"
                   :semantic "negative"}
-    "orange"     {:sgr      208
-                  :css      "#ff8700"
+    "orange"     {:sgr      172
+                  :css      "#d78700"
                   :semantic "warning"}
     "yellow"     {:sgr 178 :css "#d7af00"}
     "olive"      {:sgr 106 :css "#87af00"}
@@ -178,8 +161,7 @@
     "black"      {:sgr 16 :css "#000000"}
     "white"      {:sgr 231 :css "#ffffff"}]))
 
-
-(def ^:private bling-colors
+(def ^:public bling-colors
   (apply
    array-map
    (reduce-kv (fn [acc k v]
@@ -210,11 +192,9 @@
               []
               bling-colors*)))
 
-
 (def ^:private colors-source
   (merge bling-colors
          system-colors-source))
-
 
 (def ^:private semantics-by-semantic-type
   {"error"    "negative"
@@ -224,7 +204,6 @@
    "accent"   "accent"
    "subtle"   "subtle"
    "neutral"  "neutral"})
-
 
 (def ^:private all-color-names
   ;; TODO - perf use reduce here?
@@ -241,7 +220,6 @@
              {}
              colors-source))
 
-
 ;; Helper functions -----------------------------------------------------------
 
 (defn ^:public ?sgr
@@ -252,7 +230,7 @@
 
    Returns the value."
   [s]
-  (println 
+  (println
    (string/replace s
                    #"\u001b\[((?:[0-9]|;|(?:9|4(?::[1-5])?))*)m"
                    (str "\033[38;5;231;48;5;247m" ; <- white on gray, actual ansi sgr tag for fake ansi tag
@@ -274,71 +252,22 @@
 (defn- as-str [x]
   (str (if (or (keyword? x) (symbol? x)) (name x) x)))
 
-(defn- char-repeat [n s]
-  (when (pos-int? n)
-    (string/join (repeat n (or s "")))))
-
 (defn- spaces [n] (string/join (repeat n " ")))
-
-(defn- ns-info-str
-  [{:keys [file line column file-line-column]}]
-  (if (not (string/blank? file-line-column))
-    file-line-column
-    (str (some-> file (str ":")) line ":" column)))
-
-
 
 (defn- poi-text-underline-str [n str-index text-decoration-style]
   ;; "╱╲" <- pretty good look too
-  (str (string/join (repeat str-index " "))
-       (string/join (repeat n
-                            (case (some-> text-decoration-style
-                                          as-str)
-                              "wavy" "^"
-                              "dashed" "-"
-                              "dotted" "•"
-                              "underline" "─"
-                              "double" "═"
-                              "^")))))
+  (when-not (= :none :text-decoration-style)
+    (str (string/join (repeat str-index " "))
+         (string/join (repeat n
+                              (case (some-> text-decoration-style as-str)
+                                "wavy" "^"
+                                "dashed" "-"
+                                "dotted" "•"
+                                "underline" "─"
+                                "double" "═"
+                                "^"))))))
 
 (def ^:private form-limit 33)
-
-(defn- poi-text-underline
-  [{:keys [form form-as-str text-decoration-index text-decoration-style]}]
-  (if (and text-decoration-index
-          (or (pos? text-decoration-index)
-              (zero? text-decoration-index))
-          (coll? form)
-          (< (count (as-str form)) form-limit))
-    (let [form
-          (vec form)
-
-          data
-          (reverse
-           (for [n (-> form count range reverse)]
-             (let [v            (-> form (nth n nil))
-                   value-as-str (str v)
-                   len          (-> v str count)
-                   sv           (-> form
-                                    (subvec 0 n)
-                                    str
-                                    count)]
-               {:strlen       len
-                :v            v
-                :value-as-str value-as-str
-                :index        n
-                :str-index    sv})))
-
-          {:keys [strlen str-index]}
-          (nth data text-decoration-index nil)]
-      {:text-underline-str (poi-text-underline-str
-                            strlen
-                            str-index
-                            text-decoration-style)})
-    {:text-underline-str (poi-text-underline-str
-                          (count form-as-str)
-                          0
-                          text-decoration-style)}))
 
 (defn- x->sgr [x k]
   (when x
@@ -399,7 +328,6 @@
                              "m")]
 
     ret))
-
 
 ;; Move to colors namespace? or you already have them in vector by index?
 ;; Color-related fns  ---------------------------------------------------------
@@ -577,15 +505,210 @@
            v)))
 
 (defn- et-vec? [x]
-  (boolean (and (vector? x)
-                (= 2 (count x))
-                (-> x
-                    (nth 0)
-                    (maybe-> #(or (keyword? %)
-                                (map? %)))))))
+  (boolean (when-not (map-entry? x)
+             (and (vector? x)
+                  (= 2 (count x))
+                  (-> x
+                      (nth 0)
+                      (maybe-> #(or (keyword? %)
+                                    (map? %))))))))
 
+;; Unicode characters ----------------------------------------------------------
+
+(def text-decoration-styles
+  {:wavy   "^"
+   :solid  "─"
+   :dashed "-"
+   :dotted "•"
+   :double "═"})
+
+(def ^:private bdc
+  {:h   {:double     "═"
+         :bold       "━"
+         :thin       "─"
+         :thin-round "─"}
+
+   :h+u {:double     "╩"
+         :bold       "┻"
+         :thin       "┴"
+         :thin-round "┴"}
+
+   :h+d {:double     "╦"
+         :bold       "┳"
+         :thin       "┬"
+         :thin-round "┬"}
+
+   :v   {:double     "║"
+         :bold       "┃"
+         :thin       "│"
+         :thin-round "│"}
+
+   :v+l {:double     "╣"
+         :bold       "┫"
+         :thin       "┤"
+         :thin-round "┤"}
+
+   :v+r {:double     "╠"
+         :bold       "┣"
+         :thin       "├"
+         :thin-round "├"}
+
+   :tl  {:double     "╔"
+         :bold       "┏"
+         :thin       "┌"
+         :thin-round "╭"}
+
+   :tr  {:double     "╗"
+         :bold       "┓"
+         :thin       "┐"
+         :thin-round "╮"}
+
+   :bl  {:double     "╚"
+         :bold       "┗"
+         :thin       "└"
+         :thin-round "╰"}
+
+   :br  {:double     "╝"
+         :bold       "┛"
+         :thin       "┘"
+         :thin-round "╯"}
+
+   :mj  {:double     "╝"
+         :bold       "┛"
+         :thin       "┘"
+         :thin-round "╯"}})
+
+(def ^:private box-drawing-styles (into #{} (-> bdc :h keys)))
+
+(defn- horizontal-border-char* [style weight]
+  (case style
+    "solid"
+    (get-in bdc
+            (if (= "bold" weight)
+              [:h :bold]
+              [:h :thin]))
+    ("double")
+    (get-in bdc [:h :double])
+    nil))
+
+(defn- vertical-border-char* [style weight]
+  (case style
+    "solid"
+    (get-in bdc
+            (if (= "bold" weight)
+              [:v :bold]
+              [:v :thin]))
+    ("double")
+    (get-in bdc [:v :double])
+    nil))
+
+(defn- t-shaped-border-char
+  [m k]
+  (let [style  (:border-style m)
+        weight (:border-weight m)]
+    (case style
+      "solid"
+      (get-in bdc
+              (if (= "bold" weight)
+                [k :bold]
+                (if (= "round" (:border-shape m))
+                  [k :thin-round]
+                  [k :thin])))
+      ("double")
+      (get-in bdc [k :double])
+      nil)))
+
+(defn- first-or-last-horizontal-border-char
+  [m top-or-bottom left-or-right horizontal-border-char]
+  (let [top?   (= top-or-bottom :top)
+        bottom? (= top-or-bottom :bottom)
+        left? (= left-or-right :left)
+        right? (= left-or-right :right)
+        style  (cond (::marquee-label m)
+                     (:border-style m)
+
+                     top?
+                     (:border-top-style m)
+
+                     bottom?
+                     (:border-bottom-style m)
+
+                     :else
+                     (:border-style m))
+        weight (cond (::marquee-label m)
+                     (:border-weight m)
+
+                     top?
+                     (:border-top-weight m)
+
+                     bottom?
+                     (:border-bottom-weight m)
+
+                     :else
+                     (:border-weight m))]
+    (if (or (:border-notches? m)
+            (::marquee-label m)
+            (::boxed-callout-corner m))
+      (let [bdc-key (if top?
+                      (if left? :tl :tr)
+                      (if left? :bl :br))]
+        (case style
+          "solid"
+          (get-in bdc
+                  (if (= "bold" weight)
+                    [bdc-key :bold]
+                    (if (= "round" (:border-shape m))
+                      [bdc-key :thin-round]
+                      [bdc-key :thin])))
+          ("double")
+          (get-in bdc [bdc-key :double])
+          nil))
+      horizontal-border-char)))
 
 ;; Formatting helper fns  ------------------------------------------------------
+
+(defn- quick-warning-callout
+  [message ns-sym fn-sym]
+  (callout {:colorway :yellow
+            :theme    :gutter}
+           (bling [:yellow "WARNING" " - "]
+                  message
+                  "\n"
+                  [:italic [:gray "in "]
+                   [:medium-blue ns-sym]
+                   [:medium-blue "/"] 
+                   [:blue fn-sym]])))
+
+;; TODO add metamap w schema
+(defn ^:public file-info-str
+  [{:keys [:file
+           :line
+           :column
+           :line-style
+           :column-style
+           :file-style
+           :style]
+    :or   {
+           style        {}}}]
+  (let [style        (or style {:color :subtle})
+        line-style   (or line-style style)
+        column-style (or column-style style)
+        file-style   (or file-style style)]
+    (when (and line column)
+      (bling [style
+              [file-style
+               (if (nil? file) "[unknown file]"
+                   (let [splits (-> file str (string/split #"/"))]
+                     (if (< 1 (count splits))
+                       (->> splits
+                            (take-last 2)
+                            (string/join "/"))
+                       (last splits))))]
+              ":"
+              [line-style  line]
+              ":"
+              [column-style column]]))))
+
 
 (defn- semantic-type [opts]
   (let [x (:colorway opts)]
@@ -600,6 +723,334 @@
               name))))
 
 
+                                                                           
+;; HHHHHHHHH     HHHHHHHHHIIIIIIIIII      GGGGGGGGGGGGGHHHHHHHHH     HHHHHHHHH
+;; H:::::::H     H:::::::HI::::::::I   GGG::::::::::::GH:::::::H     H:::::::H
+;; H:::::::H     H:::::::HI::::::::I GG:::::::::::::::GH:::::::H     H:::::::H
+;; HH::::::H     H::::::HHII::::::IIG:::::GGGGGGGG::::GHH::::::H     H::::::HH
+;;   H:::::H     H:::::H    I::::I G:::::G       GGGGGG  H:::::H     H:::::H  
+;;   H:::::H     H:::::H    I::::IG:::::G                H:::::H     H:::::H  
+;;   H::::::HHHHH::::::H    I::::IG:::::G                H::::::HHHHH::::::H  
+;;   H:::::::::::::::::H    I::::IG:::::G    GGGGGGGGGG  H:::::::::::::::::H  
+;;   H:::::::::::::::::H    I::::IG:::::G    G::::::::G  H:::::::::::::::::H  
+;;   H::::::HHHHH::::::H    I::::IG:::::G    GGGGG::::G  H::::::HHHHH::::::H  
+;;   H:::::H     H:::::H    I::::IG:::::G        G::::G  H:::::H     H:::::H  
+;;   H:::::H     H:::::H    I::::I G:::::G       G::::G  H:::::H     H:::::H  
+;; HH::::::H     H::::::HHII::::::IIG:::::GGGGGGGG::::GHH::::::H     H::::::HH
+;; H:::::::H     H:::::::HI::::::::I GG:::::::::::::::GH:::::::H     H:::::::H
+;; H:::::::H     H:::::::HI::::::::I   GGG::::::GGG:::GH:::::::H     H:::::::H
+;; HHHHHHHHH     HHHHHHHHHIIIIIIIIII      GGGGGG   GGGGHHHHHHHHH     HHHHHHHHH
+                                                                           
+                                                                           
+
+;; Annotation and text-decoration start ----------------------------------------
+
+;; TODO - maybe this should happen at comptime and produce a map, so that 
+;; hifi is not called x number of times at runtime?
+(defn- sgr-highlighting-tags 
+  {:desc     "Given a style map and a `supports-color-level` int, produces a
+              vector of opening and closing ansi-sgr tags for that style, when
+              used with bling.hifi/hifi printing with highlighting via `:find`
+              option"
+   :examples [^:no-print
+              {:desc  "foo"
+               :forms '[[(let [m {:background-color "#670013"
+                                  :color            "#ffe0e0"
+                                  :font-weight      :bold}]
+                           (sgr-highlighting-tags
+                            (hifi {:a 1 :b 3} 
+                                  {:find {:path [:b] :style m}})
+                            m))
+                         ["\033[38;2;255;224;224;1;48;2;103;0;19m"
+                          "\033m"]]]}]}
+  [m n]
+  (let [s (hifi '_ 
+                {:find                 {:pred #(= % '_) :style m}
+                 :supports-color-level n})
+        i (string/index-of s "_")]
+    [(subs s 0 i)
+     (subs s (inc i))]))
+
+(defn- ansi-sgr-pattern-re [ansi-sgr-needle]
+  (let [ansi-sgr-pattern (string/replace 
+                          ansi-sgr-needle
+                          #"^\033\["
+                          #?(:cljs "\\033\\[" 
+                             :clj "\\\\033\\\\["))]
+    (re-pattern 
+     (str ansi-sgr-pattern
+          "((?:(?!\\033).)+)" 
+          "\\033\\[0?m"))))
+
+(defn- reverse-index* 
+  [opening-tag lines]
+  (some->> lines
+           reverse
+           (keep-indexed 
+            (fn [i line]
+              (when (string/index-of line opening-tag)
+                i)))
+           first))
+
+(defn- underline-char-replace 
+  [uc [_ s]] 
+  (bling.util/char-repeat
+   (count s)
+   uc))
+
+(defn- underline-stub 
+  [line ansi-sgr-re uc]
+  (-> line
+      (string/replace ansi-sgr-re (partial underline-char-replace uc))
+      (string/replace ansi/sgr-re "")
+      (string/replace (re-pattern (str "[^\\" uc "]")) 
+                      " ")))
+
+(defn- opening-sgr-tag [s target-highlight-style]
+  (some (fn [m]
+          (some (fn [vc]
+                  ;; (println)
+                  ;; (?sgr s)
+                  ;; (?sgr (first vc))
+                  ;; (?sgr (second vc))
+                  (when (string/index-of s (first vc)) vc))
+                (!? {:print-with println}
+                 (mapv (partial sgr-highlighting-tags m)
+                         [3 2 1]))))
+        (cond 
+          (map? target-highlight-style)
+          [target-highlight-style]
+
+          (= target-highlight-style :highlight-error)
+          [fireworks.defs/highlight-universal
+           fireworks.defs/highlight-error-dark
+           fireworks.defs/highlight-error-light
+           fireworks.defs/highlight-error-underlined-dark
+           fireworks.defs/highlight-error-underlined-light]
+
+          (= target-highlight-style :highlight-warning)
+          [fireworks.defs/highlight-universal
+           fireworks.defs/highlight-warning-dark
+           fireworks.defs/highlight-warning-light
+           fireworks.defs/highlight-warning-underlined-dark
+           fireworks.defs/highlight-warning-underlined-light]
+
+          (contains? #{:highlight-info :highlight} target-highlight-style)
+          [fireworks.defs/highlight-universal
+           fireworks.defs/highlight-dark
+           fireworks.defs/highlight-light]
+
+          :else
+          [fireworks.defs/highlight-universal
+           fireworks.defs/highlight-error-dark
+           fireworks.defs/highlight-error-light
+           fireworks.defs/highlight-error-underlined-dark
+           fireworks.defs/highlight-error-underlined-light
+           fireworks.defs/highlight-dark
+           fireworks.defs/highlight-light
+           fireworks.defs/highlight-warning-dark
+           fireworks.defs/highlight-warning-underlined-dark
+           fireworks.defs/highlight-warning-light
+           fireworks.defs/highlight-warning-underlined-light])))
+
+
+;; TODO - A truncate-form fn that will truncate stringified form, lopping off
+;;        top, bottom, or both with proper ellipsis
+
+#_(defn ^:public truncate-form []
+ )
+
+(defn ^:public highlighted-location
+  {:desc    "Gets position of last occurence of highlighting in a potentially
+             multi-line string. Designed to pinpoint highlighting that was
+             applied to a form using bling.hifi/hifi (with `:find` option).
+   
+             If an `:underline-char` option is supplied, the map returned will
+             include a string that can be used as a distinct line with an ascii
+             underline for the supplied stringified form. This underline line is
+             optionally decorated with a supplied `:text-decoration-style` map.
+
+             If a `:floating-annotation-text` option is supplied, the string
+             will be annotated. This string is optionally decorated with a
+             supplied `:floating-annotation-style` map."
+   :options [:map
+             [:target-highlight-style
+              {:optional true
+               :desc     "Highlight style used to identify the location"}
+              :keyword]
+             [:class
+              {:optional true
+               :desc     "Highlight style class "}
+              [:enum 
+               :highlight-error-dark 
+               :highlight-error-light
+               :highlight-error-universal]]]}
+  ([s]
+   (highlighted-location s nil))
+  ([s 
+    target-highlight-style]
+   (when-let [[opening-tag _] 
+              (opening-sgr-tag s target-highlight-style)]
+     (let [lines         (-> s string/split-lines vec)
+           reverse-index (reverse-index* opening-tag lines)]
+       (when reverse-index
+         (let [line-index  (dec (- (count lines) reverse-index))
+               line        (nth lines line-index)
+               uc          "〠"
+               ansi-sgr-re (ansi-sgr-pattern-re opening-tag)
+               replaced    (underline-stub line ansi-sgr-re uc)
+               offset      (string/index-of replaced uc)
+               last-index  (string/last-index-of replaced uc)
+               width       (inc (- (or last-index
+                                       (count replaced))
+                                   (or offset 0)))]
+           (merge {:line-index line-index
+                   :offset     offset
+                   :width      width})))))))
+
+;; TODO - Add some warnings
+(defn ^:public with-floating-label
+  {:desc    "Annotates the line at supplied index with floating label. This
+             label is optionally decorated with a supplied
+             `:floating-annotation-style` map."
+   :options [:map
+             [:line-index
+              {:required true
+               :desc     "Index of the line to be labeled"}
+              :pos-int]
+             [:label-text
+              {:required true
+               :desc     "The text of the floating annotation."}
+              :string]
+             [:label-style
+              {:optional true
+               :desc     "Controls the style of the floating annotation"}
+              :map]
+             [:label-offset
+              {:optional true
+               :default  3
+               :desc     "Controls offset of the floating annotation"}
+              :pos-int]]}
+  [s {:keys [line-index label-text label-style label-offset]}]
+  (if-let [text (when (nat-int? line-index)
+                  (when-> label-text string?))]
+    (let [lines            (-> s string/split-lines vec)
+          line             (nth lines line-index)
+          style            (or (when-> label-style map?) {})
+          offset           (or (when-> label-offset pos-int?) 3)
+          labeled          (str line
+                                (bling (util/char-repeat offset " ")
+                                       [style text]))
+          with-labeled     (assoc lines line-index labeled)
+          with-labeled-str (string/join "\n" with-labeled)]
+      with-labeled-str)
+    s))
+
+(defn- underline-width+offset 
+  [{:keys [offset width]} line]
+  (let [line-count (ansi/strlen-minus-ansi-sgr line)
+        offset     (or (some-> offset 
+                               (when-> pos-int?)
+                               (when-> #(< % line-count)))
+                       (some->> line
+                                (re-find #"^ +")
+                                count)
+                       0)
+        width      (or (when-> width pos-int?) 
+                       (- line-count offset))
+        width      (if (< line-count (+ offset width))
+                     1
+                     width)]
+    [width offset]))
+
+;; TODO - add safety for index out-of-bounds
+(defn ^:public with-ascii-underline
+  {:doc     "If supplied value for `:form` is a multi-line string, and supplied
+             value for `:line-index` is an integer less than the number of lines
+             present, inserts an ascii underline below the specified row."
+   :options [:map
+             [:line-index
+              {:required true
+               :desc     "Index of the line to receive the underline text-decoration."}
+              :pos-int]
+
+             [:offset
+              {:required true
+               :desc     "Controls offset, in columns, of the underline.
+                          If not provided, defaults to index of first non-blank character in line first."}
+              :pos-int]
+
+             [:width
+              {:required true
+               :default  3
+               :desc     "Controls the width, in columns, of the underline.
+                          If not provided, defaults to the length of the line, minus leading blank spaces"}
+              :pos-int]
+
+             [:underline-char
+              {:optional true
+               :desc     "Char used to build the ascii underline.
+                          Overrides `:text-decoration-style`"}
+              :keyword]
+
+             [:text-decoration-color
+              {:optional true
+               :desc     "Controls the color of the underline."}
+              :keyword]
+
+             [:text-decoration-weight
+              {:optional true
+               :desc     "Controls the font-weight of the underline."}
+              [:enum :normal "normal" :bold "bold"]]
+
+             [:text-decoration-style
+              {:optional true
+               :default  :wavy
+               :desc     "Controls the ascii char used to construct the underline."}
+              [:enum :wavy :solid :dashed :dotted :double]]]}
+  [s 
+   {:keys [line-index 
+           underline-char 
+           text-decoration-style 
+           text-decoration-color 
+           text-decoration-weight]
+    :or   {text-decoration-style :wavy
+           line-index ::unsupplied}
+    :as   opts}]
+  (if-let [lines (some-> s (when-> string?) string/split-lines vec)]
+    (let [line-count (count lines)
+          line-index (if (and (= line-index ::unsupplied)
+                              (= line-count 1))
+                       0
+                       line-index)]
+      (if (nat-int? line-index)
+        (if-not (> line-index line-count)
+          (let [line                (nth lines line-index) 
+                [width offset]      (underline-width+offset opts line)
+                uc                  (or (some-> underline-char
+                                                (when-> string?)
+                                                (when-> #(= (count %) 1)))
+                                        (get text-decoration-styles
+                                             text-decoration-style))
+                line-with-underline (bling [{:color       text-decoration-color
+                                             :font-weight text-decoration-weight}
+                                            (str (util/char-repeat offset " ")
+                                                 (util/char-repeat width uc))])
+                with-underline      (fireworks.util/insert-at 
+                                     lines
+                                     (inc line-index)
+                                     line-with-underline)
+                with-underline-str  (string/join "\n" with-underline)]
+            with-underline-str)
+          s)
+        s))
+    s))
+
+
+;; Highlighted location end ----------------------------------------------------
+
+
+
 
 ;; Race-condition-free version of clojure.core/println,
 ;; Maybe useful to keep around if any weird behavior arises.
@@ -607,364 +1058,482 @@
    (defn- safe-println [& more]
      (.write *out* (str (clojure.string/join " " more) "\n"))))
 
+;; PPPPPPPPPPPPPPPPP         OOOOOOOOO      IIIIIIIIII
+;; P::::::::::::::::P      OO:::::::::OO    I::::::::I
+;; P::::::PPPPPP:::::P   OO:::::::::::::OO  I::::::::I
+;; PP:::::P     P:::::P O:::::::OOO:::::::O II::::::II
+;;   P::::P     P:::::P O::::::O   O::::::O   I::::I  
+;;   P::::P     P:::::P O:::::O     O:::::O   I::::I  
+;;   P::::PPPPPP:::::P  O:::::O     O:::::O   I::::I  
+;;   P:::::::::::::PP   O:::::O     O:::::O   I::::I  
+;;   P::::PPPPPPPPP     O:::::O     O:::::O   I::::I  
+;;   P::::P             O:::::O     O:::::O   I::::I  
+;;   P::::P             O:::::O     O:::::O   I::::I  
+;;   P::::P             O::::::O   O::::::O   I::::I  
+;; PP::::::PP           O:::::::OOO:::::::O II::::::II
+;; P::::::::P            OO:::::::::::::OO  I::::::::I
+;; P::::::::P              OO:::::::::OO    I::::::::I
+;; PPPPPPPPPP                OOOOOOOOO      IIIIIIIIII
 
 
-;; PPPPPPPPPPPPPPPPP        OOOOOOOOO     IIIIIIIIII
-;; P::::::::::::::::P     OO:::::::::OO   I::::::::I
-;; P::::::PPPPPP:::::P  OO:::::::::::::OO I::::::::I
-;; PP:::::P     P:::::PO:::::::OOO:::::::OII::::::II
-;;   P::::P     P:::::PO::::::O   O::::::O  I::::I  
-;;   P::::P     P:::::PO:::::O     O:::::O  I::::I  
-;;   P::::PPPPPP:::::P O:::::O     O:::::O  I::::I  
-;;   P:::::::::::::PP  O:::::O     O:::::O  I::::I  
-;;   P::::PPPPPPPPP    O:::::O     O:::::O  I::::I  
-;;   P::::P            O:::::O     O:::::O  I::::I  
-;;   P::::P            O:::::O     O:::::O  I::::I  
-;;   P::::P            O::::::O   O::::::O  I::::I  
-;; PP::::::PP          O:::::::OOO:::::::OII::::::II
-;; P::::::::P           OO:::::::::::::OO I::::::::I
-;; P::::::::P             OO:::::::::OO   I::::::::I
-;; PPPPPPPPPP               OOOOOOOOO     IIIIIIIIII
+(defn ^:public stringified
+  {:desc "Stringifies form to a specified with and height, with optionally
+          supplied printing-fn such as `pprint`"}
+  ([form]
+   (stringified form nil))
+  ([form {:keys [height width printing-fn]}]
+   (let [width  (when-> width pos-int?)
+         height (when-> width pos-int?)
+         as-str (or (when (fn? printing-fn)
+                      (with-out-str (printing-fn form)))
+                    (str form))]
+     (as-> as-str $
+       (string/split $ #"\n")
+       (take (or height (count $)) $)
+       (mapv
+        #(if width
+           (if (< (or width 0) (or (count %) 0))
+             (-> (subs % 0 width) 
+                 (str "..."))
+             %)
+           %)
+        $)
+       (string/join "\n" $)))))
 
 
-;; Line and point of interest public fns  -------------------------------------
+;; Line and point of interest public fns  --------------------------------------
 
-(def ^{:no-doc true} point-of-interest-options-schema
-  [:map
-   [:form
-    {:required true
-     :desc     ["The form to draw attention to. Will be cast to string and"
-                "truncated at 33 chars"]}
-    :any]
-   
-   [:file
-    {:optional true
-     :desc     ["File or namespace"]}
-    :string]
-   
-   [:line
-    {:optional true
-     :desc     ["Line number"]}
-    :int]
-   
-   [:column
-    {:optional true
-     :desc     ["Column number"]}
-    :int]
-   
-   [:margin-block
-    {:optional true
-     :default  1
-     :desc     ["Controls the number of blank lines above and below the diagram."]}
-    :int]
-   
-   [:type
-    {:optional true
-     :desc     ["Automatically sets the `:text-decoration-color`."]}
-    [:enum :error "error" :warning "warning"]]
-   
-   [:text-decoration-color
-    {:optional true
-     :default  :neutral
-     :desc     ["Controls the color of the underline."]}
-    [:enum :error "error" :warning "warning" :neutral "neutral" :magenta "magenta" :green "green" :negative "negative"]]
-   
-   [:text-decoration-style
-    {:optional true
-     :desc     ["Controls the color of the underline."]}
-    [:enum :wavy "wavy" :solid "solid" :dashed "dashed" :dotted "dotted" :double "double"]]
-   
-   [:text-decoration-index
-    {:optional true
-     :desc     ["If the value of `:form` is a collection, this is the index of"
-                "the item to apply text-decoration (underline)."]}
-    :pos-int]])
-
+;; TODO - Add feature for leading and trailing line numbers
+;;      - Add additonal header template with tab?
+;;      - alt char for gutter border?
 
 (defn ^:public point-of-interest
-  "Example:
+  {:tldr          "Formatted and decorated diagram of a form with line, column, and file info."
+   :desc          "Provides the namespace, column, and line number and a representation of the
+                   specific form of interest.
 
-   ```Clojure
-   (point-of-interest {:form                  '(+ 1 true) ; <- required
-                       :line                  42
-                       :column                11
-                       :file                  \"myfile.core\"
-                       :text-decoration-style :wavy  ; :underline :solid :dashed :dotted :double
-                       :type                  :error ; :warning 
-                       ;; :margin-block          0       ; <- default is one
-                       ;; :text-decoration-index 2       ; <- If form is collection, this will focus underline
-                       ;; :text-decoration-color :yellow ; <- and bling palette color
-                       })
-   ```
-   
-   `point-of-interest` creates namespace info diagram which identifies a
-   specific form. This provides the namespace, column, and line number, and a
-   bolded, potentially truncated, representation of the specific form of
-   interest. This form representation is accented with a squiggly underline.
-   
-   The `:line`, `:column`, `:form`, and `:file` options must all be present in
-   order for the namespece info diagram to be rendered. If the `:form` option is
-   supplied, but any of the others are omitted, only the form will be rendered
-   (with an underline and no line-info diagram).
-   
-   By default, the diagram is created with a leading and trailing newlines.
-   This can be set to zero, or increased, with the `:margin-block` option.
-   
-   All the options:
+                   The `:line`, `:column`, and `:form` options must all be present in
+                   order for the info diagram to be rendered. If the `:form` option is supplied,
+                   but any of the others are omitted, only the form will be rendered.
 
-   ```Clojure
-   [:form
-    {:required true
-     :desc     [\"The form to draw attention to. Will be cast to string and\"
-                \"truncated at 33 chars\"]}
-    :any]
+                   If the form is provided is a collection, it will be stringified and truncated
+                   at 33 chars.
 
-   [:file
-    {:optional true
-     :desc     [\"File or namespace\"]}
-    :string]
+                   If you would like to print a multi-line form, you can you can pre-format the
+                   `:form` value with `bling.core/stringified`, or `bling.hifi/hifi`.
 
-   [:line
-    {:optional true
-     :desc     [\"Line number\"]}
-    :int]
+                   If you would like to print a multi-line form with individual subforms 
+                   highlighted, you can pre-format the `:form` value with some combo of
+                   bling.hifi/hifi (with `:find` option supplied),
+                   `bling.core/with-ascii-underline`, and `bling.core/with-floating-label.`
 
-   [:column
-    {:optional true
-     :desc     [\"Column number\"]}
-    :int]
+                   By default, the diagram is created with a leading and trailing newlines,
+                   via a default value of `1` for `:margin-block`. This can be set to zero,
+                   or increased, with the `:margin-block` option."
+   :examples      [{:desc  "Basic Example"
+                    :forms '[[(point-of-interest
+                               {:form   (+ 1 true)
+                                :line   42
+                                :column 11
+                                :file   "myfile.core" })]]}
+                   {:desc  "With styled file-info"
+                    :forms '[[(point-of-interest
+                               {:form                     (+ 1 true)
+                                :header-file-name-style   {:color      :subtle
+                                                           :font-style :italic}
+                                :line                     42
+                                :header-line-number-style {:color :red}
+                                :gutter-line-number-style {:color      :red
+                                                           :font-style :italic}
+                                :column                   11
+                                ;; :column-style          {:color :orange}
+                                :file                     "myfile.core"
+                                ;; :file-style            {:color :orange}
+                                })]]}
+                   {:desc  "With collection supplied as `:form`"
+                    :forms '[[(point-of-interest
+                               {:form                   {:a 1
+                                                         :b [333 444 555]
+                                                         :c "aadfasdfasdfads"
+                                                         :d "asdfasdfasdfasdfasdfasdf"}
+                                :header-file-info-style {:color      :subtle
+                                                         :font-style :italic}
+                                :line                   42
+                                :column                 11
+                                :file                   "myfile.core"})]]}]
 
-   [:margin-block
-    {:optional true
-     :default  1
-     :desc     [\"Controls the number of blank lines above and below the diagram.\"]}
-    :int]
+   :options       [:map
+                   [:form
+                    {:gen/elements [
+                                    '(+ 1 1 (+ 5 6))
+                                    '(+ 1 1 (+ 5 6))
+                                    "(+ 9 8 \n   (+ 5 6))"]
+                     :desc         "The form to draw attention to. Will be cast to string and truncated at 33 chars"}
+                    :any]
 
-   [:type
-    {:optional true
-     :desc     [\"Automatically sets the `:text-decoration-color`.\"]}
-    [:enum
-     :error
-     \"error\"
-     :warning
-     \"warning\"]]
+                   [:file
+                    {:optional     true
+                     :gen/elements [
+                                    "foo.cljs"
+                                    "barasdfasdfas_asdfs.cljs" 
+                                    "bar.cljs" 
+                                    nil
+                                    ]
+                     :desc         "File or namespace"}
+                    :string]
 
-   [:text-decoration-color
-    {:optional true
-     :default  :neutral
-     :desc     [\"Controls the color of the underline.\"]}
-    [:enum
-     :error
-     \"error\"
-     :warning
-     \"warning\"
-     :neutral
-     \"neutral\"
-     :magenta
-     \"magenta\"
-     :green
-     \"green\"
-     :negative
-     \"negative\"]]
+                   [:header-file-info-style
+                    {:optional     true
+                     :gen/elements [{:color :blue}]
+                     :desc         "File info style, in header of point-of-interest diagram.
+                                    This will apply default styles to `:header-file-name-style`,
+                                    `:header-line-number-style`, `:header-column-number-style`,  
+                                    and `:gutter-line-number-style`."}
+                    :map]
 
-   [:text-decoration-style
-    {:optional true
-     :desc     [\"Controls the color of the underline.\"]}
-    [:enum
-     :wavy
-     \"wavy\"
-     :solid
-     \"solid\"
-     :dashed
-     \"dashed\"
-     :dotted
-     \"dotted\"
-     :double
-     \"double\"]]
+                   [:header-file-name-style
+                    {:optional     true
+                     :gen/elements [{:color :blue}]
+                     :desc         "File name style, in header of point-of-interest diagram"}
+                    :map]
 
-   [:text-decoration-index
-    {:optional true
-     :desc     [\"If the value of `:form` is a collection, this is the index of\"
-                \"the item to apply text-decoration (underline).\"]}
-    :pos-int]
-   ```"
+                   [:line
+                    {:optional     true
+                     :gen/elements [12 22 33 555 77777]
+                     :desc         "Line number"}
+                    :int]
 
-  ;; TODO - change text-decoration-color to underline-color?
-  ;; TODO - Add option for doing underline in sgr?
-  [{:keys [line
-           file
+                   [:header-line-number-style
+                    {:optional     true
+                     :gen/elements [{:color :blue}]
+                     :desc         "Line number style, in header of point-of-interest diagram"}
+                    :map]
+
+                   [:gutter-line-number-style
+                    {:optional     true
+                     :gen/elements [{:color       :subtle
+                                     :font-style  :italic
+                                     :font-weight :bold}]
+                     :desc         "Gutter line number style, in header of point-of-interest diagram"}
+                    :map]
+
+                   [:column
+                    {:optional     true
+                     :gen/elements [22 77]
+                     :desc         "Column number"}
+                    :int]
+
+                   [:header-column-number-style
+                    {:optional     true
+                     :gen/elements [{:color :blue}]
+                     :desc         "Column number style, in header of point-of-interest diagram"}
+                    :map]
+
+
+                   [:margin-block
+                    {:optional true
+                     :default  1
+                     :gen/min  0
+                     :gen/max  5
+                     :desc     "Controls the number of blank lines above and below the diagram."}
+                    :int]
+
+                   [:margin-top
+                    {:optional true
+                     :default  1
+                     :gen/min  0
+                     :gen/max  5
+                     :desc     "Controls the number of blank lines above the diagram."}
+                    :int]
+
+                   [:margin-bottom
+                    {:optional true
+                     :default  1
+                     :gen/min  0
+                     :gen/max  5
+                     :desc     "Controls the number of blank lines below the diagram."}
+                    :int]]
+   :clj-docstring [[:example "Example"]
+                   :desc
+                   :options]}
+  [{:keys [form
+           line
            column
-           form
-           header ; <- deprecated / undocumented
-           body   ; <- deprecated / undocumented
+           header-file-info-style
+           header-file-name-style
+           header-line-number-style
+           header-column-number-style
            margin-block
-           text-decoration-color
-           type]
+           margin-top
+           margin-bottom
+           gutter-line-number-style]
     :as   opts}]
-  (let [type             (some-> type as-str (maybe-> #{"warning" "error"}))
-        file-info        (ns-info-str opts)
-        gutter           (some-> line str count spaces)
-        underline-color  (or (some->> type (get semantics-by-semantic-type))
-                             (some-> text-decoration-color
-                                     as-str
-                                     (maybe-> all-color-names))
-                             "neutral")
-        form-as-str      (util/shortened form 33)
-        underline-str    (-> opts
-                             (assoc :form-as-str form-as-str)
-                             poi-text-underline
-                             :text-underline-str)
-        bolded-form      [{:font-weight :bold} form-as-str]
-        underline-styled [{:font-weight :bold
-                           :color       underline-color
-                           :contrast    :medium}
-                          underline-str]
-        header           (str header)
-        body             (str body)
-        mb*              (or (some-> margin-block (maybe-> pos-int?))
-                             (if (some-> margin-block zero?)
-                               0
-                               1))
-        mb               (char-repeat mb* "\n")
-        diagram-char     #?(:cljs (fn [s] s) :clj #(bling [:subtle %]))
-        diagram          (cond
-                           (and line column file form)
-                           [mb
-                            gutter (diagram-char " ┌─ ") file-info "\n"
-                            gutter (diagram-char " │ ") "\n"
-                            line   (diagram-char " │ ") bolded-form "\n"
-                            gutter (diagram-char " │ ") underline-styled
-                            mb
-                            "\n"]
-
-                           form
-                           [mb
-                            bolded-form "\n"
-                            underline-styled
-                            mb])
-        ret              (apply bling
-                                (util/concatv header
-                                              diagram
-                                              body))]
-    ret))
-
+  ;; TODO validate input
+  (when form
+    (let [header-style (or (when-> header-file-info-style map?) {})
+          file-info    (file-info-str 
+                        (merge 
+                         opts
+                         {:file-style   (when-> header-file-name-style map?)
+                          :line-style   (when-> header-line-number-style map?)
+                          :column-style (when-> header-column-number-style map?)
+                          :style        header-style}))
+          form         (if-not (string? form) 
+                         (stringified form {:height 1 :width  33})
+                         form)
+          mb*          (or (some-> margin-block (maybe-> pos-int?))
+                           (if (some-> margin-block zero?)
+                             0
+                             1))
+          mbs*         (or (when-> margin-top pos-int?) mb*)
+          mbe*         (or (when-> margin-bottom pos-int?) mb*)
+          mbs          (char-repeat mbs* "\n")
+          mbe          (char-repeat mbe* "\n")
+          gutter-num   (bling [(or (when-> gutter-line-number-style
+                                           map?)
+                                   header-style
+                                   {})
+                               line])
+          gutter       (some-> line str count spaces)
+          border       #(bling [:subtle %])
+          diagram      (if (and line column form)
+                         (let [form-with-gutter
+                               (-> form
+                                   (string/split #"\n")
+                                   (->> (map-indexed
+                                         (fn [i ln]
+                                           (str (when (pos? i)
+                                                  (str gutter
+                                                       (border " │  ")))
+                                                ln)))
+                                        (string/join "\n")))]
+                           (-> [mbs
+                                gutter     (border " ┌──── ") file-info "\n"
+                                gutter     (border " │  ") "\n"
+                                gutter-num (border " │  ") form-with-gutter "\n"
+                                gutter     (border " │  ")]
+                               (concat [mbe "\n"])
+                               vec))
+                         form)]
+      (apply bling diagram))))
 
 ;; Enriched text public fns and helpers  --------------------------------------
 
 (declare ln)
 (declare lns)
 
-(defn- gutter-marquee-label
-  [{:keys [padding-left
-           padding-top
-           margin-left
-           label
-           label-string
-           border-style]
-    :as m}]
-  (let [margin-left-str     (char-repeat margin-left defs/gutter-char)
-        hrz                 #(char-repeat padding-left %)
-        label-lns           (-> label as-str string/split-lines)
-        label-length        (some->> label-lns (mapv count) (apply max))
-        label-string-lns    (some-> label-string string/split-lines)
-        label-string-length (some->> label-string-lns (mapv count) (apply max))
-        label-length        (or label-string-length label-length)
-        bs                  border-style]
-    (string/join
-     (interpose
-      "\n"
-      (util/concatv
-       [(bling [bs
-                (str
-                 (char-repeat (inc margin-left) "▄")
-                 " "
-                 " ┏━━"
-                 (char-repeat label-length "━")
-                 "━━┓")])
-        (str (bling [bs
-                     (str margin-left-str
-                          defs/gutter-char
-                          (hrz " ")
-                          "┃  ")])
-             (bling [{:font-color :neutral}
-                     (first label-lns)])
-             (bling [bs "  ┃"]))]
-       (for [ln (rest label-lns)]
-         (bling margin-left-str
-                [border-style (str "┃" (hrz " ") "┃  ")]
-                (bling [:italic.neutral.bold ln])
-                (bling [bs
-                        (str (char-repeat (max 0 (- label-length (count ln)))
-                                          " ")
-                             "  ┃")])))
-       [(bling [bs
-                (str margin-left-str
-                     defs/gutter-char
-                     (hrz " ")
-                     "┗━━"
-                     (char-repeat label-length "━")
-                     "━━┛")])]
-       (mapv (fn [_]
-               (bling [bs
-                       (str margin-left-str
-                            defs/gutter-char
-                            (hrz " "))]))
-             (range padding-top)))))))
+;;            CCCCCCCCCCCCC          OOOOOOOOO                               
+;;         CCC::::::::::::C        OO:::::::::OO                             
+;;       CC:::::::::::::::C      OO:::::::::::::OO                           
+;;      C:::::CCCCCCCC::::C     O:::::::OOO:::::::O     ******         ******
+;;     C:::::C       CCCCCC     O::::::O   O::::::O     *:::::*       *:::::*
+;;    C:::::C                   O:::::O     O:::::O     ***::::*******::::***
+;;    C:::::C                   O:::::O     O:::::O        **:::::::::::**   
+;;    C:::::C                   O:::::O     O:::::O     ******:::::::::******
+;;    C:::::C                   O:::::O     O:::::O     *:::::::::::::::::::*
+;;    C:::::C                   O:::::O     O:::::O     ******:::::::::******
+;;    C:::::C                   O:::::O     O:::::O        **:::::::::::**   
+;;     C:::::C       CCCCCC     O::::::O   O::::::O     ***::::*******::::***
+;;      C:::::CCCCCCCC::::C     O:::::::OOO:::::::O     *:::::*       *:::::*
+;;       CC:::::::::::::::C      OO:::::::::::::OO      ******         ******
+;;         CCC::::::::::::C        OO:::::::::OO                             
+;;            CCCCCCCCCCCCC          OOOOOOOOO                               
 
+(defn- adjusted-sgr-strlen
+  [m k]
+  (- (or (count (k m)) 0)
+     (or (ansi/sgr-count (k m)) 0)))
+
+(defn- resolve-header-gap
+  [m]
+  (let [n
+        (- (max (or (maybe-> (:width m) pos-int?) 0)
+                (:min-width m))
+           (or (+ (or (adjusted-sgr-strlen m :header-with-label) 0)
+                  (or (adjusted-sgr-strlen m :side-label) 0))
+               0))]
+    (if (pos-int? n)
+      (max n (:header-gap m)) 
+      ;; Should this be zero or some header-gutter-min-width like 2, or header-gap value?
+      ;; Only applies to sandwich theme, when label and sidelabel are both long
+      3 #_(:header-gap m))))
+
+(defn- header-gap-str
+  [{:keys [border-style-map
+           theme
+           border-top-char]
+    :as m}]
+  (if (= theme "sideline")
+    (bling [border-style-map
+            (util/sjr (:header-gap m) border-top-char)])
+    (if-let [n (some-> (resolve-header-gap m) (when-> pos?))]
+      (bling [border-style-map
+                (util/sjr n border-top-char)])
+      nil)))
 
 (defn- sideline-marquee-label
   [{:keys [padding-left
-           padding-left-str
+           header-padding-left
            margin-left
            label
-           label-string
            theme
            border-style
-           side-label]}]
-  (let [margin-left-str     (char-repeat margin-left " ")
-        b?                  (= theme "sideline-bold")
-        hrz                 #(char-repeat padding-left %)
-        label-lns           (some-> label as-str string/split-lines)
-        label-length        (some->> label-lns (mapv count) (apply max))
-        label-string-lns    (some-> label-string string/split-lines)
-        label-string-length (some->> label-string-lns (mapv count) (apply max))
-        label-length        (or label-string-length label-length)
-        bs                  border-style]
+           border-top-style
+           border-weight
+           border-top-weight
+           border-style-map
+           border-notches?
+           side-label]
+    :as m}]
+
+  (let [margin-left-str    (char-repeat margin-left 
+                                        (if (= "gutter" theme) 
+                                          defs/gutter-char
+                                          " "))
+        margin-left-str-0  (char-repeat margin-left
+                                        (if (= "gutter" theme)
+                                          defs/gutter-char-lower-seven-eighths
+                                          " "))
+
+
+        ;; TODO experimental :marquee-tab theme --------------------------------
+        ;; 
+        ;;   ┌──────────────────────────────────┐
+        ;; ┌─┘  Your Header Message goes here   └─────────────
+        ;;
+        ;;
+        ;; ┌──────────────────────────────────┐
+        ;; │  Your Header Message goes here   └───────────────
+
+        tab?                 false
+        ;; 
+        ;; ---------------------------------------------------------------------
+
+
+        sandwich-theme?      (= theme "sandwich")
+        ;; This currently takes the first line of a multi-line label
+        ;; AKA multi-line labels in the marquee label theme are not supported
+        ;; Maybe add support in the future? Would have to figure out how to
+        ;;    dynamically center the middle-left connector
+        label-length        (ansi/strlen-minus-ansi-sgr label)
+        bs                  border-style-map
+        hbc                 (horizontal-border-char* border-style border-weight)
+        vbc                 (vertical-border-char* border-style border-weight)
+        top-and-bottom-mid (str (char-repeat 2 hbc)
+                                (char-repeat label-length hbc)
+                                (char-repeat 2 hbc))
+
+        ;; TODO  header-padding-left is not working
+        top-line-str       (bling [bs
+                                   (str (if (= theme "gutter")
+                                          margin-left-str-0
+                                          margin-left-str)
+                                        (char-repeat header-padding-left " ")
+                                        (first-or-last-horizontal-border-char
+                                         (assoc m ::marquee-label true)
+                                         :top
+                                         :left
+                                         hbc)
+                                        top-and-bottom-mid
+                                        (first-or-last-horizontal-border-char
+                                         (assoc m ::marquee-label true)
+                                         :top
+                                         :right
+                                         hbc))])]
     (string/join
      (interpose
       "\n"
       (util/concatv
-       [(bling [bs
-                (str margin-left-str
-                     padding-left-str
-                     (if b? " ┏━━" " ┌──")
-                     (char-repeat label-length (if b? "━" "─"))
-                     (if b? "━━┓" "──┐"))])
-        (str (bling [bs
-                     (str margin-left-str
-                          (if b?
-                            (str "┏" (hrz "━") "┫  ")
-                            (str "┌" (hrz "─") "┤  ")))])
-             (bling [{:font-color :neutral}
-                     (first label-lns)])
-             (bling [bs (if b? "  ┃" "  │")])
-             (when side-label (bling "  " [:italic side-label])))]
-       (for [ln (rest label-lns)]
-         (bling margin-left-str
-                [bs (if b? (str "┃" (hrz " ") "┃  ")
-                        (str "│" (hrz " ") "│  "))]
-                (bling [:italic.neutral.bold ln])
-                (bling [bs
-                        (str (char-repeat (max 0 (- label-length (count ln)))
-                                          " ")
-                             (if b? "  ┃" "  │"))])))
-       [(bling [bs
-                (str margin-left-str
-                     (if b? (str "┃" (hrz " ") "┗━━")
-                         (str "│" (hrz " ") "└──"))
-                     (char-repeat label-length (if b? "━" "─"))
-                     (if b? "━━┛" "──┘"))])])))))
+       [        ;; The first, or "top" line of the lines that comprise the marquee label
+        top-line-str
 
+        ;; The second, or "middle" line of the lines that comprise the marquee label
+        (let [s
+              (str (bling [bs
+                           (str margin-left-str
+                                (cond
+                                  (= theme "gutter")
+                                  " "
+
+                                  (or (= theme "sideline")
+                                      (and sandwich-theme?
+                                           border-notches?
+                                           (not (zero? header-padding-left))))
+                                  (first-or-last-horizontal-border-char
+                                   (assoc m ::marquee-label true)
+                                   :top
+                                   :left
+                                   hbc)
+
+                                  :else
+                                  (when-not (and (= theme "sandwich")
+                                                 (zero? header-padding-left))
+                                    (horizontal-border-char* border-top-style
+                                                             border-top-weight)))
+                                (char-repeat (dec header-padding-left)
+                                             (if (= theme "gutter") " " hbc))
+                                (cond tab?
+                                      (first-or-last-horizontal-border-char
+                                       (assoc m ::marquee-label true)
+                                       :bottom
+                                       :right
+                                       hbc)
+                                      (or (= theme "gutter")
+                                          (and (= theme "sandwich")
+                                               (zero? header-padding-left)))
+                                      vbc
+                                      :else
+                                      (t-shaped-border-char m :v+l))
+                                "  ")])
+                   (bling [{:font-color :neutral} label])
+                   "  ")
+              
+              sandwich-theme-header-gap-str
+              (header-gap-str (merge m
+                                     {:header-with-label s
+                                      :border-top-char   hbc}))
+
+              vertical-border-char
+              (bling [bs (cond 
+                           tab?
+                           (first-or-last-horizontal-border-char
+                            (assoc m ::marquee-label true)
+                            :bottom
+                            :left
+                            hbc)
+                           (and (= theme "sandwich")
+                                (not (string/blank?
+                                      sandwich-theme-header-gap-str)))
+                           (t-shaped-border-char m :v+r)
+                           :else
+                           vbc)])]
+
+
+          (str s
+               vertical-border-char
+               (when (= theme "sandwich")
+                 sandwich-theme-header-gap-str)
+               (when side-label (bling "  " [:italic side-label]))))]
+
+       ;; The last line of the lines that comprise the marquee label
+       (when-not tab?
+         [(bling [bs
+                  (str margin-left-str
+                        (if (= theme "sideline")
+                          (str vbc
+                              (char-repeat (dec header-padding-left) " "))
+                          (char-repeat header-padding-left " "))
+                        (first-or-last-horizontal-border-char
+                        (assoc m ::marquee-label true)
+                        :bottom
+                        :left
+                        hbc)
+                        top-and-bottom-mid
+                        (first-or-last-horizontal-border-char
+                        (assoc m ::marquee-label true)
+                        :bottom
+                        :right
+                        hbc))])]))))))
 
 (defn- gutter-label-line-zero? [m i]
   (and (= (:theme m) "gutter")
@@ -997,13 +1566,13 @@
                                        i
                                        gutter-label-line-zero?))]
      (str current-margin-left-str
-          (bling [(:border-style m)
-                  (get m (if gutter-label-line-zero?
-                           :border-left-str-zero
-                           :border-left-str))])
+          (when-not (= (:theme m) "gutter")
+            (bling [(:border-style-map m)
+                    (get m (if gutter-label-line-zero?
+                             :border-left-str-zero
+                             :border-left-str))]))
           (:padding-left-str m)
           s))))
-
 
 (defn- restore-ansi-sgr-over-lines [s]
   (let [lns (string/split s #"\n")
@@ -1039,7 +1608,11 @@
 
                                       :else
                                       s)
-        lns-coll                    (restore-ansi-sgr-over-lines s)
+        padding-top-lns-coll        (when (and (= (:theme m) "gutter")
+                                               (or (:label m) (:side-label m)))
+                                      (char-repeat (:padding-top m) " "))
+        lns-coll                    (concat padding-top-lns-coll
+                                            (restore-ansi-sgr-over-lines s))
         ret                         (string/join
                                      "\n"
                                      (map-indexed
@@ -1048,7 +1621,6 @@
                                                       :current-line-type k))
                                       lns-coll))]
     ret))
-
 
 (defn- body-lines-with-border
   [m]
@@ -1062,66 +1634,184 @@
 
 (defn- body-lines-no-border
   [{:keys [margin-left-str padding-left-str] :as m}]
-  (let [body-lns (string/split-lines (:value m))]
-    (string/join
-     "\n"
-     (util/concatv
-      (repeat (:padding-top m) (str margin-left-str padding-left-str))
-      (mapv #(str margin-left-str padding-left-str %) body-lns)
-      (repeat (:padding-bottom m) (str margin-left-str padding-left-str))))))
+  (when-not (::no-callout-body? m)
+    (let [body-lns (string/split-lines (:value m))]
+      (string/join
+       "\n"
+       (util/concatv
+        (repeat (:padding-top m) (str margin-left-str padding-left-str))
+        (mapv #(str margin-left-str padding-left-str %) body-lns)
+        (repeat (:padding-bottom m) (str margin-left-str padding-left-str)))))))
 
-(defn- minimal-callout
-  [{:keys [label side-label border-style border-block-length value]
+;; Minimal callout start -------------------------------------------------------
+
+(defn- header-with-label
+  [{:keys [border-style-map
+           header-padding-left
+           label
+           border-top-char]
     :as   m}]
-  
-  (let [no-label?
-        (or (nil? label) (string/blank? label))
+  (let [header-padding-left? (pos-int? header-padding-left)
+        label-padding 1]
+    (bling [border-style-map
+            (when header-padding-left?
+              (first-or-last-horizontal-border-char
+               m
+               :top
+               :left
+               border-top-char))]
+           (when (and (not (nil? label)) header-padding-left?)
+             (bling [border-style-map
+                     (util/sjr (dec header-padding-left)
+                               border-top-char)]))
+           (str (when header-padding-left?
+                  (when label
+                    (spaces label-padding)))
+                label
+                (when label
+                  (spaces label-padding))))))
 
-        label-line
-        (if no-label?
-          (bling [border-style (string/join (repeat border-block-length "═"))])
-          (bling [border-style "══"]
-                 [:bold (some->> label (str " "))]
-                 (when label " ")
-                 [border-style "════"]
-                 (some->> side-label (str " "))))
+(defn- gutter-label-line*
+  [{:keys [label-theme
+           border-style-map
+           header-gap
+           margin-left
+           padding-left
+           theme
+           label
+           side-label]
+    :as m}]
+  (cond
+    (and label (= label-theme "marquee"))
+    (sideline-marquee-label m)
 
-        label-line-length
-        (count label-line)
+    :else
+    (let [          ;; This produces the first (left) part of the header line for a
+          ;; :gutter callout with a :label-theme of :simple
 
-        matches
-        (re-seq #"\u001b\[([0-9;]*)[mK]" label-line)
+          ;; It is used for callouts with a theme of :gutter
 
-        n
-        (reduce (fn [n [_ s]] (+ n (count s))) 0 matches)
+          ;; Examples:
+          ;; "▆ My label"
+          ;; "▆▆▆ My Label" 
 
-        n
-        (- label-line-length n (* 3 (count matches)))
+          margin-left-str  (bling [border-style-map
+                                   (char-repeat margin-left
+                                                (if (= "gutter" theme)
+                                                  defs/gutter-char-lower-seven-eighths
+                                                  " "))])
+          header-with-label  (str (char-repeat padding-left " ") label)
+          side-label         (some->> side-label (str " "))]
 
-        body-lines
-        (body-lines-no-border m)]
+      ;; This produces the second (right) part of the header line  
+      (str margin-left-str
+           header-with-label
+           (char-repeat header-gap " ")
+           (when side-label side-label)))))
+
+(defn- sandwich-label-line*
+  [{:keys [label-theme
+           border-top-style
+           border-top-weight
+           margin-left-str
+           theme
+           label
+           side-label]
+    :as m}]
+  (cond
+    (and label (= label-theme "marquee"))
+    (sideline-marquee-label  m)
+
+    :else
+    (let [border-top-char    (horizontal-border-char* border-top-style
+                                                      border-top-weight)
+
+          ;; This produces the first (left) part of the header line for a
+          ;; callout with a :label-theme of :simple
+
+          ;; It is used for callouts with a theme of :sideline or :simple
+
+          ;; Examples:
+
+          ;; "My label"
+          ;; "┌ My label"
+          ;; "┌── My Label" 
+          ;; "════ My Label" 
+          header-with-label  (header-with-label
+                              (assoc m
+                                     :border-top-char
+                                     border-top-char))
+          side-label         (some->> side-label (str " "))]
+
+      ;; This produces the second (right) part of the header line  
+      (str margin-left-str
+           header-with-label
+           (when (or (= theme "sandwich")
+                     (and (= theme "sideline")
+                          side-label))
+             (header-gap-str (merge m
+                                    (keyed [header-with-label
+                                            border-top-char]))))
+           (when side-label
+             side-label)))))
+
+(defn- sandwich-callout-label-line-length*
+  [label-line m]
+  (let [n (apply max
+                 (mapv #(- (count %)
+                           (or (ansi/sgr-count %)
+                               0))
+                       (string/split label-line #"\n")))]
+    (max (- (or n 0) (:margin-left m)) 0)))
+
+(defn- sandwich-callout
+  [{:keys [border-style-map
+           border-bottom-style
+           border-bottom-weight
+           margin-left-str]
+    :as   m}]
+  (let [label-line (sandwich-label-line* m)
+        body-lines (body-lines-no-border m)]
     (str label-line
-         "\n"
+         (when-not (::no-callout-body? m) "\n")
          body-lines
          (when-not (string/blank? body-lines) "\n")
          (when-not (string/blank? body-lines)
-           (bling [border-style (string/join (repeat n "─"))])))))
+           (let [border-bottom-char
+                 (horizontal-border-char* border-bottom-style
+                                          border-bottom-weight)
+
+                 bottom-left-box-drawing-char
+                 (first-or-last-horizontal-border-char m
+                                                       :bottom
+                                                       :left
+                                                       border-bottom-char)
+
+                 label-line-length
+                 (sandwich-callout-label-line-length* label-line m)]
+             (bling margin-left-str
+                    [border-style-map
+                     (str bottom-left-box-drawing-char
+                          (string/join (repeat (dec label-line-length)
+                                               border-bottom-char)))]))))))
+
+;; Minimal callout end ---------------------------------------------------------
 
 (defn- sideline-callout
-  [{:keys [theme label side-label label-theme border-style padding-left margin-left-str]
+  [{:keys [theme
+           label
+           border-style
+           border-weight
+           side-label
+           label-theme
+           border-style-map
+           padding-left
+           margin-left-str]
     :as m}]
-  (let [bold?
-        (= theme "sideline-bold")
-
-        marquee-label?
+  (let [marquee-label?
         (and label
              (-> m :label as-str string/blank? not)
              (contains? #{"marquee"} label-theme))
-
-        horizontal-extension
-        (when (and (not marquee-label?) label)
-          [border-style (char-repeat (max (dec padding-left) 0)
-                                     (if bold? "━" "─"))])
 
         label-line
         (cond
@@ -1129,22 +1819,19 @@
           marquee-label?
           (sideline-marquee-label m)
 
-
-
-          ; label-theme is :minimal
+          ; label-theme is :simple
           :else
-          (bling margin-left-str
-                 [border-style (if bold? "┏" "┌")]
-                 horizontal-extension
-                 (bling [:bold (some->> label (str " "))]
-                        (when side-label " ")
-                        (when side-label [border-style (if bold? "━━━" "───")])
-                        (some->> side-label (str " ")))))
+          (sandwich-label-line* m))
 
         bottom-line
-        (bling [border-style
+        (bling [border-style-map
                 (str margin-left-str
-                     (if bold? "┗" "└"))])]
+                     (first-or-last-horizontal-border-char
+                      m
+                      :bottom
+                      :left
+                      (horizontal-border-char* border-style
+                                               border-weight)))])]
     (str
      label-line
      "\n"
@@ -1152,19 +1839,16 @@
      "\n"
      bottom-line)))
 
-
-
-
 (defn- ansi-callout-str
-  [{:keys [label-theme theme value] :as m}]
-  (let [sideline-variant?            (contains? #{"sideline" "sideline-bold"} theme)
-        minimal-variant?             (= "minimal" theme)
+  [{:keys [theme value label side-label] :as m}]
+  (let [sideline-variant?            (= "sideline" theme)
+        sandwich-variant?            (= "sandwich" theme)
         sideline-variant-with-body?  (boolean (and value sideline-variant?))
         sideline-variant-just-label? (and (nil? value) sideline-variant?)
         gutter-theme?                (contains? #{"rainbow-gutter" "gutter"} theme)
-        m                            (assoc-in m [:border-style :contrast] :medium)]
+        m                            (assoc-in m [:border-style-map :contrast] :medium)]
     ;; (? (keyed [sideline-variant?
-    ;;            minimal-variant?
+    ;;            sandwich-variant?
     ;;            sideline-variant-with-body?
     ;;            sideline-variant-just-label?
     ;;            gutter-theme?]))
@@ -1172,58 +1856,22 @@
          (if sideline-variant-with-body?
            (sideline-callout m)
            (cond
-             minimal-variant?
-             (minimal-callout m)
+             sandwich-variant?
+             (sandwich-callout m)
 
              sideline-variant-just-label?
              (lns m :label)
 
              gutter-theme?
-             (str (when (:label m)
-                    (if (= label-theme "marquee")
-                      (gutter-marquee-label m)
-                      (lns m :label)))
+             (str (when (or label side-label)
+                    (gutter-label-line* m))
                   "\n"
                   (lns m :value))))
          (:margin-bottom-str m))))
 
-
 ;; -----------------------------------------------------------------------------
 ;; Boxed callout start 
 ;; -----------------------------------------------------------------------------
-
-(def ^:private bdc
-  {:h  {:double     "═"
-        :bold       "━"
-        :thin       "─"
-        :thin-round "─"}
-
-   :v  {:double     "║"
-        :bold       "┃"
-        :thin       "│"
-        :thin-round "│"}
-
-   :tl {:double     "╔"
-        :bold       "┏"
-        :thin       "┌"
-        :thin-round "╭"}
-
-   :tr {:double     "╗"
-        :bold       "┓"
-        :thin       "┐"
-        :thin-round "╮"}
-
-   :bl {:double     "╚"
-        :bold       "┗"
-        :thin       "└"
-        :thin-round "╰"}
-
-   :br {:double     "╝"
-        :bold       "┛"
-        :thin       "┘"
-        :thin-round "╯"}})
-
-(def ^:private box-drawing-styles (into #{} (-> bdc :h keys)))
 
 (defn- wrapped-string-inner
   [max-cols
@@ -1234,7 +1882,7 @@
     acc
     (let [nl?              (= word "\n")
           space+word       (str (when-not (or nl? (zero? col)) " ") word)
-          space+word-width (adjusted-char-count space+word)
+          space+word-width (strlen-minus-ansi-sgr space+word)
           exceeds?         (< max-cols (+ col space+word-width))
           string-to-concat (if exceeds?
                              (str "\n" word)
@@ -1259,32 +1907,28 @@
       {:result (str result string-to-concat)
        :col    new-col})))
 
-
 (defn- wrap-single-word [max-cols s]
   (->> s
        seq
        (partition-all max-cols)
        (mapv string/join)))
 
-
 (defn- stub-leading-spaces [s]
   (string/replace s #"^ +" #(util/sjr (count %) "〠")))
-
 
 (defn- with-wrapped-single-words
   [max-width acc s]
   (into acc
-        (if (< max-width (adjusted-char-count s))
+        (if (< max-width (strlen-minus-ansi-sgr s))
           (wrap-single-word max-width s)
           [s])))
-
 
 (defn- wrapped-string
   "Given a string with line-breaks, returns a string, with additional line
    breaks inserted, such that the width of every line of text is below the
    `max-cols` threshold."
   [s {:keys [max-width]}]
-  (->> 
+  (->>
    (string/split s #"\n")
    (mapv #(string/split (stub-leading-spaces %) #" "))
    (mapv #(reduce (partial with-wrapped-single-words max-width) [] %))
@@ -1294,16 +1938,14 @@
    (mapv #(-> % :result (string/replace #"〠" " ")))
    (string/join "\n")))
 
-
 (defn- colored-border [s colorway]
   (if colorway
     (bling [{:color colorway} s])
     s))
 
-
 (defn- label-profile
-  [{:keys [pd horizontal-border-char colorway label]}]
-  (let [colorize           #(if-not (re-find ansi/sgr-re % )
+  [{:keys [pd horizontal-border-char colorway label header-padding-left]}]
+  (let [colorize           #(if-not (re-find ansi/sgr-re %)
                               (bling [{:color colorway} %])
                               %)
         label-str          (or (some-> label
@@ -1313,20 +1955,19 @@
                                        (->> (str " "))
                                        colorize)
                                "")
-        label-char-count   (adjusted-char-count label-str)
+        label-char-count   (strlen-minus-ansi-sgr label-str)
         label-pd-str       (when (and (pos? label-char-count) pd)
-                             (-> pd
+                             (-> (or header-padding-left pd)
                                  dec
                                  (util/sjr horizontal-border-char)
                                  (colored-border colorway)))
         label-pd-str-count (or (some-> label-pd-str
-                                       adjusted-char-count)
+                                       strlen-minus-ansi-sgr)
                                0)]
     (keyed [label-str
             label-char-count
             label-pd-str
             label-pd-str-count])))
-
 
 (defn- block-border*
   [{:keys [pd-left
@@ -1335,9 +1976,9 @@
            colorway
            cols
            corner-border-char
-           lc                    
-           rc                    
-           label                 
+           lc
+           rc
+           label
            side-label-for-border
            shadow-level]
     :as   m}]
@@ -1391,7 +2032,7 @@
            w         (cond (< w min-width)
                            min-width
                            (some-> max-width
-                                   (maybe-> pos-int?) 
+                                   (maybe-> pos-int?)
                                    (< w))
                            max-width
                            :else w)]
@@ -1404,76 +2045,80 @@
            box-drawing-style
            colorway]
     :as   m}]
-  (let [box-drawing-style          
-        (if box-drawing-style
-          (or (maybe-> box-drawing-style box-drawing-styles)
-              :thin-round)
-          (when-not (or (string? border-char)
-                        (and (string? vertical-border-char)
-                             (string? horizontal-border-char)))
-            :thin-round))
+  (let [vertical-border-char
+        (some-> (or vertical-border-char
+                    border-char
+                    (vertical-border-char* (:border-style m)
+                                           (:border-weight m)))
+                (colored-border colorway))
 
-        vertical-border-char       
-        (-> (or (some->> box-drawing-style (-> bdc :v))
-                vertical-border-char
-                border-char
-                bdc)
-            (colored-border colorway))
+        vertical-border-char-count
+        (strlen-minus-ansi-sgr vertical-border-char)
 
-        vertical-border-char-count 
-        (adjusted-char-count vertical-border-char)
-
-        horizontal-border-char     
-        (or (some->> box-drawing-style (-> bdc :h))
-            (let [c (as-str
-                     (or horizontal-border-char
-                         border-char
-                         bdc))]
-              (if (< 1 (count c)) (subs c 0 1) c)))]
-    (keyed [box-drawing-style          
-            vertical-border-char       
-            vertical-border-char-count 
+        horizontal-border-char
+        (some-> (or horizontal-border-char
+                    border-char
+                    (horizontal-border-char* (:border-style m)
+                                             (:border-weight m)))
+                (colored-border colorway))]
+    (keyed [box-drawing-style
+            vertical-border-char
+            vertical-border-char-count
             horizontal-border-char])))
 
+(defn- zero-or-pos? [x] 
+  (boolean (when (int? x) (> x -1) )))
 
+;; TODO - support "fit-width"
 (defn- boxed-callout
   "Creates a callout with a border on all sides"
   ([s] (boxed-callout s nil))
-  ([s 
+  ([s
     {:keys     [width
                 max-width
                 min-width
                 colorway
                 label
-                side-label]
+                side-label
+                header-padding-left]
      pd-top    :padding-top
      pd-bottom :padding-bottom
      pd-left   :padding-left
      pd-right  :padding-right
      pd-block  :padding-block
      pd-inline :padding-inline
+     supplied-horizontal-border-char :horizontal-border-char
      :as       m}]
-   (let [{:keys [box-drawing-style          
-                 vertical-border-char       
-                 vertical-border-char-count 
-                 horizontal-border-char]} 
+   (let [{:keys [box-drawing-style
+                 vertical-border-char
+                 vertical-border-char-count
+                 horizontal-border-char]}
          (border-chars m)
-         pd-block                   (or (maybe-> pd-block pos-int?) 1)
+         ;;  pd-block                   (or (some-> pd-block (maybe-> zero-or-pos?)) 2)
          pd-inline                  (or (maybe-> pd-inline pos-int?) 2)
-         pd-top                     (or (maybe-> pd-top pos-int?) pd-block)
-         pd-bottom                  (or (maybe-> pd-bottom pos-int?) pd-block)
-         pd-hrz                     #(min (or (maybe-> % pos-int?) pd-inline) 10)
-         pd-right                   (pd-hrz pd-right)
-         pd-left                    (pd-hrz pd-left)
+         pd-top                     (or (some-> pd-top
+                                                (maybe-> zero-or-pos?))
+                                        pd-block)
+         pd-bottom                  (or (some-> pd-bottom
+                                                (maybe-> zero-or-pos?))
+                                        pd-block)
+         pd-right                   (min (or (some-> pd-right (maybe-> zero-or-pos?))
+                                             pd-inline)
+                                         10)
+         pd-left                    (min (or (some-> pd-left (maybe-> zero-or-pos?))
+                                             pd-inline)
+                                         10)
          terminal-width             (resolve-terminal-width min-width max-width)
          cols                       (or width terminal-width)
+         cols                       (- (max min-width cols)
+                                       (or (:margin-left m) 0))
          max-inner-cols             (- cols
                                        pd-left
                                        pd-right
                                        (* 2 vertical-border-char-count))
          pd-left-str                (util/sjr pd-left " ")
          start                      (str vertical-border-char pd-left-str)
-         start-count                (adjusted-char-count start)
+         start-count                (strlen-minus-ansi-sgr start)
          pd-ln                      (str vertical-border-char
                                          (util/sjr (- cols
                                                       (* 2 vertical-border-char-count))
@@ -1482,8 +2127,14 @@
                                          "\n")
          pd-top-ln                  (util/sjr pd-top pd-ln)
          pd-bottom-ln               (util/sjr pd-bottom pd-ln)
-         corner-border-char         #(or (some->> box-drawing-style (-> bdc %))
-                                         horizontal-border-char)
+         ;; this gets a border char
+         corner-border-char         #(or supplied-horizontal-border-char
+                                         (first-or-last-horizontal-border-char
+                                          (assoc m ::boxed-callout-corner true)
+                                          (case % :tl :top :tr :top :bl :bottom :br :bottom)
+                                          (case % :tl :left :tr :right :bl :left :br :right)
+                                          horizontal-border-char)
+                                         (some->> box-drawing-style (-> bdc %)))
          label                      (as-str label)
          truncated-label            (some-> label
                                             (maybe-> #(< (- cols 4) (count %)))
@@ -1499,33 +2150,34 @@
          side-label-for-border      (when-not truncated-label
                                       (when side-label
                                         (if label
-                                          (when (< 4 (- cols (+ (adjusted-char-count label)
-                                                                (adjusted-char-count side-label)
+                                          (when (< 4 (- cols (+ (strlen-minus-ansi-sgr label)
+                                                                (strlen-minus-ansi-sgr side-label)
                                                                 4)))
                                             side-label)
                                           truncated-side-label)))
          block-border-opts          (keyed [pd-left
+                                            header-padding-left
                                             pd-right
                                             horizontal-border-char
                                             colorway
                                             cols
                                             corner-border-char])
          top-border                 (colored-border
-                                     (block-border* 
+                                     (block-border*
                                       (merge block-border-opts
                                              {:lc                    :tl
                                               :rc                    :tr
                                               :label                 label
                                               :side-label-for-border side-label-for-border}))
                                      colorway)
-         bottom-border              (colored-border 
-                                     (block-border* 
+         bottom-border              (colored-border
+                                     (block-border*
                                       (merge block-border-opts
                                              {:lc :bl
                                               :rc :br}))
                                      colorway)
 
-         body                       (str (when (and side-label 
+         body                       (str (when (and side-label
                                                     (not side-label-for-border))
                                            (str side-label "\n\n"))
                                          s)
@@ -1534,25 +2186,27 @@
 
          lns                        (restore-ansi-sgr-over-lines wrapped)
 
-         ret 
-         (str top-border
+         margin-left-str            (char-repeat (:margin-left m) " ")
+         ret
+         (str margin-left-str top-border
               "\n"
-              pd-top-ln
+              margin-left-str pd-top-ln
               (string/join
                "\n"
                (mapv (fn [ln]
-                       (str start
+                       (str margin-left-str
+                            start
                             ln
                             (util/sjr (- cols
-                                         (+ start-count 
-                                            (adjusted-char-count ln))
+                                         (+ start-count
+                                            (strlen-minus-ansi-sgr ln))
                                          vertical-border-char-count)
                                       " ")
                             vertical-border-char))
                      lns))
               "\n"
-              pd-bottom-ln
-              bottom-border)]
+              margin-left-str pd-bottom-ln
+              margin-left-str bottom-border)]
      ret)))
 
 ;; -----------------------------------------------------------------------------
@@ -1573,12 +2227,12 @@
             "system-purple"
             "system-fuchsia"]))
 
-(defn- border-left-str [theme gutter-str]
+(defn- border-left-str
+  [{:keys [theme border-style border-weight]}
+   gutter-str]
   (case theme
     "sideline"
-    "│"
-    "sideline-bold"
-    "┃"
+    (vertical-border-char* border-style border-weight)
     "gutter"
     gutter-str
     "rainbow-gutter"
@@ -1593,75 +2247,50 @@
       (if (true? (:data? m))
         s
         (some-> s println)))
-    (let [char
-          defs/gutter-char
+    (let [char                   defs/gutter-char
+          border-style-map       {:color    (:color m)
+                                  :contrast :medium}
+          gutter?                (= "gutter" theme)
+          rainbow?               (= "rainbow-gutter" theme)
+          gutter-str             (if rainbow?
+                                   (bling [{:color (last rainbow-colors)} char])
+                                   (bling [border-style-map char]))
+          rainbow-gutter-str     (apply bling
+                                        (for [s (drop-last rainbow-colors)]
+                                          [{:color s} char]))
+          rainbow-gutter-str-odd (apply bling
+                                        (for [s (drop-last rainbow-colors-system)]
+                                          [{:color s} char]))
+          cr                     (fn [k ch] (char-repeat (or (k m) 0) ch))
+          gutter-str-zero        (bling [border-style-map
+                                         (string/join
+                                          (cr :margin-left
+                                              defs/gutter-char-lower-seven-eighths))])
+          margin-left-str-zero   gutter-str-zero
+          border-left-str-zero   defs/gutter-char-lower-seven-eighths
+          margin-left-str        (if rainbow?
+                                   rainbow-gutter-str
+                                   (cr
+                                    :margin-left
+                                    (case theme
+                                      "gutter"         gutter-str
+                                      "rainbow-gutter" rainbow-gutter-str
+                                      " ")))
+          s                      (ansi-callout-str
+                                  (merge
+                                   m
+                                   {:border-style-map  border-style-map
+                                    :border-left-str   (border-left-str m gutter-str)
+                                    :padding-left-str  (cr :padding-left " ")
+                                    :margin-left-str   margin-left-str
+                                    :margin-top-str    (cr :margin-top "\n")
+                                    :margin-bottom-str (cr :margin-bottom "\n")}
 
-          border-style
-          {:color    (:color m)
-           :contrast :medium}
-
-          gutter?
-          (= "gutter" theme)
-
-          rainbow?
-          (= "rainbow-gutter" theme)
-
-          gutter-str
-          (if rainbow?
-            (bling [{:color (last rainbow-colors)} char])
-            (bling [border-style char]))
-
-          rainbow-gutter-str
-          (apply bling
-                 (for [s (drop-last rainbow-colors)]
-                   [{:color s} char]))
-
-          rainbow-gutter-str-odd
-          (apply bling
-                 (for [s (drop-last rainbow-colors-system)]
-                   [{:color s} char]))
-
-          cr
-          (fn [k ch] (char-repeat (or (k m) 0) ch))
-
-          gutter-str-zero
-          (bling [border-style
-                  (string/join
-                   (cr :margin-left
-                       defs/gutter-char-lower-seven-eighths))])
-
-          margin-left-str-zero
-          gutter-str-zero
-
-          border-left-str-zero
-          defs/gutter-char-lower-seven-eighths
-
-          margin-left-str
-          (if rainbow?
-            rainbow-gutter-str
-            (cr
-             :margin-left
-             (case theme
-               "gutter"         gutter-str
-               "rainbow-gutter" rainbow-gutter-str
-               " ")))
-
-          s
-          (ansi-callout-str
-           (merge
-            m
-            {:border-style      border-style
-             :border-left-str   (border-left-str theme gutter-str)
-             :padding-left-str  (cr :padding-left " ")
-             :margin-left-str   margin-left-str
-             :margin-top-str    (cr :margin-top "\n")
-             :margin-bottom-str (cr :margin-bottom "\n")}
-
-            (when rainbow?
-              {:margin-left-str-odd rainbow-gutter-str-odd})
-            (when gutter?
-              (keyed [margin-left-str-zero
-                      border-left-str-zero]))))]
+                                   (when rainbow?
+                                     {:margin-left-str-odd rainbow-gutter-str-odd})
+                                   (when gutter?
+                                     (keyed [margin-left-str-zero
+                                             border-left-str-zero]))))]
       (if (or (:browser-dev-console? m)
               (true? (:data? m)))
         s
@@ -1674,335 +2303,266 @@
             bling.browser/ansi-sgr-string->browser-dev-console-array
             (.apply js/console.log js/console)))))
 
-
 (defn- default-opt [m k set-of-strs default]
   (or (some-> (k m)
               as-str
               (maybe-> set-of-strs))
       default))
 
+(defn- shortened-label [s label-max-length]
+  (if (< label-max-length (ansi/strlen-minus-ansi-sgr s))
+    (str (apply str (take label-max-length s)) "...")
+    s))
+
+(defn- supplied-label-shortened [label label-max-length]
+  (some-> label
+          str
+          string/split-lines
+          first
+          (shortened-label label-max-length)))
+
+(defn- supplied-coll-label-shortened [m label-max-length]
+  (some-> m
+          :label
+          (maybe-> coll?)
+          (util/shortened label-max-length)))
 
 (defn- resolve-label
-  [{:keys [label label-str] :as m}
-   type-as-str]
-  (let [blank-string-supplied?              (and (string? label) 
-                                                 (string/blank? label))
-        nothing-supplied?                   (nil? label)
-        supplied-label                      label
-        supplied-label-str                  label-str
-        supplied-coll-label-shortened       (some-> m
-                                                    :label
-                                                    (maybe-> coll?)
-                                                    (util/shortened 33))
-        default-label-based-on-callout-type (some-> type-as-str
-                                                    string/upper-case)]
-    ;; (? (keyed [blank-string-supplied? 
-    ;;            supplied-label 
-    ;;            supplied-label-str 
-    ;;            supplied-coll-label-shortened
-    ;;            default-label-based-on-callout-type]))
+  [{:keys [label]
+    :as   m}
+   label-max-length]
+  (let [blank-string-supplied? (and (string? label) (string/blank? label))
+        nothing-supplied?      (nil? label)]
 
-    ;; TODO confirm this
+    ;; Blank string is a force-nil situation (in event a :type is provided) 
     (if blank-string-supplied?
-      ;; Blank string is a force-nil situation (in event a :type is provided) 
       nil
-      (or
-       ;; default to type if no label supplied, but :type provided
-       (when nothing-supplied? default-label-based-on-callout-type)
-       supplied-coll-label-shortened
-       label))))
+      ;; If no label value was supplied try a fallback based on callout type
+      ;; Else use a shortened version of supplied label
+      (if nothing-supplied?
+        (some-> m :type name string/upper-case)
+        (or (supplied-coll-label-shortened m label-max-length)
+            (supplied-label-shortened label label-max-length))))))
 
+(defn- spacing [m k default]
+  (let [n (get m k)]
+    (if (and (int? n) (<= 0 n)) n default)))
 
-(defn- spacing [n default]
-  (if (and (int? n) (<= 0 n)) n default))
-
-
-(defn- resolve-padding-left [m theme]
+(defn- resolve-padding-left [m theme label]
   (if (= theme "boxed")
-    (:padding-left m)
-    (let [default (if (= theme "minimal") 0 2)
+    (or (:padding-left m)
+        (if label 1 0))
+    (let [default (if (= theme "sandwich") 0 2)
           pl      (or (maybe-> (:padding-left m) pos-int?) default)]
       pl)))
 
+(defn- resolve-block-padding-based-on-label
+  [theme label]
+  (if (contains? #{"sandwich" "sideline"} theme)
+    (if label 1 0)
+    0))
 
 (defn- resolve-padding-top
-  [theme f]
-  #?(:cljs (f :padding-top 0)
-     :clj  (if (contains? #{"gutter" "rainbow-gutter" "minimal"} theme)
-             (f :padding-top 0)
-             (f :padding-top 0))))
+  [theme label f]
+  (let [n
+        (if (contains? #{"gutter" "rainbow-gutter" "sandwich"} theme)
+          (f :padding-top 0)
+          (f :padding-top 0))]
+    (if (zero? n)
+      (resolve-block-padding-based-on-label theme label)
+      n)))
 
+(defn- resolve-padding-top2 [m theme label padding-block]
+  (cond (contains? #{"gutter" "rainbow-gutter" "sandwich"} theme)
+        (spacing m :padding-top padding-block)))
 
 (defn- callout-opts* [m]
   (let-map
-   [theme          (default-opt m
-                                :theme
-                                #{"sideline"
-                                  "sideline-bold"
-                                  "gutter"
-                                  "rainbow-gutter"
-                                  "minimal"
-                                  "boxed"}
-                                "sideline")
-    sideline-theme? (contains? #{"sideline" "sideline-bold"} theme)
-    label-theme    (or (default-opt m
+   [theme              (default-opt m
+                                    :theme
+                                    #{"sideline"
+                                      "gutter"
+                                      "rainbow-gutter"
+                                      "sandwich"
+                                      "boxed"}
+                                    "sandwich")
+    ; :"┌" and "└" (or similar) chars are use for the top-left and bottom left "corners" on the header and footer
+    border-notches?     (cond (= theme "sideline")
+                              true
+                              :else
+                              (if (false? (m :border-notches?))
+                                false
+                                true))
+    
+
+    sideline-theme?    (contains? #{"sideline"} theme)
+    label-theme        (default-opt m
                                     :label-theme
-                                    #{"marquee" "minimal" "pipe"}
-                                    nil)
-                       "minimal")
-    sp             (fn [k n] (spacing (get m k) n))
-    padding-top    (resolve-padding-top theme sp)
-    padding-bottom (sp :padding-bottom 0)
-    margin-top     (sp :margin-top #?(:cljs 0 :clj 1))
-    margin-bottom  (sp :margin-bottom 0)
-    margin-left    (sp :margin-left 0)
-    padding-left   (resolve-padding-left m theme)
-    type           (some-> (:type m) as-str (maybe-> #{"warning" "error" "info"}))
-    colorway       (or (get semantics-by-semantic-type type)
-                       (some-> (:colorway m) as-str))
-    semantic-type  (or (get semantics-by-semantic-type type)
-                       (get semantics-by-semantic-type colorway))
-    warning?       (= type "warning")
-    error?         (= type "error")
-    color          (or (get semantics-by-semantic-type colorway)
-                       (maybe-> colorway all-color-names)
-                       "neutral")
-    user-label     (:label m)
-    label*         (resolve-label m type)
-    label          (if (string? label*)
-                     (-> label*
-                         (string/replace #"\n+( +)$" #(second %))
-                         (string/replace #"^( +)\n+" #(second %)))
-                     label*)
-    side-label      (some-> m
-                            :side-label
-                            (maybe-> string?))
-    border-block-length (let [bbl (:border-block-length m)]
-                          (or (when (pos-int? bbl) bbl) 50))
-    ;; TODO maybe see if label is blinged and if not, bold it.
-     ;label         (if label-is-blinged? label (bling [:bold label]))
-    ]))
+                                    #{"marquee" "simple" "pipe"}
+                                    "simple")
+    label-max-length   (spacing m :label-max-length 68)
+    label*             (resolve-label m label-max-length)
+    label              (if (string? label*)
+                         (-> label*
+                             (string/replace #"\n+( +)$" #(second %))
+                             (string/replace #"^( +)\n+" #(second %)))
+                         label*)
+    side-label           (some-> m
+                                 :side-label
+                                 (maybe-> string?))
+    padding-block      (spacing m
+                                :padding-block
+                                (if (and (contains? #{"sideline" "gutter"} theme)
+                                         (not label)
+                                         (not side-label))
+                                  0
+                                  1))
+    padding-inline     (spacing m
+                                :padding-inline
+                                (case theme
+                                  "boxed"
+                                  (if label 3 1)
+                                  "sideline"
+                                  2
+                                  "gutter"
+                                  2
+                                  "sandwich"
+                                  (cond
+                                    (= "marquee" label-theme)
+                                    2
+                                    border-notches?
+                                    2
+                                    :else
+                                    0)
+                                  0))
+    padding-top        (spacing m :padding-top padding-block)
+    padding-bottom     (spacing m :padding-bottom padding-block)
+    margin-top         (spacing m :margin-top #?(:cljs 0 :clj 1))
+    margin-bottom      (spacing m :margin-bottom 0)
+    margin-left        (let [n (spacing m :margin-left 0)]
+                         (if (and (= theme "gutter") (zero? n)) 1 n))
+    ;; padding-left       (resolve-padding-left m theme label)
+    padding-left       (spacing m :padding-left padding-inline)
+    type               (some-> (:type m) as-str (maybe-> #{"warning" "error" "info"}))
+    colorway           (or (get semantics-by-semantic-type type)
+                           (some-> (:colorway m) as-str))
+    semantic-type      (or (get semantics-by-semantic-type type)
+                           (get semantics-by-semantic-type colorway))
+    warning?           (= type "warning")
+    error?             (= type "error")
+    color              (or (get semantics-by-semantic-type colorway)
+                           (maybe-> colorway all-color-names)
+                           "subtle")
+    user-label           (:label m)
+
+    ;; deprecated
+    border-block-length  (let [bbl (:border-block-length m)]
+                           (or (when (pos-int? bbl) bbl) 50))
+
+    ;; new ---------------------------------------------------------------------
+    border-style         (default-opt m
+                                      :border-style
+                                      #{"double" "solid"}
+                                      "solid")
+    border-weight        (default-opt m
+                                      :border-weight
+                                      #{"normal" "bold"}
+                                      (if (= theme "gutter") "bold" "normal"))
+    border-shape         (default-opt m
+                                      :border-shape
+                                      #{"sharp" "round"}
+                                      "sharp")
+
+    border-top-style     (let [s
+                               (default-opt m
+                                            :border-top-style
+                                            #{"double" "solid" "none"}
+                                            border-style)]
+                           (if (and (= theme "sideline")
+                                    (= s "none"))
+                             "solid"
+                             s))
+
+    border-top-weight    (default-opt m
+                                      :border-top-weight
+                                      #{"bold" "normal"}
+                                      border-weight)
+
+    border-bottom-style  (let [s
+                               (default-opt m
+                                            :border-bottom-style
+                                            #{"double" "solid" "none"}
+                                            border-style)]
+                           (if (and (= theme "sideline")
+                                    (= s "none"))
+                             "solid"
+                             s))
+
+    border-bottom-weight (default-opt m
+                                      :border-bottom-weight
+                                      #{"bold" "normal"}
+                                      border-weight)
+
+    header-padding-left  (spacing m :header-padding-left 2)
+
+    min-width            (spacing m :min-width 40)
+
+    width                (default-opt m
+                                      :width
+                                      #{"auto"}
+                                      (spacing m :width nil))
+
+; When width is set to auto, this is the minimum amount of spaces between the header label and the side label. This space will be occupied by the border, unless :border-style is set to :none.
+    header-gap   (spacing m :header-gap 5)
+
+    ; use to control the offset of the header label
+    header-padding-left    (let [n (spacing m
+                                            :header-padding-left
+                                            (case theme
+                                              "boxed"
+                                              3
+                                              "sandwich"
+                                              (if (= label-theme "simple") 4 2)
+                                              2)
+                                            #_(case theme
+                                                "sideline"
+                                                2
+                                                "boxed"
+                                                3
+                                                (if border-notches? 2 2)))]
+                             (if (and (= theme "sideline") (zero? n)) 1 n))
+
+    gutter-color         (or (get semantics-by-semantic-type colorway)
+                             (maybe-> colorway all-color-names)
+                             nil)]))
+
+;;           CCCCCCCCCCCCC         OOOOOOOOO      
+;;        CCC::::::::::::C       OO:::::::::OO    
+;;      CC:::::::::::::::C     OO:::::::::::::OO  
+;;     C:::::CCCCCCCC::::C    O:::::::OOO:::::::O 
+;;    C:::::C       CCCCCC    O::::::O   O::::::O 
+;;   C:::::C                  O:::::O     O:::::O 
+;;   C:::::C                  O:::::O     O:::::O 
+;;   C:::::C                  O:::::O     O:::::O 
+;;   C:::::C                  O:::::O     O:::::O 
+;;   C:::::C                  O:::::O     O:::::O 
+;;   C:::::C                  O:::::O     O:::::O 
+;;    C:::::C       CCCCCC    O::::::O   O::::::O 
+;;     C:::::CCCCCCCC::::C    O:::::::OOO:::::::O 
+;;      CC:::::::::::::::C     OO:::::::::::::OO  
+;;        CCC::::::::::::C       OO:::::::::OO    
+;;           CCCCCCCCCCCCC         OOOOOOOOO 
 
 
 
-;;         CCCCCCCCCCCCC     OOOOOOOOO     
-;;      CCC::::::::::::C   OO:::::::::OO   
-;;    CC:::::::::::::::C OO:::::::::::::OO 
-;;   C:::::CCCCCCCC::::CO:::::::OOO:::::::O
-;;  C:::::C       CCCCCCO::::::O   O::::::O
-;; C:::::C              O:::::O     O:::::O
-;; C:::::C              O:::::O     O:::::O
-;; C:::::C              O:::::O     O:::::O
-;; C:::::C              O:::::O     O:::::O
-;; C:::::C              O:::::O     O:::::O
-;; C:::::C              O:::::O     O:::::O
-;;  C:::::C       CCCCCCO::::::O   O::::::O
-;;   C:::::CCCCCCCC::::CO:::::::OOO:::::::O
-;;    CC:::::::::::::::C OO:::::::::::::OO 
-;;      CCC::::::::::::C   OO:::::::::OO   
-;;         CCCCCCCCCCCCC     OOOOOOOOO     
-
-
-;; TODO - Shoul we create callout-data as sugar for (callout {... data? true ...} ...)
-;; TODO - visual tests
-
-(def ^{:no-doc true} callout-options-map-schema
-  [:map
-   [:type
-    {:optional true
-     :desc     ["Will set the label text (unless provided via `:label`). Will also set the `:colorway`, and override any provided `:colorway` value."]}
-    [:enum :error "error" :warning "warning" :info "info"]]
-   
-   [:colorway
-    {:optional true
-     :desc     ["The color of the sideline border, or gutter, depending on the value of `:theme`."]}
-    [:enum :error "error" :warning "warning" :info "info" :positive "positive" :subtle "subtle" :magenta "magenta" :green "green" :negative "negative" :neutral "neutral"]]
-   
-   [:theme
-    {:optional true
-     :default  :sideline
-     :desc     ["Theme of callout."]}
-    [:enum :sideline "sideline" :sideline-bold "sideline-bold" :minimal "minimal" :gutter "gutter" :boxed "boxed"]]
-   
-   [:label
-    {:optional true
-     :desc     ["Labels the callout. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string)."
-                "In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively."]}
-    :any]
-   
-   [:side-label
-    {:optional true
-     :desc     ["Side label to the the callout label. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string)."
-                "In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively."]}
-    :any]
-   
-   [:label-theme
-    {:optional true
-     :default  :minimal
-     :desc     ["Theme of label."]}
-    [:enum :marquee "marquee" :minimal "minimal"]]
-   
-   [:padding-top
-    {:optional true
-     :default  0
-     :desc     ["Amount of padding (in newlines) at top, inside callout."]}
-    :int]
-   
-   [:padding-bottom
-    {:optional true
-     :default  0
-     :desc     ["Amount of padding (in newlines) at bottom, inside callout."]}
-    :int]
-   
-   [:padding-left
-    {:optional true
-     :default  2
-     :desc     ["Amount of padding (in blank character spaces) at left, inside callout."]}
-    :int]
-   
-   [:margin-top
-    {:optional true
-     :default  1
-     :desc     ["Amount of margin (in newlines) at top, outside callout."
-                "Only applies to terminal emulator printing."]}
-    :int]
-   
-   [:margin-bottom
-    {:optional true
-     :default  0
-     :desc     ["Amount of margin (in newlines) at bottom, outside callout."
-                "Only applies to terminal emulator printing."]}
-    :int]
-   
-   [:margin-left
-    {:optional true
-     :default  0
-     :desc     ["Amount of margin (in blank character spaces) at left, outside callout."]}
-    :int]
-   
-   [:border-block-length
-    {:optional true
-     :default  50
-     :desc     ["The width of the top and bottom border, only applies to the `:minimal` callout theme."]}
-    :int]
-   
-   [:data?
-    {:optional true
-     :desc     ["Returns a data representation of result instead of printing it."]}
-    :boolean]
-   
-   [:box-drawing-style
-    {:optional true
-     :theme    :boxed
-     :desc     ["The style of box-drawing character used."]}
-    [:enum :thin-round "thin-round" :thin "thin" :bold "bold" :double "double"]]
-   
-   [:border-char
-    {:optional true
-     :theme    :boxed
-     :desc     ["A char that will override the default box-drawing"
-                "character."]}
-    :string]
-   
-   [:vertical-border-char
-    {:optional true
-     :theme    :boxed
-     :desc     ["A char that will override the default box-drawing"
-                "character, for the vertical borders."]}
-    :string]
-   
-   [:width
-    {:optional true
-     :theme    :boxed
-     :desc     ["Width of the box in number of chars, aka columns in"
-                "terminal. If not set, will be the width of the terminal."
-                "If terminal width cannot be detected, will fallback to"
-                "80."]}
-    :pos-int]
-   
-   [:max-width
-    {:optional true
-     :theme    :boxed
-     :desc     ["Max width of box in number of chars, aka columns in"
-                "terminal. Overridden by the `:width` value, if set."]}
-    :pos-int]
-   
-   [:min-width
-    {:optional true
-     :theme    :boxed
-     :desc     ["Min width of box in number of chars, aka columns in"
-                "terminal. Overridden by the `:width` value, if set."]}
-    :pos-int]
-   
-   [:padding-right
-    {:optional true
-     :default  2
-     :theme    :boxed
-     :desc     ["Amount of padding (in blank character spaces) at right,"
-                "inside callout."
-                "In console emulator, defaults to `2`. In browser console,"
-                "defaults to `0`."]}
-    :int]
-   
-   [:padding-block
-    {:optional true
-     :default  1
-     :theme    :boxed
-     :desc     ["Amount of padding (in blank character spaces) at top and"
-                "bottom, inside callout."
-                "In console emulator, defaults to `1`. In browser console,"
-                "defaults to `0`."]}
-    :int]
-   
-   [:padding-inline
-    {:optional true
-     :default  2
-     :theme    :boxed
-     :desc     ["Amount of padding (in blank character spaces) at left"
-                "and right, inside callout."
-                "In console emulator, defaults to `2`. In browser console,"
-                "defaults to `0`."]}
-    :int]
-   ])
-
+;; TODO - Detect width and optionally use for sandwich theme
 
 (defn ^:public callout
-  "Example:
+  "
    
-  ```Clojure
-  (callout {:type                   :error
-            ;; :colorway            :purple          ; <- any bling palette color, overrides :type
-            ;; :label                  \"My label\"              ; overrides label assigned by :theme
-            :side-label             \"My side label\"  ; must have a :label if you want a :side-label        
-            :theme                  :sideline        ; :sideline :sideline-bold :minimal :gutter
-            :label-theme            :minimal         ; :minimal :marquee
-            ;; :padding-top            0                 
-            ;; :padding-left           2                 
-            ;; :padding-bottom         0                 
-            ;; :padding-right          0                 
-            ;; :margin-top             1                 
-            ;; :margin-botom           0                 
-            ;; :margin-left            0                 
-            ;; :data?                  true             ; <- just returns string, no printing
-            
-            :border-block-length 80               ; <- Only applies to :minimal theme + no label
-            
-            ;; --- The options below exclusive to :theme of :boxed ---------------
-            ;; :box-drawing-style      :thin-round      ; :thin :bold :double
-            ;; :border-char            \"*\"
-            ;; :vertical-border-char   \"**\"
-            ;; :width                  40
-            ;; :max-width              100
-            ;; :min-width              40
-            ;; :padding-block          1
-            ;; :padding-inline         2
-            }
-          (bling [:bold (str \"Line 1\" \"\\n\" \"Line 2\")])
-   ```
-
    Prints a message to the console with a block-based coloring motif.
    Returns nil.
-    
+   
    If the `:data?` option is set to `true`, it does not print anything, and
    returns a data representation of the formatting and styling.
    
@@ -2010,7 +2570,7 @@
    The color of the border is determined by the value of the `:type` option, or
    the `:colorway` option. The characteristics of this border are controlled by
    the `:theme` option.
-    
+   
    For callouts of the type `:error`, `:warning`, or `:info`, a label is
    printed in the block start postion. If a :type option is set, the label
    string will default to an uppercased version of that string, e.g.
@@ -2018,199 +2578,548 @@
    used instead. When you want to omit label for callouts of the type `:error`,
    `:warning`, or `:info`, you must explicitly set the :label option to an empty
    string.
-        
+   
    The amount of vertical padding (in number of lines) within the bounds of the
    message body can be controlled the `padding-top` and `padding-bottom` options.
    The amount of space (in number of lines) above and below the message block
    can be controlled the `margin-top` and `margin-bottom` options.
    
    If two arguments are provided, the first should be a map of valid options.
-
+   
+   Example call with all of the options
+   ```clojure
+   (callout {:type                   :error            ; :warning, :info
+             ;; :colorway            :purple           ; <- any bling palette color, overrides :type
+             ;; :label               \"My label\"      ; overrides label assigned by :type
+             :side-label             \"My side label\" ; must have a :label if you want a :side-label        
+             :theme                  :sideline         ; :sideline :sandwich :gutter
+             :label-theme            :simple           ; :simple :marquee
+             ;; :padding-block       0                 
+             ;; :padding-top         0                 
+             ;; :padding-bottom      0                 
+             ;; :padding-inline      2                 
+             ;; :padding-left        2                 
+             ;; :padding-right       0                 
+             ;; :margin-top          1                 
+             ;; :margin-botom        0                 
+             ;; :margin-left         0                 
+             ;; :data?               true              ; <- just returns string, no printing
+             
+             :border-shape           :sharp            ; :round
+             :border-style           :solid            ; :double
+             :border-weight          :normal           ; :bold
+             :width                  40
+             :min-width              40
+             
+             ;; --- The options below exclusive to :theme of :boxed ---
+             ;; :border-char            \"*\"
+             ;; :vertical-border-char   \"**\"
+             ;; :max-width              100
+             ;; :padding-block          1
+             ;; :padding-inline         2
+             }
+    (bling [:bold (str \"Line 1\" \"\\n\" \"Line 2\")])```
+   
    All the options:
+   
+   * **`:colorway`**
+       - `#{\"neutral\" \"magenta\" \"warning\" \"positive\" :neutral \"info\" :green :positive \"negative\" :negative \"error\" \"subtle\" :warning \"green\" :info :error :magenta :subtle}`
+       - Optional.
+       - The color of the border, or gutter, depending on the value of `:theme`.
+   
+   * **`:theme`**
+       - `#{\"boxed\" \"sideline\" :boxed :sideline \"gutter\" :sandwich \"simple\" :gutter}`
+       - Optional.
+       - Defaults to `:sideline`.
+       - Name of callout layout template.
+   
+   * **`:label`**
+       - `any?`
+       - Optional.
+       - Labels the callout.
+         In the case of a callout `:type` of `:warning`, `:error`, or `:info`,
+         the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively.
+   
+   * **`:side-label`**
+       - `any?`
+       - Optional.
+       - Side label to the the callout label. In the case of a callout
+         `:type` of `:warning`, `:error`, or `:info`, the value of the label
+         will default to `WARNING`, `ERROR`, or `INFO`, respectively.
+   
+   * **`:label-theme`**
+       - `#{:simple \"marquee\" :marquee \"simple\"}`
+       - Optional.
+       - Defaults to `:simple`.
+       - Name of label flavor.
+   
+   * **`:padding-block`**
+       - `int?`
+       - Optional.
+       - Defaults to `1`.
+       - Amount of padding (in newlines) at top and bottom, inside callout.
+   
+   * **`:padding-top`**
+       - `int?`
+       - Optional.
+       - Defaults to `1`.
+       - Amount of padding (in newlines) at top, inside callout.
+   
+   * **`:padding-bottom`**
+       - `int?`
+       - Optional.
+       - Defaults to `1`.
+       - Amount of padding (in newlines) at bottom, inside callout.
+   
+   * **`:padding-inline`**
+       - `int?`
+       - Optional.
+       - Defaults to `2`.
+       - Amount of padding (in blank character spaces) at left and right, inside callout.
+   
+   * **`:padding-left`**
+       - `int?`
+       - Optional.
+       - Defaults to `2`.
+       - Amount of padding (in blank character spaces) at left, inside callout.
+   
+   * **`:margin-top`**
+       - `int?`
+       - Optional.
+       - Defaults to `1`.
+       - Amount of margin (in newlines) at top, outside callout.
+         Only applies to terminal emulator printing.
+   
+   * **`:margin-bottom`**
+       - `int?`
+       - Optional.
+       - Defaults to `0`.
+       - Amount of margin (in newlines) at bottom, outside callout.
+         Only applies to terminal emulator printing.
+   
+   * **`:margin-left`**
+       - `int?`
+       - Optional.
+       - Defaults to `0`.
+       - Amount of margin (in blank character spaces) at left, outside callout.
+   
+   * **`:data?`**
+       - `boolean?`
+       - Optional.
+       - Returns a data representation of result instead of printing it.
+   
+   * **`:header-padding-left`**
+       - `int?`
+       - Optional.
+       - Defaults to `2`.
+       - Amount of left margin (in character spaces) for the label, in the callout header
+   
+   * **`:header-gap`**
+       - `int?`
+       - Optional.
+       - Defaults to `5`.
+       - The gap (in character spaces) the label and the optional side lable, in the callout header.
+   
+   * **`:border-style`**
+       - `#{:double :solid \"solid\" \"double\"}`
+       - Optional.
+       - Defaults to `:solid`.
+       - The style of box-drawing character used.
+   
+   * **`:border-weight`**
+       - `#{:bold \"normal\" :normal \"bold\"}`
+       - Optional.
+       - Defaults to `:normal`.
+       - The weight of box-drawing character used. Applies only to `:border-style` of `:solid`
+   
+   * **`:border-shape`**
+       - `#{\"sharp\" :round :sharp \"round\"}`
+       - Optional.
+       - Defaults to `:sharp`.
+       - The corner shape of the borders, either sharp or round. Only applies when `:border-style` is
+         `:solid` AND `:border-weight` is `:normal`
+   
+   * **`:border-notches?`**
+       - `boolean?`
+       - Optional.
+       - Defaults to `:false`.
+       - Only applies to `:sandwich` callout theme. Will use top-left-corner
+         and bottom-right-corner box-drawing chars for first character of header and footer borders.
+   
+   * **`:border-weight`**
+       - `#{:bold \"normal\" :normal \"bold\"}`
+       - Optional.
+       - Defaults to `:normal`.
+       - The style of box-drawing character used.
+   
+   * **`:width`**
+       - `pos-int?`
+       - Optional.
+       - Width of the box in number of chars, aka columns in
+         terminal. If not set, will be the width of the terminal.
+         If terminal width cannot be detected, will fallback to 80.
+   
+   * **`:min-width`**
+       - `pos-int?`
+       - Optional.
+       - Min width of box in number of chars, aka columns in
+         terminal. Overridden by the `:width` value, if set.
+   
+   * **`:border-char`**
+       - `string?`
+       - Optional.
+       - A char that will override the default box-drawing
+   
+   * **`:vertical-border-char`**
+       - `string?`
+       - Optional.
+       - A char that will override the default box-drawing character,
+         for the vertical borders.
+   
+   * **`:horizontal-border-char`**
+       - `string?`
+       - Optional.
+       - A char that will override the default box-drawing character,
+         for the horizontal borders.
+   
+   * **`:box-drawing-style`**
+       - `#{:bold :thin-round :double \"thin\" :thin \"thin-round\" \"double\" \"bold\"}`
+       - Optional.
+       - The style of box-drawing character used.
+   
+   * **`:max-width`**
+       - `pos-int?`
+       - Optional.
+       - Max width of box in number of chars, aka columns in
+         terminal. Overridden by the `:width` value, if set."
+  {:desc     "Prints a message to the console with a block-based coloring motif.
+             Returns nil.
 
-   ```Clojure
-   [:type
-    {:optional true
-     :desc     [\"Will set the label text (unless provided via `:label`). Will also set the `:colorway`, and override any provided `:colorway` value.\"]}
-    [:enum
-     :error
-     \"error\"
-     :warning
-     \"warning\"
-     :info
-     \"info\"]]
+             If the `:data?` option is set to `true`, it does not print anything, and
+             returns a data representation of the formatting and styling.
 
-   [:colorway
-    {:optional true
-     :desc     [\"The color of the sideline border, or gutter, depending on the value of `:theme`.\"]}
-    [:enum
-     :error
-     \"error\"
-     :warning
-     \"warning\"
-     :info
-     \"info\"
-     :positive
-     \"positive\"
-     :subtle
-     \"subtle\"
-     :magenta
-     \"magenta\"
-     :green
-     \"green\"
-     :negative
-     \"negative\"
-     :neutral
-     \"neutral\"]]
+             Callout prints a colored bounding border in the inline start position.
+             The color of the border is determined by the value of the `:type` option, or
+             the `:colorway` option. The characteristics of this border are controlled by
+             the `:theme` option.
 
-   [:theme
-    {:optional true
-     :default  :sideline
-     :desc     [\"Theme of callout.\"]}
-    [:enum
-     :sideline
-     \"sideline\"
-     :sideline-bold
-     \"sideline-bold\"
-     :minimal
-     \"minimal\"
-     :gutter
-     \"gutter\"
-     :boxed
-     \"boxed\"]]
+             For callouts of the type `:error`, `:warning`, or `:info`, a label is
+             printed in the block start postion. If a :type option is set, the label
+             string will default to an uppercased version of that string, e.g.
+             {:type :INFO} => \"INFO\". If a `:label` option is supplied, that value is
+             used instead. When you want to omit label for callouts of the type `:error`,
+             `:warning`, or `:info`, you must explicitly set the :label option to an empty
+             string.
 
-   [:label
-    {:optional true
-     :desc     [\"Labels the callout. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string).\"
-                \"In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively.\"]}
-    :any]
+             The amount of vertical padding (in number of lines) within the bounds of the
+             message body can be controlled the `padding-top` and `padding-bottom` options.
+             The amount of space (in number of lines) above and below the message block
+             can be controlled the `margin-top` and `margin-bottom` options.
 
-   [:side-label
-    {:optional true
-     :desc     [\"Side label to the the callout label. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string).\"
-                \"In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively.\"]}
-    :any]
+             If two arguments are provided, the first should be a map of valid options."
 
-   [:label-theme
-    {:optional true
-     :default  :minimal
-     :desc     [\"Theme of label.\"]}
-    [:enum
-     :marquee
-     \"marquee\"
-     :minimal
-     \"minimal\"]]
+   :examples [{:desc  "Example call with all of the options"
+               :forms "(callout {:type                   :error            ; :warning, :info
+                      |          ;; :colorway            :purple           ; <- any bling palette color, overrides :type
+                      |          ;; :label               \"My label\"      ; overrides label assigned by :type
+                      |          :side-label             \"My side label\" ; must have a :label if you want a :side-label        
+                      |          :theme                  :sideline         ; :sideline :sandwich :gutter
+                      |          :label-theme            :simple           ; :simple :marquee
+                      |          ;; :padding-block       0                 
+                      |          ;; :padding-top         0                 
+                      |          ;; :padding-bottom      0                 
+                      |          ;; :padding-inline      2                 
+                      |          ;; :padding-left        2                 
+                      |          ;; :padding-right       0                 
+                      |          ;; :margin-top          1                 
+                      |          ;; :margin-botom        0                 
+                      |          ;; :margin-left         0                 
+                      |          ;; :data?               true              ; <- just returns string, no printing
+                      |          
+                      |          :border-shape           :sharp            ; :round
+                      |          :border-style           :solid            ; :double
+                      |          :border-weight          :normal           ; :bold
+                      |          :width                  40
+                      |          :min-width              40
+                      |          
+                      |          ;; --- The options below exclusive to :theme of :boxed ---
+                      |          ;; :border-char            \"*\"
+                      |          ;; :vertical-border-char   \"**\"
+                      |          ;; :max-width              100
+                      |          ;; :padding-block          1
+                      |          ;; :padding-inline         2
+                      |          }
+                      | (bling [:bold (str \"Line 1\" \"\\n\" \"Line 2\")])"}
+              {}]
+   :options  [:map
+              [:type
+               {:optional true
+                :desc     "Will set the label text (unless provided via `:label`). Will also set the `:colorway`,
+                           and override any provided `:colorway` value."}
+               [:enum :error "error" :warning "warning" :info "info"]]
 
-   [:padding-top
-    {:optional true
-     :default  0
-     :desc     [\"Amount of padding (in newlines) at top, inside callout.\"]}
-    :int]
+              [:colorway
+               {:optional true
+                :desc     "The color of the border, or gutter, depending on the value of `:theme`."}
+               [:enum
+                :error
+                "error"
+                :warning
+                "warning" 
+                :info 
+                "info" 
+                :positive 
+                "positive" 
+                :subtle
+                "subtle" 
+                :magenta 
+                "magenta" 
+                :green 
+                "green" 
+                :negative 
+                "negative" 
+                :neutral 
+                "neutral"]]
 
-   [:padding-bottom
-    {:optional true
-     :default  0
-     :desc     [\"Amount of padding (in newlines) at bottom, inside callout.\"]}
-    :int]
+              #_[:sections
+                 {:optional true
+                  :desc     ["Print only specified sections of a callout"]}
+                 [:enum [:header] [:header :body] [:header :body :footer] [:body :footer] [:footer] [:header :footer] [:body]]]
 
-   [:padding-left
-    {:optional true
-     :default  2
-     :desc     [\"Amount of padding (in blank character spaces) at left, inside callout.\"]}
-    :int]
+              [:theme
+               {:optional true
+                :default  :sideline
+                :desc     "Name of callout layout template."}
+               [:enum :sideline "sideline" :sandwich "simple" :gutter "gutter" :boxed "boxed"]]
 
-   [:margin-top
-    {:optional true
-     :default  1
-     :desc     [\"Amount of margin (in newlines) at top, outside callout.\"
-                \"Only applies to terminal emulator printing.\"]}
-    :int]
+              [:label
+               {:optional true
+                :desc     "Labels the callout.
+                           In the case of a callout `:type` of `:warning`, `:error`, or `:info`,
+                           the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively."}
+               :any]
 
-   [:margin-bottom
-    {:optional true
-     :default  0
-     :desc     [\"Amount of margin (in newlines) at bottom, outside callout.\"
-                \"Only applies to terminal emulator printing.\"]}
-    :int]
+              [:side-label
+               {:optional  true
+                :desc      "Side label to the the callout label. In the case of a callout
+                            `:type` of `:warning`, `:error`, or `:info`, the value of the label
+                            will default to `WARNING`, `ERROR`, or `INFO`, respectively."}
+               :any]
 
-   [:margin-left
-    {:optional true
-     :default  0
-     :desc     [\"Amount of margin (in blank character spaces) at left, outside callout.\"]}
-    :int]
+              [:label-theme
+               {:optional true
+                :default  :simple
+                :desc     "Name of label flavor."}
+               [:enum :marquee "marquee" :simple "simple"]]
 
-   [:border-block-length
-    {:optional true
-     :default  50
-     :desc     [\"The width of the top and bottom border, only applies to the `:minimal` callout theme.\"]}
-    :int]
+              [:padding-block
+               {:optional true
+                :default  1
+                :desc     "Amount of padding (in newlines) at top and bottom, inside callout."}
+               :int]
 
-   [:data?
-    {:optional true
-     :desc     [\"Returns a data representation of result instead of printing it.\"]}
-    :boolean]
-"
+              [:padding-top
+               {:optional true
+                :default  1
+                :desc     "Amount of padding (in newlines) at top, inside callout."}
+               :int]
 
-  ;; TODO colorway can take arbitrary hex?
+              [:padding-bottom
+               {:optional true
+                :default  1
+                :desc     "Amount of padding (in newlines) at bottom, inside callout."}
+               :int]
+
+              [:padding-inline
+               {:optional true
+                :default  2
+                :desc     "Amount of padding (in blank character spaces) at left and right, inside callout."}
+               :int]
+
+              [:padding-left
+               {:optional true
+                :default  2
+                :desc     "Amount of padding (in blank character spaces) at left, inside callout."}
+               :int]
+
+              [:margin-top
+               {:optional true
+                :default  1
+                :desc     "Amount of margin (in newlines) at top, outside callout.
+                           Only applies to terminal emulator printing."}
+               :int]
+
+              [:margin-bottom
+               {:optional true
+                :default  0
+                :desc     "Amount of margin (in newlines) at bottom, outside callout.
+                           Only applies to terminal emulator printing."}
+               :int]
+
+              [:margin-left
+               {:optional true
+                :default  0
+                :desc     "Amount of margin (in blank character spaces) at left, outside callout."}
+               :int]
+
+              [:data?
+               {:optional true
+                :desc     "Returns a data representation of result instead of printing it."}
+               :boolean]
+
+              [:header-padding-left
+               {:optional true
+                :default  2
+                :desc     "Amount of left margin (in character spaces) for the label, in the callout header"}
+               :int]
+
+              [:header-gap
+               {:optional true
+                :default  5
+                :desc     "The gap (in character spaces) the label and the optional side lable, in the callout header."}
+               :int]
+
+              [:border-style
+               {:optional true
+                :default  :solid
+                :desc     "The style of box-drawing character used."}
+               [:enum :solid "solid" :double "double"]]
+
+              [:border-weight
+               {:optional true
+                :default  :normal
+                :desc     "The weight of box-drawing character used. Applies only to `:border-style` of `:solid`"}
+               [:enum :normal "normal" :bold "bold"]]
+
+              [:border-shape
+               {:optional true
+                :default  :sharp
+                :desc     "The corner shape of the borders, either sharp or round. Only applies when `:border-style` is
+                           `:solid` AND `:border-weight` is `:normal`"}
+               [:enum :sharp "sharp" :round "round"]]
+
+              [:border-notches?
+               {:optional true
+                :default  :false
+                :theme    :sandwich
+                :desc     "Only applies to `:sandwich` callout theme. Will use top-left-corner
+                           and bottom-right-corner box-drawing chars for first character of header and footer borders."}
+               :boolean]
+
+              [:width
+               {:optional true
+                :theme    [:sandwich :boxed]
+                :desc     "Width of the box in number of chars, aka columns in
+                           terminal. If not set, will be the width of the terminal.
+                           If terminal width cannot be detected, will fallback to 80."}
+               :pos-int]
+
+              [:min-width
+               {:optional true
+                :theme    [:sandwich :boxed]
+                :desc     "Min width of box in number of chars, aka columns in
+                           terminal. Overridden by the `:width` value, if set."}
+               :pos-int]
+
+              ;; boxed ---------------------------------------------------------
+
+              [:border-char
+               {:optional true
+                :theme    :boxed
+                :desc     "A char that will override the default box-drawing"}
+               :string]
+
+              [:vertical-border-char
+               {:optional true
+                :theme    :boxed
+                :desc     "A char that will override the default box-drawing character,
+                           for the vertical borders."}
+               :string]
+
+              [:horizontal-border-char
+               {:optional true
+                :theme    :boxed
+                :desc     "A char that will override the default box-drawing character,
+                           for the horizontal borders."}
+               :string]
+
+              ;; TODO - REMOVE THIS?
+              [:box-drawing-style
+               {:optional true
+                :theme    :boxed
+                :desc     "The style of box-drawing character used."}
+               [:enum
+                :thin-round
+                "thin-round"
+                :thin
+                "thin"
+                :bold
+                "bold"
+                :double
+                "double"]]
+
+              [:max-width
+               {:optional true
+                :theme    :boxed
+                :desc     "Max width of box in number of chars, aka columns in
+                           terminal. Overridden by the `:width` value, if set."}
+               :pos-int]]}
   [x & args]
   (if (empty? args)
-    (cond
-      ;; The case when user just passes a :label value, so just border and text
-      (map? x)
-      (callout x nil)
+    (callout {} (bling.hifi/hifi x))
 
-      ;; The case when user just passes a string
-      (string? x)
-      (callout {} x)
+    (let [opts          (maybe-> x map?)
+          callout-opts  (some-> opts callout-opts*)
+          callout-opts+ (merge {:value (string/join "" args)
+                                ::no-callout-body? (or (= args '(nil))
+                                                       (every? nil? args))}
+                               opts
+                               callout-opts)]
+      {:theme               (keyword (:theme callout-opts))
+       :label-theme         (keyword (:label-theme callout-opts))
+       :header-padding-left [(:header-padding-left opts)
+                             '=>
+                             (:header-padding-left callout-opts)]
+       :padding-left        [(:padding-left opts)
+                             '=>
+                             (:padding-left callout-opts)]}
+      #?(:cljs
+         (if node?
+           (callout* callout-opts+)
+           (-> (callout* (assoc callout-opts+ :browser-dev-console? true))
+               print-to-browser-dev-console))
 
-      ;; Internal warning from bling about bad args
-      :else
-      (callout
-       {:type        :warning
-        :theme       :sideline-bold
-        :label-theme :marquee}
-       ;; TODO - this is messy formatiing for data-structures, fix
-       (point-of-interest
-        {:type   :warning
-         :header "bling.core/callout"
-         :form   (cons 'callout (list x))
-         :body   (str "bling-core/callout, if called with a single argument,\n"
-                      "expects either:\n"
-                      "- a map of options\n"
-                      "- a string\n\n"
-                      "Nothing will be printed.")})))
+         :clj
+         (callout* callout-opts+)))))
 
-    (if-not (map? x)
-      ;; Internal warning from bling about bad args
-      (callout
-       {:type :warning}
-       (point-of-interest
-        {:type   :warning
-         :header "bling.core/callout"
-         :form   (cons 'callout (cons x args))
-         :body   (str "bling-core/callout expects a map of options,\n"
-                      "followed by any number of values (usually strings).\n\n"
-                      "Nothing will be printed.")}))
-      (let [opts          x
-            ;;  value         (some-> args (maybe-> #(not (string/blank? %))))
-            callout-opts  (callout-opts* opts)
-            callout-opts+ (merge {:value (string/join "" args)}
-                                 opts
-                                 callout-opts)]
-        #?(:cljs
-           (if node?                                                           ;; TODO <- move to enriched or data
-             (callout* callout-opts+)
-             (-> (callout* (assoc callout-opts+ :browser-dev-console? true))
-                 print-to-browser-dev-console))
+#_{:marquee-label {:line-1 {:margin-str " "
+                            :header-padding-left-str "  "
+                            :first-char '(resolve-char based on border style)}
+                   :line-2 {:margin-str " "
+                            :header-padding-left-str '(resolve str based on theme and border-style)
+                            :first-char '(resolve-char based on border style and theme and header-padding-inline)}
+                   :line-3 {:margin-str " "
+                            :header-padding-left-str '(resolve str based on theme and border-style)
+                            :first-char '(resolve-char based on border style)}}}
 
-           :clj
-           (callout* callout-opts+))))))
+;;   BBBBBBBBBBBBBBBBB      LLLLLLLLLLL                       GGGGGGGGGGGGG
+;;   B::::::::::::::::B     L:::::::::L                    GGG::::::::::::G
+;;   B::::::BBBBBB:::::B    L:::::::::L                  GG:::::::::::::::G
+;;   BB:::::B     B:::::B   LL:::::::LL                 G:::::GGGGGGGG::::G
+;;     B::::B     B:::::B     L:::::L                  G:::::G       GGGGGG
+;;     B::::B     B:::::B     L:::::L                 G:::::G              
+;;     B::::BBBBBB:::::B      L:::::L                 G:::::G              
+;;     B:::::::::::::BB       L:::::L                 G:::::G    GGGGGGGGGG
+;;     B::::BBBBBB:::::B      L:::::L                 G:::::G    G::::::::G
+;;     B::::B     B:::::B     L:::::L                 G:::::G    GGGGG::::G
+;;     B::::B     B:::::B     L:::::L                 G:::::G        G::::G
+;;     B::::B     B:::::B     L:::::L         LLLLLL   G:::::G       G::::G
+;;   BB:::::BBBBBB::::::B   LL:::::::LLLLLLLLL:::::L    G:::::GGGGGGGG::::G
+;;   B:::::::::::::::::B    L::::::::::::::::::::::L     GG:::::::::::::::G
+;;   B::::::::::::::::B     L::::::::::::::::::::::L       GGG::::::GGG:::G
+;;   BBBBBBBBBBBBBBBBB      LLLLLLLLLLLLLLLLLLLLLLLL          GGGGGG   GGGG
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Enriched text public fns and helpers  
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 
 (defn- ^:private tagged-str
   "Expects an EnrichedText record. Returns string wrapped with appropriate ANSI
@@ -2222,7 +3131,6 @@
             m->sgr)
        (:value o)
        "\033[0;m"))
-
 
 (defn- tag->map
   ([acc s]
@@ -2253,9 +3161,7 @@
        (reduce (fn [acc [k m]] (assoc acc k m)) acc kvs)
        acc))))
 
-
 (defrecord ^:private EnrichedText [value style])
-
 
 #?(:cljs
    (defn- href-browser-dev-console [style v]
@@ -2266,7 +3172,6 @@
            style (if href (dissoc style :href) style)]
        [style v])))
 
-
 (defn- href-console [style v]
   (let [href  (when (map? style) (:href style))
         v     (if href (hyperlink v href) v)
@@ -2275,7 +3180,6 @@
                        (dissoc style :href))
                 style)]
     [style v]))
-
 
 (defn- enriched-text
   "Returns an EnrichedText record. The `:value` entry is intended to be
@@ -2318,7 +3222,6 @@
          (dissoc m :color :background-color)
          m)))))
 
-
 (defn- enriched-data-inner
   [coll x]
   (let [s (cond (et-vec? x)
@@ -2333,20 +3236,29 @@
 (defn- tags->maps [coll]
   (walk/postwalk
    (fn [x]
-     (if-let [k (some-> x
-                        (maybe-> vector?)
-                        (nth 0 nil)
-                        (maybe-> keyword?))]
+     (if-let [k (when-not (map-entry? x)
+                  (some-> x
+                          (maybe-> vector?)
+                          (nth 0 nil)
+                          (maybe-> keyword?)))]
        (if (= [:br] x)
          "\n"
          (into [(-> k
                     name
                     (string/split #"\.")
                     (->> (reduce (partial tag->map true) {})))]
-               (rest x)))
-       x))
+               (let [rst (rest x)
+                     fst (nth rst 0 nil)]
+                 (if (and (= 1 (count rst))
+                          (et-vec? fst))
+                   [fst nil]
+                   rst))))
+       (if (and (et-vec? x)
+                (some-> x (nth 1 nil) et-vec?)
+                (= 2 (count x)))
+         (conj x nil)
+         x)))
    coll))
-
 
 (defn- get-style-map [x]
   (some-> x
@@ -2354,14 +3266,12 @@
           (nth 0 nil)
           (maybe-> map?)))
 
-
 (defn- wrapped-val? [x]
   (boolean (some-> x
                    (maybe-> vector?)
                    (maybe-> #(= 2 (count %)))
                    (nth 0 nil)
                    (maybe-> map?))))
-
 
 (defn- nest-styles [coll]
   (walk/prewalk
@@ -2376,7 +3286,6 @@
        x))
    coll))
 
-
 (defn- wrap-naked-strings [coll]
   (walk/postwalk
    (fn [x]
@@ -2390,7 +3299,6 @@
          x)
        x))
    coll))
-
 
 (defn- rollup [acc coll]
   (reduce
@@ -2414,7 +3322,6 @@
    acc
    coll))
 
-
 (defn- p-tag-match* [x]
   (some-> x
           (maybe-> vector?)
@@ -2423,13 +3330,11 @@
           name
           (->> (re-find #"^p(?:\.(\S+))?"))))
 
-
 (defn- p-tag* [x]
   (when-let [tag
              (p-tag-match* x)]
     (or (some-> tag second keyword)
         :normal)))
-
 
 (defn- padded-paragraphs
   "Normalizes any :p vectors, adding 2 newlines to end of vector, unless the
@@ -2460,7 +3365,6 @@
                       x))
                   args))))
 
-
 (defn- nested->flat
   "Hydrates args that are :p elements and flattens nested bling hiccup vectors"
   [args]
@@ -2490,12 +3394,11 @@
     {:tagged tagged
      :args   args}))
 
-
 (defn ^:public bling
   "Giving any number of strings or hiccup-like vectors, returns a string tagged
    with ANSI SGR codes to style the text as desired."
   [& coll]
-  #_(!? :js (-> coll bling-data* :tagged))
+  ;; (!? :js (-> coll bling-data* :tagged))
   (-> coll bling-data* :tagged))
 
 (defn ^:public print-bling

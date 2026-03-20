@@ -51,7 +51,7 @@
            (re-seq sgr-re)
            (reduce (fn [n s] (+ n (count s))) 0)))
 
-(defn adjusted-char-count
+(defn strlen-minus-ansi-sgr
   "Given a string containing ANSI SGR tags, returns the character count of the
    string minus the char count of all the ANSI SGR tags."
   [s]

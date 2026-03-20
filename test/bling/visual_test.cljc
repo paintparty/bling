@@ -1,5 +1,3 @@
-
-
 ;; Namespace for visual testing and sandbox dev during development
 
 (ns bling.visual-test
@@ -13,10 +11,18 @@
                                  callout
                                  point-of-interest
                                  bling-colors*
-                                 ]]
-   [fireworks.core :refer [? !? ?> !?> pprint]]
+                                 stringified
+                                 highlighted-location
+                                 with-floating-label
+                                 with-ascii-underline]]
+   [fireworks.core :refer [? !? ?> !?> pprint] :rename {pprint fwpp}]
+   [fireworks.defs]
+   [fireworks.util]
+   [fireworks.state]
+   [fireworks.sample :refer [array-map-of-everything-cljc]]
+   [clojure.pprint :refer [pprint]]
    [bling.sample :as sample]
-   [bling.util :as util]
+   [bling.util :as util :refer [maybe->> maybe-> when-> when->>]]
    [bling.defs]
    [bling.explain]
    [bling.fonts]
@@ -29,852 +35,299 @@
    [bling.fonts.isometric-1 :refer [isometric-1]]
    [bling.fontlib]
    [bling.banner]
-   [bling.hifi :refer [print-hifi hifi chopped]]
+  ;;  [bling.hifi :refer [print-hifi hifi chopped]]
    [malli.core :as m]
    [clojure.string :as string]
-   [lasertag.core :refer [tag-map]]))
+   ;; [taoensso.tufte :as tufte :refer [p profile]]
+   [lasertag.core :refer [tag-map]]
 
+   ;; testing sequence of variants / options
+   [bling.cycle]
 
-;;  [taoensso.tufte :as tufte :refer [p profile]]
-
-;; (bling.banner/banner {:font miniwi :text "hi"})
-
-;; (tufte/add-handler! :my-console-handler (tufte/handler:console))
-
-;; (print-bling [:bold (str "Line 1" "\n" "Line 2")])
-
-#_(callout {:type                   :info
-          ;; :colorway            :purple          ; <- any bling palette color, overrides :type
-          ;; :label                  "My label"              ; overrides label assigned by :theme
-          :side-label             "My side label"  ; must have a :label if you want a :side-label        
-          :theme                  :sideline        ; :sideline :sideline-bold :minimal :gutter
-          :label-theme            :minimal         ; :minimal :marquee
-          ;; :padding-top            0                 
-          ;; :padding-left           2                 
-          ;; :padding-bottom         0                 
-          ;; :padding-right          0                 
-          ;; :margin-top             1                 
-          ;; :margin-botom           0                 
-          ;; :margin-left            0                 
-          ;; :data?                  true             ; <- just returns string, no printing
-          
-          :border-block-length 80               ; <- Only applies to :minimal theme + no label
-          
-          ;; --- The options below exclusive to :theme of :boxed ---------------
-          ;; :box-drawing-style      :thin-round      ; :thin :bold :double
-          ;; :border-char            "*"
-          ;; :vertical-border-char   "**"
-          ;; :width                  40
-          ;; :max-width              100
-          ;; :min-width              40
-          ;; :padding-block          1
-          ;; :padding-inline         2
-          }
-         (bling [:bold (str "Line 1" "\n" "Line 2")]))
-
-#_(println (point-of-interest {:form                  '(+ 1 true) ; <- required
-                                :line                  42
-                                :column                11
-                                :file                  "myfile.core"
-                                :text-decoration-style :wavy  ; :underline :solid :dashed :dotted :double
-                                :type                  :error ; :warning 
-                                ;; :margin-block          0       ; <- default is one
-                                ;; :text-decoration-index 2       ; <- If form is collection, this will focus underline
-                                ;; :text-decoration-color :yellow ; <- any bling palette color
-                                }))
-
-#_(println (bling.banner/banner {:text "FUDGE" :font ansi-shadow}))
-
-#_(print
- (bling.hifi/format-malli-options-schema-for-docstring
-  "My docs"
-  [:map
-    [:font
-     {:optional true
-      :default  'bling.fonts.ansi-shadow/ansi-shadow
-      :desc     ["Must be one of the fonts that ships with Bling:"
-                 "`bling.fonts.ansi-shadow/ansi-shadow`,"
-                 "`bling.fonts.big-money.big-money/big-money`,"
-                 "`bling.fonts.big/big`, `bling.fonts.miniwi/miniwi`,"
-                 "`bling.fonts.drippy/drippy,` or"
-                 "`bling.fonts.isometric-1/isometric-1`."]}
-     :map]
-    
-    [:text
-     {:optional true
-      :desc     ["The text to set in the banner."]}
-     :string]]))
-
-
-
-;; (callout {:theme :sideline-bold} 
-;;          (bling [:bold (str "Line 1" "\n" "Line 2")]))
-
-;; (callout {:theme :gutter} 
-;;          (bling [:bold (str "Line 1" "\n" "Line 2")]))
-
-#_(? (count (re-seq ansi-sgr-re (bling [:red "Hi"]))))
-
-#_(print-hifi {:a 1 :b 3})
-
-;; (?sgr (bling [:red.wavy-underline "Hi"] " there " [:blue.yellow-bg "GOLD"]))
-;; (?sgr (bling [:bold.gray "Hi"] " there " [:bold.purple "GOLD"]))
-;; (println (bling.sample/all-the-colors))
-;; (bling.sample/print-bling-color-contrast)
-;; (?sgr (bling [:red.wavy-underline "Hi"] " there " [:blue.yellow-bg "GOLD"]))
-;; Boxed callout
-#_(callout
- #_(bling "This namespace is automatically generated in bling.test-gen.\n"
-          "\n"
-          "Do not manually add anything to this namespace.\n"
-          "\n"
-          "To regenerate, set " [:bold "bling.test-gen/write-tests?"] " to `true`, then run " [:bold "lein test"] ".\n"
-          "\n"
-          "If you want do any experimentation use `bling.visual-test`\n")
-
- #_(bling "This namespace is automatically generated in " [:bold "bling.test-gen"] ".\n"
-          "\n"
-          "Do not manually add anything to this namespace.\n"
-          "\n"
-          "To regenerate, set " [:bold "bling.test-gen/write-tests?"] " to " [:bold "true"] ", then run " [:bold "lein test"] ".\n"
-          "\n"
-          "If you want do any experimentation use " [:bold "bling.visual-test"] ".\n")
-
- 
-
- {
-  ;;  :label (bling [:bold.neutral "Where's the beef asdfasdfsadfasdfasdfas fasdfasdf asdfasdfasdf asdfasdfasfdaaasfdsaf?"])
-  :max-width            100
-  ;;  :min-width            40
-  :theme                :sideline
-  :label                (bling [:bold.italic "Where's the beef aldflasdjfasldf ad?"])
-  ;; :label                "Where's the beef aldflasdjfasldf ad?"
-  ;; :side-label           (bling [:italic "My side label that is kind of too long"])
-  :colorway         :orange
-  ;; :padding-left         3
-  ;; :padding-top          1
-
-  :box-drawing-style    :double
-  :border-char          "╳"
-  :vertical-border-char "╳╳"
-  }
-
- (bling [:p "This namespace is automatically generated in " [:bold "bling.test-gen"]]
-        [:p "Do not manually add anything to this namespace."]
-        [:p "To regenerate, set " [:bold "bling.test-gen/write-tests?"] " to " [:bold "true"] ", then run " [:bold "lein test"] "."]
-        [:p "If you want do any experimentation use " [:bold "bling.visual-test"] "."]))
-
-;; (callout {:type :warning}
-;;          "Hello World")
-
-;; (callout {:type :warning :theme :minimal}
-;;          "Hello World")
-
-;; (callout {:type :warning :theme :gutter}
-;;          "Hello World")
-
-
-(def d
-  {:a         "foo"
-   :b         2
-   :c         3
-   :aasdfsafs {:a        "foo"
-               :b        2
-               :c        3
-               :adfasdfs "asdfsadsadf"
-               :e        "asdfsadasfa"}
-   :e         "asdfsadf"})
-
-
-#_(callout {:type  :warning
-          :padding-left 4
-          :theme :boxed
-          :width 60
-          }
-         "Hello World\n"
-         (hifi d))
-
-;; (println)
-;; (println)
-
-#_(callout {:colorway      :positive
-          :theme         :boxed
-          :label         "Success!"
-          :side-label    "myns.app.core:11:42"
-          :padding-left  3
-          :padding-right 5
-          :width         50}
-         (bling "This is a callout with a " [:bold ":theme" ] " of " [:bold ":boxed"] "\n\n"
-                "A second line of text, which will automatically get wrapped, based on the width and padding of the box.\n\n"
-                "A third line of text."))
-
-#_(? (bling/wrapped-string (hifi d) {:max-width 80}))
-
-#_(println "                                                 *")
-          
-#_(println (count "This namespace is automatically generated in abcd."))
-
-#_(println (hifi d))
-
-
-
-#_(println
- (chopped (hifi d) 50))
-
-#_(println
- (bling/wrapped-string
-  (bling 
-   "This namespace is automatically generated in " [:bold "abcd"] ".\n"
-   "        Do not manually add anything to this namespace.\n"
-   (hifi d)
+   ;; impl ns for the stuff in the visual test suite 
+   [bling.visual-test-impl :refer [random-callouts bling-basics]]
    
-   ;;  "\n"
-   ;;  "ssssssssssssssssssssssssssssssssssssssssssssssssssssaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaxxxxxxxxxxxxxxxxxxxxxxxxxx"
-   ;;  "\n"
-   ;;  "To regenerate, set `bling.test-gen/write-tests?` to `true`, then run `lein test`.\n"
-   ;;  "\n"
-   ;;  "If you want do any experimentation use `bling.visual-test`\n"
-   )
-  {:max-width 50}))
-
-
-
-
-;; example callouts ------------------------------------------------------------
-#_(defn my-error-callout [{:keys [header body source]}]
-  (callout {:type        :error
-            :theme       :gutter
-            :margin-left 1
-            :padding-top 1}
-           header
-           source
-           body))
-
-#_(my-error-callout
- {:header "Your header message goes here\n"
-  :source (point-of-interest 
-           {:type                  :error
-            :file                  "example.ns.core"
-            :line                  11
-            :column                1
-            :form                  '(+ foo baz)
-            :text-decoration-index 2})
-  :body   (str "The body of your template goes here.\n"
-               "Second line of copy.\n"
-               "Another line.")})
-;; -----------------------------------------------------------------------------
-
-
-
-
-;; Sample new hiccup syntax
-;; (println "\n\n")
-;; (print-bling "First paragraph"
-;;              "\n\n"
-;;              [:bold "Bold, "]
-;;              [:bold.italic "bold italic, "]
-;;              [:bold.italic.red "bold italic red, "]
-;;              [:bold "bold"]
-;;              "\n\n"
-;;              "Last line")
-
-(require '[bling.explain :refer [explain-malli]])
-
-(def Address
-  [:map
-   [:id string?]
-   [:tags [:set keyword?]]
-   [:address
-    [:map
-     [:street string?]
-     [:city string?]
-     [:zip int?]
-     [:lonlat [:tuple double? double?]]]]])
-
-(def v 
-  {:id      "Lillan"
-   :tags    #{:artesan "coffee" :garden}
-   :address {:street "Ahlmanintie 29"
-             :city   "Tempare"
-             :zip    33100
-             :lonlat [61.4858322, 87.34]}})
-
-(def Myschema [:vector
-               #_[:fn #_{:error/message "Must be an int greater than 10"}
-                  (fn greater-than-10? [%] (< 10 %))]
-               #_[:enum :foobar]
-               [:or
-                :int
-                #_[:fn #_{:error/message "Must be an int less than 5"} #(> 5 %)]
-                ;; :pos-int
-                #_:keyword
-                [:enum :foobars]
-                #_[:fn {:error/message "Must be an int greater than 10"}
-                   (fn greater-than-10? [%] (< 10 %))]]
-               #_[:and :int [:fn #(< 10 %)]]]
-  #_[:or
-     :map
-     [:vector [:or 
-               :int
-               #_[:fn (fn [s] (string/starts-with? s "s"))]
-               :string
-               #_[:and :string [:fn (fn [s] (string/starts-with? s "s"))]]]]])
-
-#_(def my-schema [:vector
-                [:or
-                 :int
-                 :string]]
-  #_[:or
-     :map
-     [:vector [:or 
-               :int
-               #_[:fn (fn [s] (string/starts-with? s "s"))]
-               :string
-               #_[:and :string [:fn (fn [s] (string/starts-with? s "s"))]]]]])
-
-#_(explain-malli my-schema [2 :foobar false] #_{:display-schema? true :display-explain-data? false})
-
-
-#_(explain-malli Myschema 
-               [#_2 :foobar #_:bazbat] 
-               {:display-schema? false
-                :highlighted-problem-section-label "fudge"
-                ;; :spacing         :compact
-                #_ #_:display-explain-data? true})
-
-#_(explain-malli Myschema 
-               [#_2 :foobar #_:bazbat] 
-               {:display-schema? false
-                :highlighted-problem-section-label "fudge"
-                :spacing         :compact
-                #_ #_:display-explain-data? true})
-
-#_(explain-malli Myschema 
-               [#_2 :foobar #_:bazbat] 
-               {:display-schema? false
-                :highlighted-problem-section-label "fudge"
-                :spacing         :ultra-compact
-                #_ #_:display-explain-data? true})
-
-;; (callout {:label-theme :marquee :label "hey"} "hi" )
-
-;; (explain-malli Address v {:display-schema? false :callout-opts {:label "Custom Label"}})
-
-;; (explain-malli Address v {:display-schema? false :callout-opts {:label "Custom Label" :label-theme :minimal}})
-
-;; (explain-malli Address v {:display-schema? false :callout-opts {:label "Custom Label" :theme :sideline-bold}})
-
-;; (explain-malli Address v {:display-schema? false :callout-opts {:label "Custom Label" :theme :sideline-bold :label-theme :minimal}})
-
-;; (explain-malli Address v {:display-schema? false :callout-opts {:label "Custom Label" :theme :gutter}})
-
-;; (explain-malli Address v {:display-schema? false :callout-opts {:label "Custom Label" :theme :gutter :label-theme :minimal}})
-
-;; (explain-malli Address v {:display-schema? false :callout-opts {:label "Custom Label" :theme :gutter :margin-left 3 :label-theme :minimal}})
-
-#?(:cljs
-   ()
-   :clj
-   (do 
-     #_(pprint (tag-map (java.util.HashMap. {"a" 1
-                                           "b" 2})))
-    ;;  (pprint (tag-map 
-    ;;           (java.util.HashMap. {"a" 1
-    ;;                                "b" 2})))
-    ;;  (println "\n")
-    ;;  (pprint (tag-map 
-    ;;           (java.util.ArrayList. [1 2 3])))
-
-    ;;  (println "\n")
-    ;;  (pprint (tag-map 
-    ;;           (java.util.HashSet. #{"a" 1 "b" 2})))
-     
-
-     ))
-
-
-
-(def printer
-  #?(:cljs (if node? println print-bling) :clj println))
-
-(declare example-custom-callout)
-
-(defn print-fake-comment [& lns]
-  (println)
-  (println)
-  (doseq [ln lns]
-    (println 
-     (bling 
-      [:italic.subtle ln]))))
-   
-(def poi-opts
-  {:file                  "example.ns.core"
-   :line                  11
-   :column                1
-   :form                  '(+ 1 true)
-   :text-decoration-index 2})
-
-(defn print-seq [sep f coll]
-  (printer (apply bling (interpose sep (mapv f coll)))))
-
-(def callout-examples
-  [{:type :info
-    :s    "Example callout, with :type of :info"}
-   {:type  :info
-    :label "My custom label"
-    :s     "Example callout, with :type of :info and custom :label"}
-   {:type :warning
-    :s    "Example callout, with :type of :warnings"}
-   {:type :error
-    :s    "Example callout, with :type of :error"}
-   {:colorway :positive
-    :label    "SUCCESS!"
-    :s        "Example callout, with :colorway of :positive, and custom :label"}
-   {:colorway        :subtle
-    :label           "My label"
-    :s               "Example callout, with :colorway of :subtle (or :gray)"
-    :docs/secondary? true}
-   {:colorway        :magenta
-    :label           "My label"
-    :s               "Example callout, with :colorway of :magenta"
-    :docs/secondary? true}
-   {:label           "My label"
-    :s               "Example callout, default"
-    :docs/secondary? true}])
-
-(defn bling-basics
-  ([]
-   (bling-basics false))
-  ([extras?]
-
-   ;; Hyperlink
-   (printer
-    (bling [{:text-decoration :underline
-             :href            "http://example.com"}
-            "cmd (or ctrl) + click on me to follow hypelink"]))
-
-   (println)
-
-   ;; Underline styles
-   (print-seq "\n" 
-              (fn [s] [(keyword s) s])
-              ["bold"
-               "italic"
-               "strikethrough"
-               "underline"
-               "double-underline"
-               "wavy-underline"
-               "dotted-underline"
-               "dashed-underline"])
-   
-   
-   (println)
-
-   ;; Colors
-   (print-seq " " 
-              (fn [s] [(keyword (str "bold." s)) (string/capitalize s)])
-              (keys bling-colors*))
-
-   (println)
-
-   ;; Background colors
-   (print-seq " " 
-              (fn [s] 
-                (when-not (contains? #{"black" "white"} s)
-                  [(keyword (str "white.bold." s "-bg"))
-                   (str " " (string/capitalize s) " ")]))
-              (keys bling-colors*))
-
-   
-   (println)
-
-   ;; Semantic colors
-   (print-seq " " 
-              (fn [s] [(keyword (str "bold." s)) (string/capitalize s)])
-              ["negative"
-               "error"
-               "warning"
-               "positive"
-               "info"
-               "subtle"
-               "neutral"])
-   
-   ;; Combos colors
-   (println)
-   (printer (bling [:bold.italic "bold & italic"]
-                   "\n"
-                   [:italic.blue "italic & colored"]
-                   "\n"
-                   [:bold.italic.white.blue-bg
-                    "bold & italic & colored & colored-bg"]
-                   "\n"
-                   [:bold.italic.blue.underline
-                    "bold & italic & colored & underline"]
-                   "\n"
-                   [:bold.italic.blue.strikethrough 
-                    "bold & italic & colored & strikethrough"]))
-   
-   
-
-   ;; CALLOUT examples  --------------------------------------------------------
-   (println)
-
-   (let [print-callout-examples
-         (fn [theme opts]
-           (let []
-             ;; (print-fake-comment  (str ";; callout examples, {:theme " theme "}"))
-             (doseq [{callout-type :type
-                      colorway     :colorway
-                      label        :label}
-                     callout-examples]
-               (let [merged-opts  (merge {:type        callout-type
-                                          :label-theme :minimal}
-                                         opts
-                                         (when theme {:theme theme})
-                                         (when label {:label label})
-                                         (when colorway {:colorway colorway}))
-
-                     example-call (let [a (string/replace (with-out-str (pprint merged-opts))
-                                                          #"\n$"
-                                                          "")]
-                                    (str "(callout\n "
-                                         (if (re-find #"\n" a)
-                                           (string/replace a #",\n|, " "\n ")
-                                           (string/replace a #", " "\n  "))
-                                         ")"))
-
-                     callout-body (str 
-                                   #_"\n"
-                                   (if colorway
-                                     (str "Example callout, with :colorway of " colorway)
-                                     (if callout-type
-                                       (str "Example callout, with :type of " callout-type)
-                                       (str "Example callout," " default")))
-                                   "\n"
-                                   #_"\n\n"
-                                   #_example-call)]
-                 (callout merged-opts callout-body)))))]
-     
-     (print-fake-comment  ";; callout examples, {:label-theme :minimal}")
-
-     (doseq [theme [:sideline :sideline-bold :gutter :minimal]]
-       (print-callout-examples theme {}))
-
-     (doseq [theme [:gutter]]
-       (print-callout-examples theme {:margin-left 2}))
-
-     (doseq [theme [:sideline :sideline-bold]]
-       (print-callout-examples theme {:label-theme :marquee}))
-     
-     (doseq [theme [:sideline]]
-       (print-callout-examples theme {:label-theme :marquee
-                                      :side-label  "foo.core:11:24"}))
-     )
-   
-
-   ;; TODO make custom error and warning examples ------------------------------
-   (print-fake-comment
-    ";; Custom error and warning templates with a point-of-interest "
-    ";; diagram. Checkout Templates section in readme for more details.")
-
-   (doseq [callout-opts
-           [{}
-            {:label-theme :marquee}
-            {:theme :sideline-bold}
-            {:label-theme :marquee
-             :theme       :sideline-bold}
-            {:theme :gutter}]]
-     ;;  :label "WARNING: Invalid arg value"
-     (doseq [t [:warning :error]]
-       (example-custom-callout
-        {:point-of-interest-opts (assoc poi-opts :type t)
-         :callout-opts           (assoc callout-opts :type t)})))
-   
-   (callout
-    {:type         :warning
-     :theme        :gutter
-     :padding-left 4}
-    "Example callout, with :type of :warning, padding-left of 4.")
-   
-   (callout
-    {:type         :warning
-     :theme        :boxed
-     :padding-left 3}
-    "Example callout, with :type of :warning, padding-left of 3.")
-
-   (callout
-    {:type         :warning
-     :theme        :boxed
-     :max-width    110
-     :padding-left 3}
-    "Example callout, :theme of :boxed, :type of :warning, padding-left of 3.")
-
-   (callout
-    {:type         :warning
-     :theme        :boxed
-     :width        80
-     :padding-left 3}
-    "Example callout, :theme of :boxed, :type of :warning, padding-left of 3.")
-
-   (callout
-    {:type         :warning
-     :label        "My Label"
-     :side-label   "My Side Label"
-     :theme        :boxed
-     :width        80
-     :padding-left 3}
-    "Example callout, :theme of :boxed, :type of :warning, padding-left of 3.")
-
-   (callout
-    {:colorway     :neutral
-     :label        (bling [:bold.blue "My Label"])
-     :side-label   (bling [:bold.purple "My Side Label"])
-     :theme        :boxed
-     :width        50
-     :padding-left 3}
-    "Example callout, :theme of :boxed, :type of :warning, padding-left of 3.")
-
-   (callout
-    {:colorway     :neutral
-     :box-drawing-style :bold
-     :label        (bling [:bold.blue "My Label"])
-     :side-label   (bling [:bold.purple "My Side Label"])
-     :theme        :boxed
-     :width        80
-     :padding-left 3}
-    "Example callout, :theme of :boxed, :type of :warning, padding-left of 3.")
-
-   (callout
-    {:colorway          :neutral
-     :box-drawing-style :double
-     :label             (bling [:bold.blue "My Label"])
-     :side-label        (bling [:bold.purple "My Side Label"])
-     :theme             :boxed
-     :width             80
-     :padding-left      3}
-    "Example callout, :theme of :boxed, :type of :warning, padding-left of 3.")
-
-   (callout
-    {:colorway          :neutral
-     :box-drawing-style :double
-     :label             (bling [:bold.blue "My Label"])
-     :side-label        (bling [:bold.purple "My Side Label"])
-     :theme             :boxed
-     :width             80
-     :padding-left      3}
-    "With some code inside\n\n"
-    (hifi {:a         "foo"
-           :b         2
-           :c         3
-           :aasdfsafs {:a        "foo"
-                       :b        2
-                       :c        3
-                       :adfasdfs "asdfsadsadf"
-                       :e        "asdfsadasfa"}
-           :e         "asdfsadf"}))
-   ))
-
-
-(defn example-custom-callout
-  [{:keys [point-of-interest-opts callout-opts]}]
-  (let [poi-opts     (merge {:header "Your header message goes here."
-                             :body   (str "The body of your template goes here."
-                                          "\n"
-                                          "Second line of copy."
-                                          "\n"
-                                          "Another line.")}
-                            point-of-interest-opts)
-        message      (point-of-interest poi-opts)
-        callout-opts (merge {:padding-top 1}
-                            callout-opts)]
-    (callout callout-opts message)))
-
-
-(defn random-callouts []
-  (callout {:label "Callout, no body, body is \"\""} "")
-
-  (callout {:theme :gutter
-            :label "Callout, no body, body is \"\""} "")
-
-  (callout {:theme :minimal
-            :label "Callout, no body, body is \"\""} "")
-  
-  (callout {:label "Callout, no body"} nil)
-
-  (callout {:theme :gutter
-            :label "Callout, no body, body is nil"} nil)
-  
-  (callout {:theme :minimal
-            :label "Callout, no body, body is nil"} nil)
-
-  (callout {:label "Callout, no body, body is not supplied"})
-
-  (callout {:theme :gutter
-            :label "Callout, no body, body is not supplied"})
-
-  (callout {:theme :minimal
-            :label "Callout, no body, body is not supplied"})
-  
-  (callout "Callout, only body")
-
-  (callout (bling [:magenta "Callout, only body"]))
-
-  (callout {:theme :gutter}  "Callout, only body")
-
-  (callout {:theme :minimal}  "Callout, only body")
-
-  (callout {:theme               :minimal
-            :block-border-length 66}
-           "Callout, only body, :block-border-length of 66")
-
-  (callout {:label "Callout, no body"})
-
-  (callout {:label "Callout, blank body"} "")
-
-  (callout {:label ""})
-
-  (callout "")
-
-  (callout "just body")
-  
-  (callout "Default callout, no options")
-
-  (callout {:padding-left 2} "Default callout, no label, left padding")
-
-  (callout {:label "My label"} "Default callout, custom label")
-
-  (callout {:type :warning} "Callout, type :warning, default label")
-
-  (callout {:type  :warning
-            :label "My warning"}
-           "Callout, type :warning, custom label")
-
-  (callout {:type         :warning
-            :label-string " My warning "
-            :label        (bling [:bold.orange-bg.black " My warning "])}
-           "Callout, type :warning, custom enriched label")
-
-  (callout {:type           :warning
-            :padding-top    1
-            :padding-bottom 1
-            :padding-left   2} 
-           "Callout, type :warning, default label, custom padding")
-
-  (callout {:type         :positive
-            :label-string " YES "
-            :label        (bling [:positive-bg.white.bold " YES "])}
-           "Callout, type :positve, enriched label")
-
-  (callout {:label    "YES"
-            :colorway "positive"}
-           "Callout, type :positve, user label")
-
-  (callout {:colorway :magenta
-            :theme    :gutter}
-           (bling [:blue "One line."]
-                  #_"\n"
-                  #_[:red "red"]))
-
-  (callout {:colorway :magenta
-            :theme    :gutter
-             ;; :label "foo"
-            }
-           (bling [:blue "1 of 2 lines."]
-                  "\n"
-                  [:red "2nd line"]))
-  
-  (callout {:colorway :magenta
-            :theme    :minimal}
-           (bling [:blue "1 of 2 lines."]
-                  "\n"
-                  [:red "2nd line"]))
-
-  (callout {:type  :warning 
-            :theme :minimal}
-           (bling "Callout, type :warning, :theme :minimal\n"
-                  "Second line"))
+   [fireworks.ansi :as ansi]
+   [fireworks.state :as state]
+   [bling.browser :as browser]))
+
+
+#_(let [js-console-array
+      (? :+ (-> (point-of-interest
+                 {:margin-top             1
+                  :header-file-info-style {:font-style :italic}
+                  :form                   (let [s (bling.hifi/hifi '(+ 1 true))]
+                                            (-> s
+                                                (with-ascii-underline 
+                                                  (assoc {:line-index 0}
+                                                         :text-decoration-color
+                                                         :red))))
+                  :file                   "foo"
+                  :line                   111
+                  :column                 33})
+                browser/ansi-sgr-string->browser-dev-console-array))
+
+      ;; [formatted & styles] 
+      ;; js-console-array
+
+      ]
+  ;; (? (->> formatted (re-seq #"%") count))
   )
 
-(defn examples-warnings-for-bad-arg-to-callout []
-   (callout {:colorway :neutral
-            :theme    :rainbow-gutter }
-          (bling [:bold.neutral 
-                  "The following callouts would be"]
-                  "\n"
-                  [:bold.neutral "issued by bling.core/callout, if the"]
-                                  "\n"
-                  [:bold.neutral "user were to supply malformed args."]))
 
-   ;; This should issue a warning callout with point-of-interest
-   (callout nil)
- 
-   ;; This should issue a warning callout with point-of-interest
-   (callout [1 2 3])
- 
-   ;; This should issue a warning callout with point-of-interest
-   (callout nil)
- 
-   ;; This should issue a warning callout with point-of-interest
-   (callout [1 2 3]))
+#_(bling.core/print-bling
+ "Example of callout body with Bling styling."
+ "\n\n"
+ "Line with " [:bold.purple "bold purple"] " and " [:italic.blue "italic blue"] " text"
+ "\n\n"
+ [:p "Lines in a " [:blue ":p"] " hiccup tag will insert a trailing\n"
+  [:olive "\"\\n\\n\""] " for spacing between paragraphs."]
+ [:p
+  "Example hyperlink -> "
+  [{:href "https://github.com/paintparty/bling"} "Official Bling docs"]])
 
+#_(require 'bling.hifi)
 
-
-;; Single callout
-#_(callout {:theme :sideline-bold
+#_(callout {
+          :type  :info
+          :border-notches? false
+          :border-shape :round
+          ;; :theme :boxed
+          ;; :theme :sideline
+          ;; :theme :sandwich
+          ;;  :theme :gutter
           :label-theme :marquee
-          :type        :warning
-          ;; :theme    :gutter
-             ;; :label "foo"
+
           }
-         "Hello")
+         (bling.core/bling
+          "Example of callout body with Bling styling aasfasdf."
+          "\n\n"
+          "Line with " [:bold.purple "bold purple"] " and " [:italic.blue "italic blue"] " text"
+          "\n\n"
+          [:p "Lines in a " [:blue ":p"] " hiccup tag will insert a trailing " [:olive "\"\\n\\n\""] ]
 
-;; Single callout , gutter
-#_(callout
-  {:type :info
-   :label-theme :minimal
-   :margin-left 2
-   :theme :gutter})
+          ;; TODO fix this error
+          #_[:p "Example hyperlink -> " [{:href "https://github.com/paintparty/bling"} "Official Bling docs"]]))
 
-;; Single banner
-#_(print-bling 
- (bling.banner/banner 
-  {
-   :font               bling.fonts/ansi-shadow
-  ;;  :font-weight        :bold
-   :text               "ABCDEFG"
-   :gradient-colors    [:cool :warm]
-  ;;  :gradient-direction nil
-  ;;  :gradient-shift      0
-  ;;  :contrast           :low
-  ;;  :margin-bottom      1
-   ;; :display-missing-chars? true
-   }))
+#_(bling.core/callout {:label           "duude"
+                    ;;  :type            :warning
+                    :theme           :sandwich
+                    ;;  :theme           :sideline
+                    ;;  :theme           :gutter
+                     :label-theme     :marquee
+                    ;;  :label-theme     :minimal
+                     :border-notches? true
+                     :border-shape    :round
+                     :side-label      "myreallylongadfsd.ns.core:44:2"
+                     :width           50}
+                    "Callout body"
+                    (point-of-interest
+          {:margin-top 1
+           :header-file-info-style {:font-style :italic}
+           :form (let [s (bling.hifi/hifi '(+ 1 true))]
+                   (-> s
+                       (with-ascii-underline 
+                         (assoc {:line-index 0}
+                                :text-decoration-color
+                                :red))))
+
+           #_(let [s   (hifi {:a 1
+                              :b [333 444 555]
+                              :c "aadfasdfasdfads"
+                              :d "asdfasdfasdfasdfasdfasdf"} 
+                             {:find {:path [:b 1]}})
+                   loc (highlighted-location s :highlight-error)]
+               (-> s
+                   (with-floating-label {:label-text   "<- Foo"
+                                         :label-offset 5 
+                                         :label-style  {:color :red}
+                                         :line-index   (:line-index loc)})
+                   (with-ascii-underline 
+                     (assoc {:line-index 1}
+                            :text-decoration-color :red)))) 
+           :file   "foo"
+           :line   111
+           :column 33
+           #_(bling.hifi/hifi
+              {:foo {:bar [12345
+                           :asfasdfasdfsdfasdfasz
+                           'aafasfasd]}
+               :bang 23
+               :bow 55}
+              {:find {:path  [:foo :bar]
+                      :class :highlight-error}})})
+                    "More information can go here.")
 
 
-;; Single colors
-#_(do (? bling.defs/bling-mood)
 
-    (println '(print-bling [:bold.light-blue "Hello"]))
-    (print-bling [:bold.light-red "Hello, I'm light red"])
+#_(println
+ (let [s   (hifi {:a 1
+                  :b [333 444 555]
+                  :c "aadfasdfasdfads"
+                  :d "asdfasdfasdfasdfasdfasdf"} 
+                 {:find {:path [:b 1]
+                         ;;  :class :highlight-error
+                         ;;  :style fireworks.defs/highlight-error-dark
+                         }})
+       loc (highlighted-location s :highlight-error)]
+   (-> s
+       (with-floating-label {:label-text   "<- Foo"
+                             :label-offset 5 
+                             :label-style  {:color :red}
+                             :line-index   (:line-index loc)})
+       (with-ascii-underline (assoc {:line-index 1} #_loc :text-decoration-color :red)))))
 
-    (println '(print-bling [:bold.medium-blue "Hello"]))
-    (print-bling [:bold.medium-blue "Hello"])
+;; \033[38;2;255;255;255;1;48;2;0;0;224m
+;; \033[38;5;231;1;48;5;20m
 
-    (println '(print-bling [:bold.dark-blue "Hello"]))
-    (print-bling [:bold.dark-blue "Hello"])
+#_(println (point-of-interest
+          {:form   (stringified {:a 1
+                                 :b [333 444 555]
+                                 :c "aadfasdfasdfads"
+                                 :d "asdfasdfasdfasdfasdfasdf"}
+                                {
+                                 :printing-fn pprint
+                                ;;  :height      3
+                                ;;  :width       "fu"
+                                 })
+           #_(let [s   (hifi {:a 1
+                              :b [333 444 555]
+                              :c "aadfasdfasdfads"
+                              :d "asdfasdfasdfasdfasdfasdf"} 
+                             {:find {:path [:b 1]}})
+                   loc (highlighted-location s :highlight-error)]
+               (-> s
+                   (with-floating-label {:label-text   "<- Foo"
+                                         :label-offset 5 
+                                         :label-style  {:color :red}
+                                         :line-index   (:line-index loc)})
+                   (with-ascii-underline 
+                     (assoc {:line-index 1}
+                            :text-decoration-color :red)))) 
+           :file   "foo"
+           :line   111
+           :column 33
+           #_(bling.hifi/hifi
+              {:foo {:bar [12345
+                           :asfasdfasdfsdfasdfasz
+                           'aafasfasd]}
+               :bang 23
+               :bow 55}
+              {:find {:path  [:foo :bar]
+                      :class :highlight-error}})}))
 
-    (println '(print-bling [:bold.blue "Hello"]))
-    (print-bling [:bold.blue "Hello"])
 
-    (println '(print-bling [:blue "Hello"]))
-    (print-bling [:blue "Hello"])
 
-    (!?sgr (bling [:bold.red "hello"])))
+;;------------------------------------------------------------------------------
+;; Testing sequence
+;;------------------------------------------------------------------------------
+
+;; TODO - Add highlights (primary, secondary and option) to the options map of
+;;        the printed function call.
+
+
+#_(bling.cycle/variants
+ bling.core/point-of-interest
+ {:animate?       true
+  :print-desc?    false
+  :print-fn-call? true
+  :primary        :form})
+
+(def filter-themes
+  #{#_{:theme :sideline}
+    #_{:theme :sandwich}
+    #_{:theme           :sandwich
+       :border-notches? true}
+    #_{:theme :gutter}
+    #_{:theme :boxed}})
+
+(def filter-options
+  #{;; :label
+    ;; :side-label
+    :colorway
+    ;; :border-style
+    ;; :border-shape
+    ;; :border-weight
+    ;; :margin-left
+    ;; :width
+    ;; :padding-block
+    ;; :padding-top
+    ;; :padding-bottom
+    ;; :padding-inline
+    ;; :padding-left
+    ;; :padding-right
+    })
+
+(def padding-frame-rate 75)
+
+(do
+    ;; Test with :label-theme :marquee
+
+    #_(bling.cycle/callout-option-sequences
+       {:padding-frame-rate padding-frame-rate
+        :label-theme        :marquee
+        :filter-themes      filter-themes
+        :filter             filter-options})
+
+    ;; Test with :label-theme :simple
+
+    #_(bling.cycle/callout-option-sequences
+       {:padding-frame-rate padding-frame-rate
+        :label-theme        :simple
+        :filter-themes      filter-themes
+        :filter             filter-options})
+
+    ;; Test with :theme :box
+    #_(bling.cycle/callout-option-sequences
+     {:padding-frame-rate 75
+      :filter-themes      #{{:theme :boxed}}
+      :filter             filter-options}))
+
+
+#_(let [m  {:border-style :solid
+          :label        (hifi 'bling.core/callout)
+          ;;  :side-label      "foo.cljs:11:12"
+          ;;  :label-theme     :simple
+          :label-theme  :marquee
+          :theme        :sideline-bold
+          ;;  :theme           :sandwich
+          ;;  :theme           :gutter
+          ;;  :theme           :boxed
+          :border-notches? true
+          :border-shape :round
+          ;; :padding-inline  3
+          ;;  :padding-top     3
+          ;;  :margin-left     0
+          :colorway     :subtle
+          ;;  :min-width 30
+          ;;  :width 20
+          ;;  :margin-left 5
+          ;;  :width :auto
+          :find         {:path  [:label]
+                         :class :highlight-error-underlined}
+          }
+      m2 (assoc m :theme :sandwich)]
+
+  (callout m
+           (
+            bling.core/with-ascii-decoration
+            #_identity
+            (bling.hifi/hifi m
+                             {
+                              ;;  :margin-inline-start 5
+                              :find {:path  [:border-shape]
+                                     :class :highlight-error}})))
+
+  #_(callout m2 (bling.hifi/hifi m2)))
+
+
+;;------------------------------------------------------------------------------
+;; Visual test suite 
+;;------------------------------------------------------------------------------
 
 (defn visual-test-suite []
-  (random-callouts)
-  (bling-basics)
-  (examples-warnings-for-bad-arg-to-callout))
+  #_(random-callouts)
+  #_(bling-basics))
 
 #_(visual-test-suite)
 
@@ -886,10 +339,10 @@
 
 #_(sample/print-bling-banner-font-samples)
 
-#_(sample/print-bling-banner-gradients 
- {:select-fonts [:isometric-1
-                 :ansi-shadow]
-  :display-labels? true})
+#_(sample/print-bling-banner-gradients
+   {:select-fonts [:isometric-1
+                   :ansi-shadow]
+    :display-labels? true})
 
 #_(sample/print-bling-banner-gradient-warm-cool)
 
@@ -909,44 +362,45 @@
 
 
 
-;; Experimental code for remove cljs brnch-related code
-;; (defn tagged->enriched [s]
-;;    (let [css 
-;;          (mapv #(second %)
-;;                (re-seq
-;;                 #"✂〠✂([^〠✂]+)〠✂〠"
-;;                 (str "✂〠✂background-color: rgb(255 238 0 / 1);font-weight: bold;text-decoration-line: underline;text-decoration-style: wavy〠✂〠"
-;;                      "Hello"
-;;                      "✂〠✂color: initial; line-height: 1.45〠✂〠")))
-;;          tagged
-;;          (string/replace s #"✂〠✂([^〠✂]+)〠✂〠" "%c")]
-;;      {:tagged       tagged
-;;       :css          (into-array css)
-;;       :consoleArray (into-array (util/concatv [tagged] css))
-;;       :args         []}))
-
-              
-;; (tagged->enriched 
-;;  (str "✂〠✂background-color: rgb(255 238 0 / 1);font-weight: bold;text-decoration-line: underline;text-decoration-style: wavy〠✂〠"
-;;       "Hello"
-;;       "✂〠✂color: initial; line-height: 1.45〠✂〠"))
-
-;; (print-hifi "Hello")
 
 
-;; (print-hifi "Hello" 
-;;             {:find [{:path  []
-;;                      :class :highlight-info}]})
+#_(bling.explain/explain-malli*
+ [:map-of
+  [:or :keyword :int]
+  [:or :string :keyword]]
+ {"wtf"   :key
+  1     "hiasfdasdfasdfasdfasdfas"
+  :bars "hiasfdasdfasdfasdfasdfas"}
+ (merge {:display-schema? false
+         :form            {:foo :key
+                           :bar "hi"}
+         :spacing         :compact
+         :callout-opts    (assoc {} 
+                                 :label-theme
+                                 :marquee)}
+        {}))
 
-;; (print-hifi "Hello" 
-;;             {:find [{:path  []
-;;                      :class :highlight}]})
+#_(defn my-error-callout [{:keys [header body source]}]
+  (callout {:type        :error
+            :theme       :gutter
+            :margin-left 2
+            :padding-top 1}
+           header
+           source
+           body))
 
-;; (print-hifi "Hello" 
-;;             {:find [{:path  []
-;;                      :class :highlight-underlined}]})
-
-
-
-
-
+#_(let [bad-form '(+ 1 true)]
+  (my-error-callout
+     {:header "Your header message goes here\n"
+      :source (point-of-interest 
+               {:type   :error
+                :file   "example.ns.core"
+                :line   11
+                :column 1
+                :form   (with-ascii-underline
+                          (str bad-form)
+                          {:line-index            0
+                           :text-decoration-color :red})})
+      :body   (str "The body of your template goes here.\n"
+                   "Second line of copy.\n"
+                   "Another line.")}))

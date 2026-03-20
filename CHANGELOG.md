@@ -5,14 +5,57 @@
 For a list of breaking changes, check [here](#breaking-changes)
 
 
-## Unreleased
+## 0.10.0
+
+2025-02-20
+
 #### Added 
+- New options for `bling.core/callout`<br>
+  - `:border-style`
+  - `:border-shape`
+  - `:border-weight`
+  - `:header-padding-left`
+  - `:header-gap`
+  - `:border-style`
+  - `:border-weight`
+  - `:border-shape` (rounded + sharp)
+  - `:border-notches?`
+  - `:width`
+  - `:min-widh`
 
-#### Changed
+- New options for `bling.core/point-of-interest`<br>
+  - `:header-file-info-style`
+  - `:header-file-name-style`
+  - `:header-line-number-style`
+  - `:gutter-line-number-style`
+  - `:header-column-number-style`
 
-#### Fixed
+- `:ultra-compact` setting for `explain-malli` [#46](https://github.com/paintparty/bling/issues/46)
+- Grouping of sibling problem values in `explain-malli` [#44](https://github.com/paintparty/bling/issues/44)
+
+- `bling.core/file-info-str` utility fn
+- `bling.core/with-ascii-underline` utility fn
+- `bling.core/with-floating-label` utility fn
+- `bling.core/highlighted-location` utility fn
+- `bling.core/stringified` utility fn
+
+- Refined nested hiccup implementation [#52](https://github.com/paintparty/bling/issues/52)
+
 
 #### Removed
+The following options to `bling.core/callout`:
+  - `:border-block-length` option (for minimal theme), 
+  - `:box-drawing-style` option 
+
+#### Breaking / potentially breaking
+- Bumped Clojure to 1.11.1
+
+- `bling.core/callout`
+  - with a single argument will now print the argument within a generic callout, formatting the value with `bling.hifi/hifi`.
+  - `:border-block-length` removed, use `:width` instead
+  - `:sideline-bold` `:theme` removed, use `{:theme :sideline :border-weight :bold}` 
+  - `:minimal` `:theme` is now called `:sandwich` 
+  - `:minimal` `:label-theme` is now called `:simple` 
 
 
 ## 0.9.2
@@ -318,6 +361,16 @@ Various internal refactoring and code cleanup, in addtion to new features:
 <br>
 
 ## Breaking changes
+## 0.10.0
+- Bumped Clojure to 1.11.1
+
+- `bling.core/callout`
+  - with a single argument will now print the argument within a generic callout, formatting the value with `bling.hifi/hifi`.
+  - `:border-block-length` removed, use `:width` instead
+  - `:sideline-bold` `:theme` removed, use `{:theme :sideline :border-weight :bold}` 
+  - `:minimal` `:theme` is now called `:sandwich` 
+  - `:minimal` `:label-theme` is now called `:simple` 
+
 
 ## 0.5.0
 - The `:type` option for `callout` now only accepts for `:error`, `:warning`, and `:info`. Previously, it accepted the other semantic color aliases such as `:positive`, `:subtle`, `:accent`, etc., as well any of the other named colors from the [Bling pallette](https://github.com/paintparty/bling?tab=readme-ov-file#the-bling-pallette). These alias and color names can be now provided by the new `:colorway` option. If both `:colorway` and `:type` options are supplied, the `:type` option will take precedence. 

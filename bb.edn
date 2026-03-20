@@ -1,33 +1,43 @@
-{:tasks {test:bb       {:extra-paths      ["test"]
-                        :extra-deps       {io.github.paintparty/bling           {:local/root "."}
+{:tasks {test:bb   {:extra-paths      ["test"]
+                    :extra-deps       {io.github.paintparty/bling           {:local/root "."}
 
-                                           io.github.paintparty/fireworks       ;; {:mvn/version "0.17.0"}
+                                       io.github.paintparty/fireworks       ;; {:mvn/version "0.17.0"}
                                            ;; For local dev / testing only
-                                           {:local/root "./../fireworks"}
+                                       {:local/root "./../fireworks"}
 
-                                           io.github.cognitect-labs/test-runner {:git/tag "v0.5.1"
-                                                                                 :git/sha "dfb30dd"}}
-                        :task             (exec 'cognitect.test-runner.api/test)
-                        :exec-args        {:dirs ["test"]}
-                        :org.babashka/cli {:coerce {:nses [:symbol]
-                                                    :vars [:symbol]}}}
-         quickdoc      {:doc        "Invoke quickdoc"
-                        :extra-deps {io.github.borkdude/quickdoc {:git/tag "v0.2.5"
-                                                                  :git/sha "25784ca"}}
-                        :task       (exec 'quickdoc.api/quickdoc)
-                        :exec-args  {:git/branch   "0.10.0v2"
-                                     :github/repo  "https://github.com/paintparty/bling"
-                                     :source-paths [
+                                       io.github.cognitect-labs/test-runner {:git/tag "v0.5.1"
+                                                                             :git/sha "dfb30dd"}}
+                    :task             (exec 'cognitect.test-runner.api/test)
+                    :exec-args        {:dirs ["test"]}
+                    :org.babashka/cli {:coerce {:nses [:symbol]
+                                                :vars [:symbol]}}}
+         quickdoc  {:doc        "Invoke quickdoc"
+                    :extra-deps {io.github.borkdude/quickdoc {:git/tag "v0.2.5"
+                                                              :git/sha "25784ca"}}
+                    :task       (exec 'quickdoc.api/quickdoc)
+                    :exec-args  {:git/branch   "0.10.0v2"
+                                 :github/repo  "https://github.com/paintparty/bling"
+                                 :source-paths [
+                                                    ;; "src/bling/core.cljc"
+                                                "src/bling/banner.cljc"
+                                                "src/bling/explain.cljc"
+                                                ]}}
+         
+         docstring {:doc        "Invoke docstring to generate docstrings from function metadata maps"
+                    :extra-deps {io.github.paintparty/docstring {:local/root "./../docstring/"}
+                                 io.github.paintparty/bling     {:local/root "."}
+                                 io.github.paintparty/fireworks {:local/root "./../fireworks"}
+                                 }
+                    :task       (exec 'docstring.api/docstring)
+                    :exec-args  {:source-paths [
                                                     ;; "src/bling/core.cljc"
                                                     "src/bling/banner.cljc"
-                                                    "src/bling/explain.cljc"
-                                                    ]}}
-         
-         clj-docstring {:doc        "Invoke clj-docstring"
-                        :extra-deps {io.github.paintparty/clj-docstring {:local/root "./../clj-docstring/"}}
-                        :task       (exec 'clj-docstring.api/docstrings)
-                        :exec-args  {:source-paths [
-                                                    ;; "src/bling/core.cljc"
-                                                    ;; "src/bling/banner.cljc"
-                                                    "src/bling/explain.cljc"
-                                                    ]}}}}
+                                                ;; "src/bling/friends.cljc"
+                                                            ;; 222
+                                                 "src/bling/explain.cljc"
+                                                
+                                                ]
+                                      ;; :exclude              [bling.friends/friends]
+                                    ;;  :print-report?        true
+                                     :print-report-banner? false
+                                 }}}}
