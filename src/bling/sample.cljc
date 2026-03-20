@@ -716,15 +716,27 @@
 
 (defn explain-malli-missing-map-key
   []
-  (let [v {:id      "Lillan"
-           :tags    #{:artesan :coffee :garden}
-           :address {:street "Ahlmanintie 29"
-                     :zip    33100
-                     :lonlat [61.4858322, 87.34]}}]
+  (let [v             {:id      "Lillan"
+                       :tags    #{:artesan :coffee :garden}
+                       :address {:street "Ahlmanintie 29"
+                                 :zip    33100
+                                 :lonlat [61.4858322, 87.34]
+                                 
+                                 }}
+        ]
     (print-explain-malli-example-header
      "The result of bling.core/explain-malli, highlighting a collection with a missing key."
      v)
-    (explain-malli Address v)))
+    (explain-malli Address 
+                   v
+                   {:callout-opts  {:label-theme :marquee
+                                    :label       (bling [:red "Malli Schema Error"])}
+                    
+                    :file          "myns.core"
+                    :function-name "my-function"
+                    :line          21
+                    :column        33
+                    })))
 
 
 (defn explain-malli-default []
@@ -816,6 +828,8 @@
               :line            21
               :column          33
               :display-explain-data? true
+              :callout-opts   {:label-theme :marquee
+                               :label (bling [:red "Malli Schema Error"])}
               ;; :spacing         :compact
               }]
     (print-explain-malli-example-header
@@ -833,16 +847,16 @@
   (explain-malli [:map-of :keyword :int] {"foo" 2}))
 
 (defn explain-malli-examples []
-  (explain-malli-with-explain-data)
+  ;; (explain-malli-with-explain-data)
 
   ;; (explain-malli-bad-map-value)
 
-  (explain-malli-with-source-info)
-  (explain-malli-default)
+  ;; (explain-malli-with-source-info)
+  ;; (explain-malli-default)
   (explain-malli-missing-map-key)
-  (explain-malli-bad-key-in-map)
-  (explain-malli-no-schema)
-  (explain-malli-no-schema-compact)
+  ;; (explain-malli-bad-key-in-map)
+  ;; (explain-malli-no-schema)
+  ;; (explain-malli-no-schema-compact)
   )
 
 

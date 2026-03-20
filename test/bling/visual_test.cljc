@@ -1,11 +1,3 @@
-;; TODO release 
-
-;; deploy pages site
-
-;; TODO - fix hyperlink in boxed issue
-
-;; analytics?
-
 ;; Namespace for visual testing and sandbox dev during development
 
 (ns bling.visual-test
@@ -388,3 +380,27 @@
                                  :marquee)}
         {}))
 
+#_(defn my-error-callout [{:keys [header body source]}]
+  (callout {:type        :error
+            :theme       :gutter
+            :margin-left 2
+            :padding-top 1}
+           header
+           source
+           body))
+
+#_(let [bad-form '(+ 1 true)]
+  (my-error-callout
+     {:header "Your header message goes here\n"
+      :source (point-of-interest 
+               {:type   :error
+                :file   "example.ns.core"
+                :line   11
+                :column 1
+                :form   (with-ascii-underline
+                          (str bad-form)
+                          {:line-index            0
+                           :text-decoration-color :red})})
+      :body   (str "The body of your template goes here.\n"
+                   "Second line of copy.\n"
+                   "Another line.")}))
