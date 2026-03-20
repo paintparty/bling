@@ -3006,13 +3006,6 @@
                            and bottom-right-corner box-drawing chars for first character of header and footer borders."}
                :boolean]
 
-              [:border-weight
-               {:optional true
-                :theme    :sandwich
-                :default  :normal
-                :desc     "The style of box-drawing character used."}
-               [:enum :normal "normal" :bold "bold"]]
-
               [:width
                {:optional true
                 :theme    [:sandwich :boxed]
@@ -3050,6 +3043,7 @@
                            for the horizontal borders."}
                :string]
 
+              ;; TODO - REMOVE THIS?
               [:box-drawing-style
                {:optional true
                 :theme    :boxed
