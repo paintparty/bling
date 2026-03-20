@@ -21,6 +21,13 @@ node_modules/
 .shadow-cljs/
 .ls
 .clj-kondo/.cache
-/public/js
-visual_test/public/js
 .calva/output-window/output.calva-repl
+
+# !/demo/public/css/main.js
+# !/demo/public/css/reset.css
+# !/demo/public/css/main.css
+# !/demo/public/css/dt.css
+# !/demo/public/css/main.js
+# !/demo/public/css/reset.css
+# !/demo/public/css/main.css
+# !/demo/public/css/dt.css

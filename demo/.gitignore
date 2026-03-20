@@ -1,5 +1,9 @@
 **/.DS_Store
-/public/js
+
+# /public/js
+/public/js/main.js.map
+/public/js/manifest.edn
+
 /node_modules
 /target
 /yarn.lock
@@ -8,7 +12,9 @@
 /*.iml
 /.nrepl-port
 /.idea
-/public/css/
+# /public/css/
+/public/css/kushi-utility.css
+/public/css/design-tokens.css
 /.calva
 /tmp
 .hgignore
@@ -20,3 +26,8 @@
 .vscode
 .idea
 .cpcache
+
+# !/public/css/main.js
+# !/public/css/reset.css
+# !/public/css/main.css
+# !/public/css/dt.css
