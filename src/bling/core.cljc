@@ -1185,8 +1185,9 @@
                     {:optional     true
                      :gen/elements [{:color :blue}]
                      :desc         "File info style, in header of point-of-interest diagram.
-                                    This will apply default styles to `:file-style` `:column-style`
-                                    and `:line-style`."}
+                                    This will apply default styles to `:header-file-name-style`,
+                                    `:header-line-number-style`, `:header-column-number-style`,  
+                                    and `:gutter-line-number-style`."}
                     :map]
 
                    [:header-file-name-style
