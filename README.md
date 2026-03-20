@@ -439,7 +439,7 @@ map instead of a hiccup-style keyword:
 ## Callout blocks
 **`bling.core/callout`** will print a message "block" to the console with a colored bounding border in the inline-start position.
 
-**`callout`** takes any number arguments. The first can optionally be a map with 0 or more of following entries:
+<!-- **`callout`** takes any number arguments. The first can optionally be a map with 0 or more of following entries:
 
 | Key               | Pred                    | Description                                                  |
 | :---------------  | -----------------       | ------------------------------------------------------------ |
@@ -476,7 +476,7 @@ map instead of a hiccup-style keyword:
 | `:padding-block`          | `int?`                  | Amount of padding (in blank character spaces) at top and bottom, inside callout.<br>In console emulator, defaults to `1`. In browser console, defaults to `0`.|
 | `:padding-inline`          | `int?`                  | Amount of padding (in blank character spaces) at left and right, inside callout.<br>In console emulator, defaults to `2`. In browser console, defaults to `0`.|
 <br>
-<br>
+<br> -->
 
 Examples of `callout` with different `:type` / `:colorway` options:
 
@@ -514,12 +514,12 @@ The above calls would render the following in your terminal emulator:
 <p align="center"><img src="resources/docs/chromed/callouts_sideline_minimal_dark.png" width="700px" /></p>
 <br>
 
-With `{:theme :sideline-bold}`: 
+With `{:theme :sideline :border-weight :bold}`: 
 <p align="center"><img src="resources/docs/chromed/callouts_sideline-bold_minimal_light.png" width="700px" /></p>
 <p align="center"><img src="resources/docs/chromed/callouts_sideline-bold_minimal_dark.png" width="700px" /></p>
 <br><br>
 
-With `{:theme :minimal}`:
+With `{:theme :sandwich}`:
 
  <p align="center"><img src="resources/docs/chromed/callouts_minimal_light.png" width="700px" /></p>
 <p align="center"><img src="resources/docs/chromed/callouts_minimal_dark.png" width="700px" /></p>
@@ -530,7 +530,7 @@ With `{:theme :minimal}`:
 
 <br>
 
-With `{:label-theme :marquee}`:
+With `{:label-theme :sandwich}`:
 Callout accepts a `:label-theme` option. Supplying a value of `:marquee`, will render
 the label inside a box: 
 
@@ -538,7 +538,7 @@ the label inside a box:
 <p align="center"><img src="resources/docs/chromed/callouts_sideline_marquee_dark.png" width="700px" /></p>
 <br>
 
-With `{:theme :sideline-bold :label-theme :marquee}`: 
+With `{:theme :sideline :border-weight :bold :label-theme :marquee}`: 
 <p align="center"><img src="resources/docs/chromed/callouts_sideline-bold_marquee_light.png" width="700px" /></p>
 <p align="center"><img src="resources/docs/chromed/callouts_sideline-bold_marquee_dark.png" width="700px" /></p>
 <br>
@@ -579,9 +579,12 @@ An example of a `:boxed` callout. If you don't set the `:width`, it will occupy 
 is perfect for creating your own custom error or warning messages. 
 
 Here is an example of creating a custom callout for an error message.
-You must provide the relevant `:file`, `:line`, `:column`, and `:form` values.
+You must provide the relevant `:file`, `:line`, `:column`, and `:form` values. You can use `bling.core/with-ascii-underline` to decorate a specific
+part of the form.
 
 ```Clojure
+(require '[bling.core :refer [callout point-of-interest with-ascii-underline]])
+
 (defn my-error-callout [{:keys [header body source]}]
   (callout {:type        :error
             :padding-top 1}
@@ -589,18 +592,23 @@ You must provide the relevant `:file`, `:line`, `:column`, and `:form` values.
            source
            body))
 
-(my-error-callout
- {:header "Your header message goes here\n"
-  :source (point-of-interest 
-           {:type                  :error
-            :file                  "example.ns.core"
-            :line                  11
-            :column                1
-            :form                  '(+ foo baz)
-            :text-decoration-index 2})
-  :body   (str "The body of your template goes here.\n"
-               "Second line of copy.\n"
-               "Another line.")})
+(let [bad-form '(+ foo baz)]
+  (my-error-callout
+     {:header "Your header message goes here\n"
+      :source (point-of-interest 
+               {:type   :error
+                :file   "example.ns.core"
+                :line   11
+                :column 1
+                :form   (with-ascii-underline
+                          (str bad-form)
+                          {:line-index            0
+                           :offset                8
+                           :width                 4
+                           :text-decoration-color :red})})
+      :body   (str "The body of your template goes here.\n"
+                   "Second line of copy.\n"
+                   "Another line.")}))
 ```
 
 <br>
@@ -617,7 +625,7 @@ You can also render such warning and error callouts using a `:label-theme` value
 
 
 
-### Options for `point-of-interest`
+<!-- ### Options for `point-of-interest`
 The diagram inside the callout that shows the namespace, line, column, and form
 with underlined is created by **`bling.core/point-of-interest`**, which takes a
 single map with the following options:
@@ -637,7 +645,7 @@ single map with the following options:
 | `:text-decoration-style` | #{`:wavy` `:solid` `:dashed` `:dotted` `:double`} | Controls the color of the underline. |
 | `:text-decoration-index` | `pos-int?` | If the value of `:form` is a collection, this is the index of the item to apply text-decoration (underline). |
 <br>
-<br>
+<br> -->
 
 ## Go heavy
 
@@ -648,34 +656,8 @@ If you want to place more emphasis on your callouts you can pass
 defined above:
 
 ```Clojure
-(defn my-error-callout [{:keys [header body source]}]
-  (callout {:type        :error
-            :theme       :gutter
-            :padding-top 1}
-           header
-           source
-           body))
+(require '[bling.core :refer [callout point-of-interest with-ascii-underline]])
 
-(my-error-callout
- {:header "Your header message goes here\n"
-  :source (point-of-interest 
-           {:type                  :error
-            :file                  "example.ns.core"
-            :line                  11
-            :column                1
-            :form                  '(+ foo baz)
-            :text-decoration-index 2})
-  :body   (str "The body of your template goes here.\n"
-               "Second line of copy.\n"
-               "Another line.")})
-```
-
-<p align="center"><img src="resources/docs/chromed/callout-with-poi_gutter_with-colored-labels_light.png" width="700px" /></p>
-<p align="center"><img src="resources/docs/chromed/callout-with-poi_gutter_with-colored-labels_dark.png" width="700px" /></p>
-
-Example value of `1` for `:margin-left`, to increase the weight:
-
-```Clojure
 (defn my-error-callout [{:keys [header body source]}]
   (callout {:type        :error
             :theme       :gutter
@@ -685,18 +667,55 @@ Example value of `1` for `:margin-left`, to increase the weight:
            source
            body))
 
-(my-error-callout
- {:header "Your header message goes here\n"
-  :source (point-of-interest 
-           {:type                  :error
-            :file                  "example.ns.core"
-            :line                  11
-            :column                1
-            :form                  '(+ foo baz)
-            :text-decoration-index 2})
-  :body   (str "The body of your template goes here.\n"
-               "Second line of copy.\n"
-               "Another line.")})
+(let [bad-form '(+ 1 true)]
+  (my-error-callout
+     {:header "Your header message goes here\n"
+      :source (point-of-interest 
+               {:type   :error
+                :file   "example.ns.core"
+                :line   11
+                :column 1
+                :form   (with-ascii-underline
+                          (str bad-form)
+                          {:line-index            0
+                           :text-decoration-color :red})})
+      :body   (str "The body of your template goes here.\n"
+                   "Second line of copy.\n"
+                   "Another line.")}))
+```
+
+<p align="center"><img src="resources/docs/chromed/callout-with-poi_gutter_with-colored-labels_light.png" width="700px" /></p>
+<p align="center"><img src="resources/docs/chromed/callout-with-poi_gutter_with-colored-labels_dark.png" width="700px" /></p>
+
+Example value of `2` for `:margin-left`, to increase the weight:
+
+```Clojure
+(require '[bling.core :refer [callout point-of-interest with-ascii-underline]])
+
+(defn my-error-callout [{:keys [header body source]}]
+  (callout {:type        :error
+            :theme       :gutter
+            :margin-left 2
+            :padding-top 1}
+           header
+           source
+           body))
+
+(let [bad-form '(+ 1 true)]
+  (my-error-callout
+     {:header "Your header message goes here\n"
+      :source (point-of-interest 
+               {:type   :error
+                :file   "example.ns.core"
+                :line   11
+                :column 1
+                :form   (with-ascii-underline
+                          (str bad-form)
+                          {:line-index            0
+                           :text-decoration-color :red})})
+      :body   (str "The body of your template goes here.\n"
+                   "Second line of copy.\n"
+                   "Another line.")}))
 ```
 <p align="center"><img src="resources/docs/chromed/callout-with-poi_gutter2_with-colored-labels_light.png" width="700px" /></p>
 <p align="center"><img src="resources/docs/chromed/callout-with-poi_gutter2_with-colored-labels_dark.png" width="700px" /></p>
@@ -791,7 +810,7 @@ The above code would print the following:
 
 <div align="center"><img src="resources/docs/chromed/malli-explain-bad-set-value-with-no-schema_dark-0.7.0.png" width="700px"/></div>
 
-### Options for `explain-malli`
+<!-- ### Options for `explain-malli`
 The trailing options map for `explain-malli` accepts the following:
 | Key                      | Pred                    | Description                                                  |
 | :---------------         | ----------------------- | ------------------------------------------------------------ |
@@ -804,7 +823,7 @@ The trailing options map for `explain-malli` accepts the following:
 | `:display-explain-data?` | `boolean?`              | Displays the output of `malli.core/explain` within the callout block. Defaults to `false`.
 | `:callout-opts`          | `map?`                  | A map of options for the underlying call to `bling.core/callout`. With this you can change the theme of the callout template, colorway of the callout, theme of the callout label, text in the callout label, etc. See the docstring for `bling.core/callout.`  |"
 
-<br>
+<br> -->
 
 You can preview several examples of bling.explain/explain-malli in your terminal with the following snippet:
 ```
@@ -921,7 +940,7 @@ Below are the example calls that render the screenshot at the the top of this se
 
 <br>
 
-### All the options for `banner` 
+<!-- ### All the options for `banner` 
 
 | Key                   | Pred       | Description   |
 | :---------------      | -----------| ------------- |
@@ -937,7 +956,7 @@ Below are the example calls that render the screenshot at the the top of this se
 | `:margin-left`        | `int?`     | Amount of margin (in blank character spaces) at left, outside banner. <br>Defaults to `0`. Only applies to terminal emulator printing. |
 | `:margin-right`       | `int?`     | Amount of margin (in blank character spaces) at right, outside banner. <br>Defaults to `0`. Only applies to terminal emulator printing. |"
 
-<br>
+<br> -->
 
 > [!NOTE]
 Figlet banners only work in terminal context (JVM Clojure or Node.js ClojureScript).
