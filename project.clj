@@ -1,14 +1,14 @@
-(defproject io.github.paintparty/bling "0.9.2"
+(defproject io.github.paintparty/bling "0.10.0-SNAPSHOT"
   :description "Hi-fidelity console printing"
   :url "https://github.com/paintparty/bling"
   :license {:name "MIT"}
   :source-paths ["src"
                  ;; for local dev of fireworks and lasertag deps
-                 "../lasertag/src"
-                 "../fireworks/src"
+                ;;  "../lasertag/src"
+                ;;  "../fireworks/src"
                  ]
   :dependencies [[org.clojure/clojure "1.11.1"]
-                 [io.github.paintparty/fireworks "0.19.0"]
+                 [io.github.paintparty/fireworks "0.20.0"]
                  [metosin/malli "0.20.0"]
 
                 ;;  [dev.weavejester/cljfmt "0.15.6"]
