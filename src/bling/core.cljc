@@ -1076,6 +1076,8 @@
 
 
 (defn ^:public stringified
+  {:desc "Stringifies form to a specified with and height, with optionally
+          supplied printing-fn such as `pprint`"}
   ([form]
    (stringified form nil))
   ([form {:keys [height width printing-fn]}]
