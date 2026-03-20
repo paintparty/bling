@@ -4,17 +4,19 @@
 (ns bling.demo.browser
   (:require
   ;;  [bling.core :refer [bling print-bling point-of-interest]]
-   [bling.browser :refer []]
+  ;;  [bling.browser :refer []]
   ;;  [bling.hifi :refer [print-hifi hifi]]
    [clojure.string :as string]
   ;;  [clojure.math :as math]
    [domo.core :as domo]
-   [fireworks.core :refer [? !? ?> !?> pprint]]
-   [fireworks.defs]
+  ;;  [fireworks.core :refer [? !? ?> !?> pprint]]
+  ;;  [fireworks.defs]
    [reagent.dom :as rdom]
    [reagent.ratom]
    [zprint.core :as zp]
-   [goog.string]))
+   [goog.string]
+   [me.flowthing.pp :as pp :refer [pprint]]
+   ))
 
 
 (defn inline-style->map [v]
@@ -405,33 +407,33 @@
     {:d "M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Zm0 2.445L6.615 5.5a.75.75 0 0 1-.564.41l-3.097.45 2.24 2.184a.75.75 0 0 1 .216.664l-.528 3.084 2.769-1.456a.75.75 0 0 1 .698 0l2.77 1.456-.53-3.084a.75.75 0 0 1 .216-.664l2.24-2.183-3.096-.45a.75.75 0 0 1-.564-.41L8 2.694Z"}]])
 
 (defn main-view []
-  #_(? :pp #_(->> (point-of-interest
-                   {:margin-top             1
-                    :header-file-info-style {:font-style :italic}
-                    :form                   (let [s (bling.hifi/hifi '(+ 1 true))]
-                                              (-> s
-                                                  (bling.core/with-ascii-underline
-                                                    (assoc {:line-index 0}
-                                                           :text-decoration-color
-                                                           :red))))
-                    :file                   "foo"
-                    :line                   111
-                    :column                 33})
-                  bling.browser/ansi-sgr-string->browser-dev-console-array
-                  console-args->hiccup
-                  (into [:<>]))
+  ;; #_(? :pp #_(->> (point-of-interest
+  ;;                  {:margin-top             1
+  ;;                   :header-file-info-style {:font-style :italic}
+  ;;                   :form                   (let [s (bling.hifi/hifi '(+ 1 true))]
+  ;;                                             (-> s
+  ;;                                                 (bling.core/with-ascii-underline
+  ;;                                                   (assoc {:line-index 0}
+  ;;                                                          :text-decoration-color
+  ;;                                                          :red))))
+  ;;                   :file                   "foo"
+  ;;                   :line                   111
+  ;;                   :column                 33})
+  ;;                 bling.browser/ansi-sgr-string->browser-dev-console-array
+  ;;                 console-args->hiccup
+  ;;                 (into [:<>]))
 
-       #_(-> (bling.core/bling
-              "Example of callout body with Bling styling."
-              "\n\n"
-              "Line with " [:bold.purple "bold purple"] " and " [:italic.blue "italic blue"] " text"
-              "\n\n"
-              [:p "Lines in a " [:blue ":p"] " hiccup tag will insert a trailing" [:olive "\"\\n\\n\""]]
-              [:p
-               "Example hyperlink -> "
-               [{:href "https://github.com/paintparty/bling"} "Official Bling docs"]])
-             bling.browser/ansi-sgr-string->browser-dev-console-array
-             console-args->hiccup))
+  ;;      #_(-> (bling.core/bling
+  ;;             "Example of callout body with Bling styling."
+  ;;             "\n\n"
+  ;;             "Line with " [:bold.purple "bold purple"] " and " [:italic.blue "italic blue"] " text"
+  ;;             "\n\n"
+  ;;             [:p "Lines in a " [:blue ":p"] " hiccup tag will insert a trailing" [:olive "\"\\n\\n\""]]
+  ;;             [:p
+  ;;              "Example hyperlink -> "
+  ;;              [{:href "https://github.com/paintparty/bling"} "Official Bling docs"]])
+  ;;            bling.browser/ansi-sgr-string->browser-dev-console-array
+  ;;            console-args->hiccup))
   [:<> 
    
    
@@ -460,7 +462,7 @@
        "https://github.com/paintparty/bling"]
       [counter-badge
        [:img
-        {:src   "graphics/clojars-logo-bw2.png"
+        {:src   "./public/graphics/clojars-logo-bw2.png"
          :style {:height :17px
                  :filter "grayscale(1) contrast(1) brightness(1) invert()"}}]
        "Clojars"
@@ -473,9 +475,9 @@
    [:div.docs-section.absolute-block-start-inside 
     {:style {:display (if (not= "Docs" (:active-view @S)) "none" "flex")}}
     [:div 
-     [:p "Official docs can be found. " [:a.foreground {:href "https://github.com/paintparty/bling"} "here"]]
+     [:p "Official docs can be found. " [:a.foreground {:href "https://github.com/paintparty/bling" :target "_blank"} "here"]]
      [:br]
-     [:p "Public APIs are " [:a.foreground {:href "https://github.com/paintparty/bling/API.md"} "here"]]
+     [:p "Public APIs are " [:a.foreground {:href "https://github.com/paintparty/bling/API.md" :target "_blank"} "here"]]
      [:br]
      [:p "New docs site coming soon!"]]]
    
@@ -485,9 +487,9 @@
     [:div 
      [:p "Bling is a library that provides hifi console printing for Clojure dialects."]
      [:br]
-     [:p "Project repo can be found " [:a.foreground {:href "https://github.com/paintparty/bling"} "here"]]
+     [:p "Project repo can be found " [:a.foreground {:href "https://github.com/paintparty/bling" :target "_blank"} "here"]]
      [:br]
-     [:p "Consumable via " [:a.foreground {:href "https://clojars.org/io.github.paintparty/bling"} "Clojars" ]]]]
+     [:p "Consumable via " [:a.foreground {:href "https://clojars.org/io.github.paintparty/bling" :target "_blank"} "Clojars" ]]]]
 
    [:div.panel.absolute-block-start-inside.flex-row
     {:style {:display (if (not= "Callout Config" (:active-view @S)) "none" "flex")}}
