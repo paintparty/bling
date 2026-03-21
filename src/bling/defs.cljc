@@ -1,3 +1,4 @@
+;; TODO - should defs in here be marked public?
 (ns bling.defs
   (:require
     [bling.macros :as macros :refer [keyed start-dbg! stop-dbg! nth-not-found]]

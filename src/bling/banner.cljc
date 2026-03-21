@@ -983,9 +983,7 @@
 ;; - then expose compose as a public fn
 
 (defn banner
-  "
-   
-   Returns a multi-line Figlet (ascii art) string with the provided
+  "Returns a multi-line Figlet (ascii art) string with the provided
    `:text` option. Intended to render a \"single line\" banner,
    consisting of multiple lines of constituent characters.
    
@@ -1008,7 +1006,7 @@
    (bling [:red (banner {:text \"Hello\"})])
    ```
    
-   All the options:
+   Options:
    
    * **`:text`**
        - `string?`

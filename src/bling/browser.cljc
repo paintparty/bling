@@ -112,34 +112,32 @@
   (string/join "; " (mapv (fn [[k v]] (str k ": " v)) m)))
 
 (defn ansi-sgr-string->browser-dev-console-array
-  "Intended to convert an ANSI SGR-tagged string to a format specifier-tagged
-  string, with a corresponding vector of css style strings. The resulting string
-  and styles can be supplied to a browser development console to format
-  messages. See https://developer.chrome.com/docs/devtools/console/format-style
-  for more background.
-  
-  Replaces all ANSI SGR tags in supplied string with CSS format specifier tag,
-  \"%c\". Analyzes all ANSI SGR tags, and produces a vector of corresponding
-  css style strings. Returns a vector of the format-specifier-tagged strings,
-  followed by the contents of the styles array. In ClojureScript, returns an
-   array.
-   
-  Example usage in ClojureScript:
+  {:desc
+   "Converts an ANSI SGR-tagged string to a format specifier-tagged string, with
+    a corresponding vector of css style strings. The resulting string and styles
+    can be supplied to a browser development console to format messages.
+    See https://developer.chrome.com/docs/devtools/console/format-style for more
+    background.
+    
+    Replaces all ANSI SGR tags in supplied string with CSS format specifier tag,
+    \"%c\". Analyzes all ANSI SGR tags, and produces a vector of corresponding
+    css style strings. Returns a vector of the format-specifier-tagged strings,
+    followed by the contents of the styles array. In ClojureScript, returns an
+    array.
 
-  ```Clojure
-  (def console-array
-    (->> :foo
-         bling.hifi/hifi
-         ansi-sgr-string->browser-dev-console-array))
-  ;; =>
-  ;; [\"%c:foo%c\",
-  ;;  \"color: rgb(122, 62, 157)\",
-  ;;  \"line-height: 1.45; color: default\"]
+    To print the value, with formatting, to dev console:
+    (.apply js/console.log js/console console-array)
+    ```"
 
-  ;; Print the value, with formatting, to dev console:
-  (.apply js/console.log js/console console-array)
-  ```
-  "
+    :examples 
+    [{:desc  "Usage in ClojureScript"
+      :forms '[[(def console-array
+                  (->> :foo
+                       bling.hifi/hifi
+                       ansi-sgr-string->browser-dev-console-array))
+                ["%c:foo%c",
+                 "color: rgb(122, 62, 157)",
+                 "line-height: 1.45; color: default"]]]}]}
   [s]
   (let [
         ;; This removes redundant unstyled spaces

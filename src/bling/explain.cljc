@@ -201,7 +201,7 @@
                  ":"
                  column))))
 
-(defn common-root-path-max [paths]
+(defn- common-root-path-max [paths]
   (when (seq paths)
     (let [min-length (apply min (map count paths))]
       (loop [i 0]
@@ -234,7 +234,7 @@
               @p))]
     p))
 
-(defn error-summary [m]
+(defn- error-summary [m]
   (assoc m
          :error/message (me/error-message m)
          :schema/form   (m/form (:schema m))))
@@ -309,7 +309,7 @@
                      :value-schema/sym  sym
                      :value-schema/tag  tag})))))
 
-(defn schema-path-siblings [filtered]
+(defn- schema-path-siblings [filtered]
   (let [grouped-by-path-count (group-by (fn [[k]] (count k)) filtered)
         max-path-count        (->> grouped-by-path-count keys (apply max))]
     (some-> grouped-by-path-count
@@ -317,7 +317,7 @@
             first
             second)))
 
-(defn regrouped-errors
+(defn- regrouped-errors
   "This is intended to reduce the number of errors that are reported.
 
    Should only work when:
@@ -721,7 +721,7 @@
          (concat [nil])))
     printed))
 
-(defn of-one? [x] (some-> x count (= 1)))
+(defn- of-one? [x] (some-> x count (= 1)))
 
 (defn- maybe-display-schema
   [multiple-problems? problems schema display-schema? display-explain-data? hifi+ malli-schema section-opts malli-ex-data]
@@ -761,7 +761,7 @@
                 (hifi+ (explain-data* malli-ex-data))
                 section-opts))]))
 
-(defn ^:public explain-malli*
+(defn ^:public ^:no-doc explain-malli*
   ([schema v]
    (explain-malli* schema v nil))
   ([schema
@@ -941,18 +941,12 @@
            (println success-message)))))))
 
 (defmacro ^:public explain-malli
-  "
-   
-   Prints a Malli validation error \"callout\" block via bling.core/callout.
-   
-   
+  "Prints a Malli validation error \"callout\" block via bling.core/callout.
    
    Within the block, the value is pretty-printed, potentially with syntax
    coloring. The problem value is highlighted with the `:highlight-error`
    class of the active fireworks theme, or the `:highlight-error-underlined`
    class, if the value is not a collection.
-   
-   
    
    If three arguments are provided, the third should be a map
                         with the following optional keys:
@@ -1038,7 +1032,7 @@
        - Optional.
        - The message to display if value passes schema validation"
   {:desc    "Prints a Malli validation error \"callout\" block via bling.core/callout.
-             \n\n
+             
              Within the block, the value is pretty-printed, potentially with syntax
              coloring. The problem value is highlighted with the `:highlight-error`
              class of the active fireworks theme, or the `:highlight-error-underlined`

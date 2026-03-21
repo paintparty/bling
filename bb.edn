@@ -18,10 +18,9 @@
                     :exec-args  {:git/branch   "0.10.0v2"
                                  :github/repo  "https://github.com/paintparty/bling"
                                  :source-paths [
-                                                    ;; "src/bling/core.cljc"
+                                                "src/bling/core.cljc"
                                                 "src/bling/banner.cljc"
-                                                "src/bling/explain.cljc"
-                                                ]}}
+                                                "src/bling/explain.cljc"]}}
          
          docstring {:doc        "Invoke docstring to generate docstrings from function metadata maps"
                     :extra-deps {io.github.paintparty/docstring {:local/root "./../docstring/"}
@@ -30,14 +29,12 @@
                                  }
                     :task       (exec 'docstring.api/docstring)
                     :exec-args  {:source-paths [
-                                                    ;; "src/bling/core.cljc"
-                                                    "src/bling/banner.cljc"
-                                                ;; "src/bling/friends.cljc"
-                                                            ;; 222
+                                                 "src/bling/core.cljc"
+                                                 "src/bling/banner.cljc"
                                                  "src/bling/explain.cljc"
+                                                ;;  "src/bling/ansi.cljc"
                                                 
                                                 ]
-                                      ;; :exclude              [bling.friends/friends]
-                                    ;;  :print-report?        true
-                                     :print-report-banner? false
-                                 }}}}
+                                     ;; :exclude              [bling.friends/friends]
+                                     ;;  :print-report?        true
+                                     :print-report-banner? false}}}}

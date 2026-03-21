@@ -5,8 +5,7 @@
             [bling.ansi]
             [bling.util :refer [join-lines]]
             #?(:cljs [bling.browser :as browser])
-            #?(:cljs [bling.js-env :refer [node?]])
-            [clojure.walk :as walk]))
+            #?(:cljs [bling.js-env :refer [node?]])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Hi-Fidelity printing 
@@ -42,8 +41,11 @@
 
 
 (defn ^:public hifi
-  "Hi-fidelity, pretty-printed string with syntax-coloring. Dispatches to
-   fireworks.core/_p2. More information about the available options can be found
+  "Hi-fidelity, pretty-printed string with syntax-coloring.
+   
+   Dispatches to fireworks.core/_p2.
+   
+   More information about the available options can be found
    [here](https://github.com/paintparty/fireworks?tab=readme-ov-file#options)"
   ([x]
    (hifi x nil))
@@ -52,18 +54,21 @@
 
 
 (defn ^:public print-hifi
-  "Prints a structurally formatted value with syntax-coloring based on user's
-   preferred theme. Dispatches to fireworks.core/_p2.
-   
+  "Prints a structurally formatted value with syntax-coloring based on
+   user's preferred theme. Dispatches to fireworks.core/_p2.
+    
    In JVM Clojure, cljs(Node), and bb, `print-hifi` is sugar for:
    `(println (bling.core/hifi x))`
 
    In cljs (browser dev consoles), `print-hifi` is sugar for the the following:
    ```Clojure
    (->> (bling.core/hifi x)
-         bling.browser/ansi-sgr-string->browser-dev-console-array
-         (.apply js/console.log js/console))
-   ```"
+        bling.browser/ansi-sgr-string->browser-dev-console-array
+        (.apply js/console.log js/console))
+   ```
+
+   More information about the available options can be found
+   [here](https://github.com/paintparty/fireworks?tab=readme-ov-file#options)"
   ([x]
    (print-hifi x nil))
   ([x opts]

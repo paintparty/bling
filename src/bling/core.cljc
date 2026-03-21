@@ -79,7 +79,7 @@
    :margin-left])
 
 ;; TODO - Move to colors namespace?
-(def ^:public system-colors-source
+(def ^:public ^:no-doc system-colors-source
   {"system-black"   {:sgr 0}
    "system-maroon"  {:sgr 1}
    "system-green"   {:sgr 2}
@@ -137,6 +137,13 @@
 ;; TODO Add the light and dark variants to x-term-colors-by-id
 ;; TODO - Move to colors namespace?
 (def ^:public bling-colors*
+  "Array map of the blink color pallette.
+   
+   ```Clojure
+   {...
+    \"purple\" {:sgr 141 :css \"#af87ff\"}
+    ...}
+   ```"
   (apply
    array-map
    ["red"        {:sgr      196
@@ -162,6 +169,22 @@
     "white"      {:sgr 231 :css "#ffffff"}]))
 
 (def ^:public bling-colors
+  "Array map of the blink color pallette with light, dark, and medium entries
+   each color.
+   
+   ```Clojure
+   {...
+    \"purple\"        {:sgr 141
+                       :css \"#af87ff\"
+                       :sgr-dark 129
+                       :sgr-light 147
+                       :css-dark \"#af00ff\"
+                       :css-light \"#afafff\"}
+    \"medium-purple\" {:sgr 141 :css \"#af87ff\"}
+    \"dark-purple\"   {:sgr 129 :css \"#af00ff\"}
+    \"light-purple\"  {:sgr 147 :css \"#afafff\"}
+    ...}
+   ```"
   (apply
    array-map
    (reduce-kv (fn [acc k v]
@@ -515,7 +538,7 @@
 
 ;; Unicode characters ----------------------------------------------------------
 
-(def text-decoration-styles
+(def ^:private text-decoration-styles
   {:wavy   "^"
    :solid  "─"
    :dashed "-"
@@ -676,11 +699,99 @@
                   "\n"
                   [:italic [:gray "in "]
                    [:medium-blue ns-sym]
-                   [:medium-blue "/"] 
+                   [:medium-blue "/"]
                    [:blue fn-sym]])))
 
-;; TODO add metamap w schema
 (defn ^:public file-info-str
+  "Creates a file-info string consisting of the file name, line number
+   and column number. Optionally styled with Bling.
+   
+   Basic example
+   ```clojure
+   (file-info-str {:file \"foo.cljc\", :line 42, :column 44})
+   ;; =>
+   \"foo.cljc:42:44\"
+   ```
+   
+   Options:
+   
+   * **`:line`**
+       - `int?`
+       - Optional.
+       - Line number
+   
+   * **`:column`**
+       - `int?`
+       - Optional.
+       - Column number
+   
+   * **`:file-style`**
+       - `map?`
+       - Optional.
+       - CSS style map for the file name
+   
+   * **`:line-style`**
+       - `map?`
+       - Optional.
+       - CSS style map for the line number
+   
+   * **`:column-style`**
+       - `map?`
+       - Optional.
+       - CSS style map for the column number
+   
+   * **`:style`**
+       - `map?`
+       - Optional.
+       - CSS style map for file-info string"
+  {:desc    "Creates a file-info string consisting of the file name, line number
+             and column number. Optionally styled with Bling."
+   :examples [{:desc  "Basic example"
+               :forms '[[(file-info-str {:file   "foo.cljc"
+                                         :line   42
+                                         :column 44})
+                         "foo.cljc:42:44"]]}]
+   :options [:map
+             [:file
+              {:optional     true
+               :gen/elements ["foo.cljs"
+                              "barasdfasdfas_asdfs.cljs"
+                              "bar.cljs"
+                              nil]
+               :desc         "File or namespace"}
+              :string]
+
+             [:line
+              {:optional     true
+               :gen/elements [12 22 33 555 77777]
+               :desc         "Line number"}
+              :int]
+
+             [:column
+              {:optional     true
+               :gen/elements [22 77]
+               :desc         "Column number"}
+              :int]
+
+             [:file-style
+              {:optional true
+               :desc     "CSS style map for the file name"}
+              :map]
+
+             [:line-style
+              {:optional true
+               :desc     "CSS style map for the line number"}
+              :map]
+
+             [:column-style
+              {:optional true
+               :desc     "CSS style map for the column number"}
+              :map]
+
+             [:style
+              {:optional true
+               :desc     "CSS style map for file-info string"}
+              :map]]}
   [{:keys [:file
            :line
            :column
@@ -688,8 +799,7 @@
            :column-style
            :file-style
            :style]
-    :or   {
-           style        {}}}]
+    :or   {style {}}}]
   (let [style        (or style {:color :subtle})
         line-style   (or line-style style)
         column-style (or column-style style)
@@ -709,7 +819,6 @@
               ":"
               [column-style column]]))))
 
-
 (defn- semantic-type [opts]
   (let [x (:colorway opts)]
     (cond
@@ -722,8 +831,6 @@
               (maybe-> nameable?)
               name))))
 
-
-                                                                           
 ;; HHHHHHHHH     HHHHHHHHHIIIIIIIIII      GGGGGGGGGGGGGHHHHHHHHH     HHHHHHHHH
 ;; H:::::::H     H:::::::HI::::::::I   GGG::::::::::::GH:::::::H     H:::::::H
 ;; H:::::::H     H:::::::HI::::::::I GG:::::::::::::::GH:::::::H     H:::::::H
@@ -740,14 +847,12 @@
 ;; H:::::::H     H:::::::HI::::::::I GG:::::::::::::::GH:::::::H     H:::::::H
 ;; H:::::::H     H:::::::HI::::::::I   GGG::::::GGG:::GH:::::::H     H:::::::H
 ;; HHHHHHHHH     HHHHHHHHHIIIIIIIIII      GGGGGG   GGGGHHHHHHHHH     HHHHHHHHH
-                                                                           
-                                                                           
 
 ;; Annotation and text-decoration start ----------------------------------------
 
 ;; TODO - maybe this should happen at comptime and produce a map, so that 
 ;; hifi is not called x number of times at runtime?
-(defn- sgr-highlighting-tags 
+(defn- sgr-highlighting-tags
   {:desc     "Given a style map and a `supports-color-level` int, produces a
               vector of opening and closing ansi-sgr tags for that style, when
               used with bling.hifi/hifi printing with highlighting via `:find`
@@ -758,13 +863,13 @@
                                   :color            "#ffe0e0"
                                   :font-weight      :bold}]
                            (sgr-highlighting-tags
-                            (hifi {:a 1 :b 3} 
+                            (hifi {:a 1 :b 3}
                                   {:find {:path [:b] :style m}})
                             m))
                          ["\033[38;2;255;224;224;1;48;2;103;0;19m"
                           "\033m"]]]}]}
   [m n]
-  (let [s (hifi '_ 
+  (let [s (hifi '_
                 {:find                 {:pred #(= % '_) :style m}
                  :supports-color-level n})
         i (string/index-of s "_")]
@@ -772,38 +877,38 @@
      (subs s (inc i))]))
 
 (defn- ansi-sgr-pattern-re [ansi-sgr-needle]
-  (let [ansi-sgr-pattern (string/replace 
+  (let [ansi-sgr-pattern (string/replace
                           ansi-sgr-needle
                           #"^\033\["
-                          #?(:cljs "\\033\\[" 
+                          #?(:cljs "\\033\\["
                              :clj "\\\\033\\\\["))]
-    (re-pattern 
+    (re-pattern
      (str ansi-sgr-pattern
-          "((?:(?!\\033).)+)" 
+          "((?:(?!\\033).)+)"
           "\\033\\[0?m"))))
 
-(defn- reverse-index* 
+(defn- reverse-index*
   [opening-tag lines]
   (some->> lines
            reverse
-           (keep-indexed 
+           (keep-indexed
             (fn [i line]
               (when (string/index-of line opening-tag)
                 i)))
            first))
 
-(defn- underline-char-replace 
-  [uc [_ s]] 
+(defn- underline-char-replace
+  [uc [_ s]]
   (bling.util/char-repeat
    (count s)
    uc))
 
-(defn- underline-stub 
+(defn- underline-stub
   [line ansi-sgr-re uc]
   (-> line
       (string/replace ansi-sgr-re (partial underline-char-replace uc))
       (string/replace ansi/sgr-re "")
-      (string/replace (re-pattern (str "[^\\" uc "]")) 
+      (string/replace (re-pattern (str "[^\\" uc "]"))
                       " ")))
 
 (defn- opening-sgr-tag [s target-highlight-style]
@@ -815,9 +920,9 @@
                   ;; (?sgr (second vc))
                   (when (string/index-of s (first vc)) vc))
                 (!? {:print-with println}
-                 (mapv (partial sgr-highlighting-tags m)
-                         [3 2 1]))))
-        (cond 
+                    (mapv (partial sgr-highlighting-tags m)
+                          [3 2 1]))))
+        (cond
           (map? target-highlight-style)
           [target-highlight-style]
 
@@ -853,14 +958,31 @@
            fireworks.defs/highlight-warning-light
            fireworks.defs/highlight-warning-underlined-light])))
 
-
 ;; TODO - A truncate-form fn that will truncate stringified form, lopping off
 ;;        top, bottom, or both with proper ellipsis
 
-#_(defn ^:public truncate-form []
- )
+#_(defn ^:public truncate-form [])
 
 (defn ^:public highlighted-location
+  "Gets position of last occurence of highlighting in a potentially
+   multi-line string. Designed to pinpoint highlighting that was
+   applied to a form using bling.hifi/hifi (with `:find` option).
+   
+   If an `:underline-char` option is supplied, the map returned will
+   include a string that can be used as a distinct line with an ascii
+   underline for the supplied stringified form. This underline line is
+   optionally decorated with a supplied `:text-decoration-style` map.
+   
+   If a `:floating-annotation-text` option is supplied, the string
+   will be annotated. This string is optionally decorated with a
+   supplied `:floating-annotation-style` map.
+   
+   Options:
+   
+   * **`:class`**
+       - `#{:highlight-error-universal :highlight-error-dark :highlight-error-light}`
+       - Optional.
+       - Highlight style class "
   {:desc    "Gets position of last occurence of highlighting in a potentially
              multi-line string. Designed to pinpoint highlighting that was
              applied to a form using bling.hifi/hifi (with `:find` option).
@@ -881,15 +1003,15 @@
              [:class
               {:optional true
                :desc     "Highlight style class "}
-              [:enum 
-               :highlight-error-dark 
+              [:enum
+               :highlight-error-dark
                :highlight-error-light
                :highlight-error-universal]]]}
   ([s]
    (highlighted-location s nil))
-  ([s 
+  ([s
     target-highlight-style]
-   (when-let [[opening-tag _] 
+   (when-let [[opening-tag _]
               (opening-sgr-tag s target-highlight-style)]
      (let [lines         (-> s string/split-lines vec)
            reverse-index (reverse-index* opening-tag lines)]
@@ -908,11 +1030,29 @@
                    :offset     offset
                    :width      width})))))))
 
-;; TODO - Add some warnings
 (defn ^:public with-floating-label
-  {:desc    "Annotates the line at supplied index with floating label. This
-             label is optionally decorated with a supplied
-             `:floating-annotation-style` map."
+  "Annotates the line at supplied index with floating label.
+   This label is optionally decorated with a supplied `:floating-annotation-style` map.
+   
+   Options:
+   
+   * **`:label-text`**
+       - `string?`
+       - Required.
+       - The text of the floating annotation.
+   
+   * **`:label-style`**
+       - `map?`
+       - Optional.
+       - Controls the style of the floating annotation
+   
+   * **`:label-offset`**
+       - `pos-int?`
+       - Optional.
+       - Defaults to `3`.
+       - Controls offset of the floating annotation"
+  {:desc    "Annotates the line at supplied index with floating label.
+             This label is optionally decorated with a supplied `:floating-annotation-style` map."
    :options [:map
              [:line-index
               {:required true
@@ -946,17 +1086,17 @@
       with-labeled-str)
     s))
 
-(defn- underline-width+offset 
+(defn- underline-width+offset
   [{:keys [offset width]} line]
   (let [line-count (ansi/strlen-minus-ansi-sgr line)
-        offset     (or (some-> offset 
+        offset     (or (some-> offset
                                (when-> pos-int?)
                                (when-> #(< % line-count)))
                        (some->> line
                                 (re-find #"^ +")
                                 count)
                        0)
-        width      (or (when-> width pos-int?) 
+        width      (or (when-> width pos-int?)
                        (- line-count offset))
         width      (if (< line-count (+ offset width))
                      1
@@ -1008,11 +1148,11 @@
                :default  :wavy
                :desc     "Controls the ascii char used to construct the underline."}
               [:enum :wavy :solid :dashed :dotted :double]]]}
-  [s 
-   {:keys [line-index 
-           underline-char 
-           text-decoration-style 
-           text-decoration-color 
+  [s
+   {:keys [line-index
+           underline-char
+           text-decoration-style
+           text-decoration-color
            text-decoration-weight]
     :or   {text-decoration-style :wavy
            line-index ::unsupplied}
@@ -1025,7 +1165,7 @@
                        line-index)]
       (if (nat-int? line-index)
         (if-not (> line-index line-count)
-          (let [line                (nth lines line-index) 
+          (let [line                (nth lines line-index)
                 [width offset]      (underline-width+offset opts line)
                 uc                  (or (some-> underline-char
                                                 (when-> string?)
@@ -1036,7 +1176,7 @@
                                              :font-weight text-decoration-weight}
                                             (str (util/char-repeat offset " ")
                                                  (util/char-repeat width uc))])
-                with-underline      (fireworks.util/insert-at 
+                with-underline      (fireworks.util/insert-at
                                      lines
                                      (inc line-index)
                                      line-with-underline)
@@ -1046,11 +1186,7 @@
         s))
     s))
 
-
 ;; Highlighted location end ----------------------------------------------------
-
-
-
 
 ;; Race-condition-free version of clojure.core/println,
 ;; Maybe useful to keep around if any weird behavior arises.
@@ -1075,8 +1211,9 @@
 ;; P::::::::P              OO:::::::::OO    I::::::::I
 ;; PPPPPPPPPP                OOOOOOOOO      IIIIIIIIII
 
-
 (defn ^:public stringified
+  "Stringifies form to a specified with and height, with optionally
+   supplied printing-fn such as `pprint`"
   {:desc "Stringifies form to a specified with and height, with optionally
           supplied printing-fn such as `pprint`"}
   ([form]
@@ -1093,13 +1230,12 @@
        (mapv
         #(if width
            (if (< (or width 0) (or (count %) 0))
-             (-> (subs % 0 width) 
+             (-> (subs % 0 width)
                  (str "..."))
              %)
            %)
         $)
        (string/join "\n" $)))))
-
 
 ;; Line and point of interest public fns  --------------------------------------
 
@@ -1108,6 +1244,124 @@
 ;;      - alt char for gutter border?
 
 (defn ^:public point-of-interest
+  "Formatted and decorated diagram of a form with line, column, and file info.
+   
+   Provides the namespace, column, and line number and a representation of the
+   specific form of interest.
+   
+   The `:line`, `:column`, and `:form` options must all be present in
+   order for the info diagram to be rendered. If the `:form` option is supplied,
+   but any of the others are omitted, only the form will be rendered.
+   
+   If the form is provided is a collection, it will be stringified and truncated
+   at 33 chars.
+   
+   To print a multi-line form, pre-format the `:form` value with
+   `bling.core/stringified`, or `bling.hifi/hifi`.
+   
+   If you would like to print a multi-line form with individual subforms 
+   highlighted, you can pre-format the `:form` value with some combo of
+   bling.hifi/hifi (with `:find` option supplied),
+   `bling.core/with-ascii-underline`, and `bling.core/with-floating-label.`
+   
+   By default, the diagram is created with a leading and trailing newlines,
+   via a default value of `1` for `:margin-block`. This can be set to zero,
+   or increased, with the `:margin-block` option.
+   
+   Basic Example
+   ```clojure
+   (point-of-interest
+    {:form (+ 1 true), :line 42, :column 11, :file \"myfile.core\"})
+   ```
+   
+   With styled file-info
+   ```clojure
+   (point-of-interest
+    {:form (+ 1 true),
+     :header-file-name-style {:color :subtle, :font-style :italic},
+     :line 42,
+     :header-line-number-style {:color :red},
+     :gutter-line-number-style {:color :red, :font-style :italic},
+     :column 11,
+     :file \"myfile.core\"})
+   ```
+   
+   With collection supplied as `:form`
+   ```clojure
+   (point-of-interest
+    {:form
+     {:a 1,
+      :b [333 444 555],
+      :c \"aadfasdfasdfads\",
+      :d \"asdfasdfasdfasdfasdfasdf\"},
+     :header-file-info-style {:color :subtle, :font-style :italic},
+     :line 42,
+     :column 11,
+     :file \"myfile.core\"})
+   ```
+   
+   Options:
+   
+   * **`:file`**
+       - `string?`
+       - Optional.
+       - File or namespace
+   
+   * **`:header-file-info-style`**
+       - `map?`
+       - Optional.
+       - File info style, in header of point-of-interest diagram.
+         This will apply default styles to `:header-file-name-style`,
+         `:header-line-number-style`, `:header-column-number-style`,  
+         and `:gutter-line-number-style`.
+   
+   * **`:header-file-name-style`**
+       - `map?`
+       - Optional.
+       - File name style, in header of point-of-interest diagram
+   
+   * **`:line`**
+       - `int?`
+       - Optional.
+       - Line number
+   
+   * **`:header-line-number-style`**
+       - `map?`
+       - Optional.
+       - Line number style, in header of point-of-interest diagram
+   
+   * **`:gutter-line-number-style`**
+       - `map?`
+       - Optional.
+       - Gutter line number style, in header of point-of-interest diagram
+   
+   * **`:column`**
+       - `int?`
+       - Optional.
+       - Column number
+   
+   * **`:header-column-number-style`**
+       - `map?`
+       - Optional.
+       - Column number style, in header of point-of-interest diagram
+   
+   * **`:margin-block`**
+       - `int?`
+       - Optional.
+       - Defaults to `1`.
+       - Controls the number of blank lines above and below the diagram.
+   
+   * **`:margin-top`**
+       - `int?`
+       - Optional.
+       - Defaults to `1`.
+       - Controls the number of blank lines above the diagram.
+   
+   * **`:margin-bottom`**
+       - `int?`
+       - Optional.
+       - Defaults to `1`.
+       - Controls the number of blank lines below the diagram."
   {:tldr          "Formatted and decorated diagram of a form with line, column, and file info."
    :desc          "Provides the namespace, column, and line number and a representation of the
                    specific form of interest.
@@ -1119,8 +1373,8 @@
                    If the form is provided is a collection, it will be stringified and truncated
                    at 33 chars.
 
-                   If you would like to print a multi-line form, you can you can pre-format the
-                   `:form` value with `bling.core/stringified`, or `bling.hifi/hifi`.
+                   To print a multi-line form, pre-format the `:form` value with
+                   `bling.core/stringified`, or `bling.hifi/hifi`.
 
                    If you would like to print a multi-line form with individual subforms 
                    highlighted, you can pre-format the `:form` value with some combo of
@@ -1135,7 +1389,7 @@
                                {:form   (+ 1 true)
                                 :line   42
                                 :column 11
-                                :file   "myfile.core" })]]}
+                                :file   "myfile.core"})]]}
                    {:desc  "With styled file-info"
                     :forms '[[(point-of-interest
                                {:form                     (+ 1 true)
@@ -1164,8 +1418,7 @@
 
    :options       [:map
                    [:form
-                    {:gen/elements [
-                                    '(+ 1 1 (+ 5 6))
+                    {:gen/elements ['(+ 1 1 (+ 5 6))
                                     '(+ 1 1 (+ 5 6))
                                     "(+ 9 8 \n   (+ 5 6))"]
                      :desc         "The form to draw attention to. Will be cast to string and truncated at 33 chars"}
@@ -1173,12 +1426,10 @@
 
                    [:file
                     {:optional     true
-                     :gen/elements [
-                                    "foo.cljs"
-                                    "barasdfasdfas_asdfs.cljs" 
-                                    "bar.cljs" 
-                                    nil
-                                    ]
+                     :gen/elements ["foo.cljs"
+                                    "barasdfasdfas_asdfs.cljs"
+                                    "bar.cljs"
+                                    nil]
                      :desc         "File or namespace"}
                     :string]
 
@@ -1229,7 +1480,6 @@
                      :desc         "Column number style, in header of point-of-interest diagram"}
                     :map]
 
-
                    [:margin-block
                     {:optional true
                      :default  1
@@ -1271,14 +1521,14 @@
   ;; TODO validate input
   (when form
     (let [header-style (or (when-> header-file-info-style map?) {})
-          file-info    (file-info-str 
-                        (merge 
+          file-info    (file-info-str
+                        (merge
                          opts
                          {:file-style   (when-> header-file-name-style map?)
                           :line-style   (when-> header-line-number-style map?)
                           :column-style (when-> header-column-number-style map?)
                           :style        header-style}))
-          form         (if-not (string? form) 
+          form         (if-not (string? form)
                          (stringified form {:height 1 :width  33})
                          form)
           mb*          (or (some-> margin-block (maybe-> pos-int?))
@@ -1353,7 +1603,7 @@
                   (or (adjusted-sgr-strlen m :side-label) 0))
                0))]
     (if (pos-int? n)
-      (max n (:header-gap m)) 
+      (max n (:header-gap m))
       ;; Should this be zero or some header-gutter-min-width like 2, or header-gap value?
       ;; Only applies to sandwich theme, when label and sidelabel are both long
       3 #_(:header-gap m))))
@@ -1368,7 +1618,7 @@
             (util/sjr (:header-gap m) border-top-char)])
     (if-let [n (some-> (resolve-header-gap m) (when-> pos?))]
       (bling [border-style-map
-                (util/sjr n border-top-char)])
+              (util/sjr n border-top-char)])
       nil)))
 
 (defn- sideline-marquee-label
@@ -1386,15 +1636,14 @@
            side-label]
     :as m}]
 
-  (let [margin-left-str    (char-repeat margin-left 
-                                        (if (= "gutter" theme) 
+  (let [margin-left-str    (char-repeat margin-left
+                                        (if (= "gutter" theme)
                                           defs/gutter-char
                                           " "))
         margin-left-str-0  (char-repeat margin-left
                                         (if (= "gutter" theme)
                                           defs/gutter-char-lower-seven-eighths
                                           " "))
-
 
         ;; TODO experimental :marquee-tab theme --------------------------------
         ;; 
@@ -1408,7 +1657,6 @@
         tab?                 false
         ;; 
         ;; ---------------------------------------------------------------------
-
 
         sandwich-theme?      (= theme "sandwich")
         ;; This currently takes the first line of a multi-line label
@@ -1487,14 +1735,14 @@
                                 "  ")])
                    (bling [{:font-color :neutral} label])
                    "  ")
-              
+
               sandwich-theme-header-gap-str
               (header-gap-str (merge m
                                      {:header-with-label s
                                       :border-top-char   hbc}))
 
               vertical-border-char
-              (bling [bs (cond 
+              (bling [bs (cond
                            tab?
                            (first-or-last-horizontal-border-char
                             (assoc m ::marquee-label true)
@@ -1508,7 +1756,6 @@
                            :else
                            vbc)])]
 
-
           (str s
                vertical-border-char
                (when (= theme "sandwich")
@@ -1519,17 +1766,17 @@
        (when-not tab?
          [(bling [bs
                   (str margin-left-str
-                        (if (= theme "sideline")
-                          (str vbc
+                       (if (= theme "sideline")
+                         (str vbc
                               (char-repeat (dec header-padding-left) " "))
-                          (char-repeat header-padding-left " "))
-                        (first-or-last-horizontal-border-char
+                         (char-repeat header-padding-left " "))
+                       (first-or-last-horizontal-border-char
                         (assoc m ::marquee-label true)
                         :bottom
                         :left
                         hbc)
-                        top-and-bottom-mid
-                        (first-or-last-horizontal-border-char
+                       top-and-bottom-mid
+                       (first-or-last-horizontal-border-char
                         (assoc m ::marquee-label true)
                         :bottom
                         :right
@@ -2066,8 +2313,8 @@
             vertical-border-char-count
             horizontal-border-char])))
 
-(defn- zero-or-pos? [x] 
-  (boolean (when (int? x) (> x -1) )))
+(defn- zero-or-pos? [x]
+  (boolean (when (int? x) (> x -1))))
 
 ;; TODO - support "fit-width"
 (defn- boxed-callout
@@ -2298,7 +2545,7 @@
 
 #?(:cljs
    (do
-     (defn ^:public print-to-browser-dev-console [s]
+     (defn ^:public ^:no-doc print-to-browser-dev-console [s]
        (->> s
             bling.browser/ansi-sgr-string->browser-dev-console-array
             (.apply js/console.log js/console)))))
@@ -2393,7 +2640,6 @@
                               (if (false? (m :border-notches?))
                                 false
                                 true))
-    
 
     sideline-theme?    (contains? #{"sideline"} theme)
     label-theme        (default-opt m
@@ -2553,36 +2799,31 @@
 ;;        CCC::::::::::::C       OO:::::::::OO    
 ;;           CCCCCCCCCCCCC         OOOOOOOOO 
 
-
-
 ;; TODO - Detect width and optionally use for sandwich theme
 
 (defn ^:public callout
-  "
+  "Uses a predesigned template to format and print a message block.
    
    Prints a message to the console with a block-based coloring motif.
+   
    Returns nil.
    
    If the `:data?` option is set to `true`, it does not print anything, and
    returns a data representation of the formatting and styling.
    
-   Callout prints a colored bounding border in the inline start position.
-   The color of the border is determined by the value of the `:type` option, or
-   the `:colorway` option. The characteristics of this border are controlled by
-   the `:theme` option.
+   Callout uses any one of a number of predesigned templates to format a block
+   of information that is delineated by an optionally colored border motif.
+   The color of the border is determined by the value of the `:type` option,
+   or the `:colorway` option. The characteristics of this border are controlled
+   by the `:theme` option. By default, a label is printed in the block
+   start position.
    
-   For callouts of the type `:error`, `:warning`, or `:info`, a label is
-   printed in the block start postion. If a :type option is set, the label
+   For callouts of the type `:error`, `:warning`, or `:info`, the label
    string will default to an uppercased version of that string, e.g.
    {:type :INFO} => \"INFO\". If a `:label` option is supplied, that value is
    used instead. When you want to omit label for callouts of the type `:error`,
-   `:warning`, or `:info`, you must explicitly set the :label option to an empty
-   string.
-   
-   The amount of vertical padding (in number of lines) within the bounds of the
-   message body can be controlled the `padding-top` and `padding-bottom` options.
-   The amount of space (in number of lines) above and below the message block
-   can be controlled the `margin-top` and `margin-bottom` options.
+   `:warning`, or `:info`, you must explicitly set the :label option to an
+   empty string.
    
    If two arguments are provided, the first should be a map of valid options.
    
@@ -2620,7 +2861,7 @@
              }
     (bling [:bold (str \"Line 1\" \"\\n\" \"Line 2\")])```
    
-   All the options:
+   Options:
    
    * **`:colorway`**
        - `#{\"neutral\" \"magenta\" \"warning\" \"positive\" :neutral \"info\" :green :positive \"negative\" :negative \"error\" \"subtle\" :warning \"green\" :info :error :magenta :subtle}`
@@ -2746,12 +2987,6 @@
        - Only applies to `:sandwich` callout theme. Will use top-left-corner
          and bottom-right-corner box-drawing chars for first character of header and footer borders.
    
-   * **`:border-weight`**
-       - `#{:bold \"normal\" :normal \"bold\"}`
-       - Optional.
-       - Defaults to `:normal`.
-       - The style of box-drawing character used.
-   
    * **`:width`**
        - `pos-int?`
        - Optional.
@@ -2792,31 +3027,29 @@
        - Optional.
        - Max width of box in number of chars, aka columns in
          terminal. Overridden by the `:width` value, if set."
-  {:desc     "Prints a message to the console with a block-based coloring motif.
-             Returns nil.
+  {:tldr     "Uses a predesigned template to format and print a message block."
+   :desc     "Prints a message to the console with a block-based coloring motif.
 
-             If the `:data?` option is set to `true`, it does not print anything, and
-             returns a data representation of the formatting and styling.
+              Returns nil.
 
-             Callout prints a colored bounding border in the inline start position.
-             The color of the border is determined by the value of the `:type` option, or
-             the `:colorway` option. The characteristics of this border are controlled by
-             the `:theme` option.
+              If the `:data?` option is set to `true`, it does not print anything, and
+              returns a data representation of the formatting and styling.
 
-             For callouts of the type `:error`, `:warning`, or `:info`, a label is
-             printed in the block start postion. If a :type option is set, the label
-             string will default to an uppercased version of that string, e.g.
-             {:type :INFO} => \"INFO\". If a `:label` option is supplied, that value is
-             used instead. When you want to omit label for callouts of the type `:error`,
-             `:warning`, or `:info`, you must explicitly set the :label option to an empty
-             string.
+              Callout uses any one of a number of predesigned templates to format a block
+              of information that is delineated by an optionally colored border motif.
+              The color of the border is determined by the value of the `:type` option,
+              or the `:colorway` option. The characteristics of this border are controlled
+              by the `:theme` option. By default, a label is printed in the block
+              start position.
 
-             The amount of vertical padding (in number of lines) within the bounds of the
-             message body can be controlled the `padding-top` and `padding-bottom` options.
-             The amount of space (in number of lines) above and below the message block
-             can be controlled the `margin-top` and `margin-bottom` options.
+              For callouts of the type `:error`, `:warning`, or `:info`, the label
+              string will default to an uppercased version of that string, e.g.
+              {:type :INFO} => \"INFO\". If a `:label` option is supplied, that value is
+              used instead. When you want to omit label for callouts of the type `:error`,
+              `:warning`, or `:info`, you must explicitly set the :label option to an
+              empty string.
 
-             If two arguments are provided, the first should be a map of valid options."
+              If two arguments are provided, the first should be a map of valid options."
 
    :examples [{:desc  "Example call with all of the options"
                :forms "(callout {:type                   :error            ; :warning, :info
@@ -2865,20 +3098,20 @@
                 :error
                 "error"
                 :warning
-                "warning" 
-                :info 
-                "info" 
-                :positive 
-                "positive" 
+                "warning"
+                :info
+                "info"
+                :positive
+                "positive"
                 :subtle
-                "subtle" 
-                :magenta 
-                "magenta" 
-                :green 
-                "green" 
-                :negative 
-                "negative" 
-                :neutral 
+                "subtle"
+                :magenta
+                "magenta"
+                :green
+                "green"
+                :negative
+                "negative"
+                :neutral
                 "neutral"]]
 
               #_[:sections
@@ -3230,7 +3463,6 @@
                 (as-str x))]
     (conj coll s)))
 
-
 ;; Hiccup w nested styles, supports :p elements ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn- tags->maps [coll]
@@ -3396,7 +3628,145 @@
 
 (defn ^:public bling
   "Giving any number of strings or hiccup-like vectors, returns a string tagged
-   with ANSI SGR codes to style the text as desired."
+   with ANSI SGR codes to style the text.
+   
+   Bold text
+   ```clojure
+   (bling [:bold \"Bold text\"])
+   ```
+   
+   Red text
+   ```clojure
+   (bling [:red \"Red text\"])
+   ```
+   
+   Italic text
+   ```clojure
+   (bling [:italic \"Italic text\"])
+   ```
+   
+   Bold red italic text
+   ```clojure
+   (bling [:bold.red.italic \"Bold red italic text\"])
+   ```
+   
+   Bold red italic text, order of tags doesn't matter
+   ```clojure
+   (bling [:italic.bold.red \"Bold red italic text\"])
+   ```
+   
+   Bold red italic text, and blue text
+   ```clojure
+   (bling
+    [:italic.bold.red \"Bold red italic text\"]
+    \" and \"
+    [:blue \"blue text\"])
+   ```
+   
+   Black on yellow text
+   ```clojure
+   (bling [:black.yellow-bg \"Black on yellow text\"])
+   ```
+   
+   Bling color pallette
+   ```clojure
+   (bling [:red \"Red text\"])
+   
+   (bling [:orange \"Orange text\"])
+   
+   (bling [:yellow \"Yellow text\"])
+   
+   (bling [:olive \"Olive text\"])
+   
+   (bling [:green \"Green text\"])
+   
+   (bling [:blue \"Blue text\"])
+   
+   (bling [:purple \"Purple text\"])
+   
+   (bling [:magenta \"Magenta text\"])
+   
+   (bling [:gray \"Gray text\"])
+   
+   (bling [:black \"Black text\"])
+   
+   (bling [:white \"White text\"])
+   ```
+   
+   Bling color aliases
+   ```clojure
+   (bling [:error \"Error\"])
+   
+   (bling [:negative \"Negative\"])
+   
+   (bling [:warning \"Warning\"])
+   
+   (bling [:success \"Success\"])
+   
+   (bling [:accent \"Success\"])
+   
+   (bling [:neutral \"Neutral\"])
+   
+   (bling [:subtle \"Subtle\"])
+   ```
+   
+   Nested hiccup example
+   ```clojure
+   (print-bling
+    [:p \"First paragraph\"]
+    [:p
+     [:bold
+      \"Bold, \"
+      [:italic \"bold italic, \" [:red \"bold italic red, \"]]
+      \"bold.\"]]
+    \"Last line\")
+   ```"
+  {:desc     "Giving any number of strings or hiccup-like vectors, returns a string tagged
+              with ANSI SGR codes to style the text."
+   :examples [{:desc  "Bold text"
+               :forms '[[(bling [:bold "Bold text"])]]}
+              {:desc  "Red text"
+               :forms '[[(bling [:red "Red text"])]]}
+              {:desc  "Italic text"
+               :forms '[[(bling [:italic "Italic text"])]]}
+              {:desc  "Bold red italic text"
+               :forms '[[(bling [:bold.red.italic "Bold red italic text"])]]}
+              {:desc  "Bold red italic text, order of tags doesn't matter"
+               :forms '[[(bling [:italic.bold.red "Bold red italic text"])]]}
+              {:desc  "Bold red italic text, and blue text"
+               :forms '[[(bling [:italic.bold.red "Bold red italic text"]
+                                " and "
+                                [:blue "blue text"])]]}
+              {:desc  "Black on yellow text"
+               :forms '[[(bling [:black.yellow-bg "Black on yellow text"])]]}
+              {:desc  "Bling color pallette"
+               :forms '[[(bling [:red "Red text"])]
+                        [(bling [:orange "Orange text"])]
+                        [(bling [:yellow "Yellow text"])]
+                        [(bling [:olive "Olive text"])]
+                        [(bling [:green "Green text"])]
+                        [(bling [:blue "Blue text"])]
+                        [(bling [:purple "Purple text"])]
+                        [(bling [:magenta "Magenta text"])]
+                        [(bling [:gray "Gray text"])]
+                        [(bling [:black "Black text"])]
+                        [(bling [:white "White text"])]]}
+              {:desc  "Bling color aliases"
+               :forms '[[(bling [:error "Error"])]
+                        [(bling [:negative "Negative"])]
+                        [(bling [:warning "Warning"])]
+                        [(bling [:success "Success"])]
+                        [(bling [:accent "Success"])]
+                        [(bling [:neutral "Neutral"])]
+                        [(bling [:subtle "Subtle"])]]}
+              {:desc  "Nested hiccup example"
+               :forms '[[(print-bling [:p "First paragraph"]
+                                      [:p [:bold
+                                           "Bold, "
+                                           [:italic "bold italic, "
+                                            [:red "bold italic red, "]]
+                                           "bold."]]
+                                      "Last line")]]}]}
   [& coll]
   ;; (!? :js (-> coll bling-data* :tagged))
   (-> coll bling-data* :tagged))
@@ -3404,12 +3774,22 @@
 (defn ^:public print-bling
   "In JVM Clojure, cljs(Node), and bb, `print-bling` is sugar for:
    (println (bling [:bold.blue \"my blue text\"]))
-
-   In cljs (browser dev consoles), `print-bling` is sugar for the the following:
+   
+   In cljs(browser), `print-bling` is sugar for the the following:
    `(print-to-browser-dev-console (bling [:bold.blue \"my blue text\"]))`
+   
+   print bold text
+   ```clojure
+   (print-bling [:bold \"Bold text\"])
+   ```"
+  {:desc     "In JVM Clojure, cljs(Node), and bb, `print-bling` is sugar for:
+              (println (bling [:bold.blue \"my blue text\"]))
 
-  Example:
-  `(print-bling [:bold.blue \"my blue text\"])"
+              In cljs(browser), `print-bling` is sugar for the the following:
+              `(print-to-browser-dev-console (bling [:bold.blue \"my blue text\"]))`"
+
+   :examples [{:desc  "print bold text"
+               :forms '[[(print-bling [:bold "Bold text"])]]}]}
   [& args]
   (let [bling-str (apply bling args)]
     #?(:cljs
