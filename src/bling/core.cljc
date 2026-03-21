@@ -170,7 +170,7 @@
 
 (def ^:public bling-colors
   "Array map of the blink color pallette with light, dark, and medium entries
-   each color.
+   for each color.
    
    ```Clojure
    {...
@@ -1051,8 +1051,8 @@
        - Optional.
        - Defaults to `3`.
        - Controls offset of the floating annotation"
-  {:desc    "Annotates the line at supplied index with floating label.
-             This label is optionally decorated with a supplied `:floating-annotation-style` map."
+  {:tldr    "Annotates a line of text at supplied index with floating label."
+   :desc    "This label is optionally decorated with a supplied `:floating-annotation-style` map."
    :options [:map
              [:line-index
               {:required true
@@ -1105,7 +1105,9 @@
 
 ;; TODO - add safety for index out-of-bounds
 (defn ^:public with-ascii-underline
-  {:doc     "If supplied value for `:form` is a multi-line string, and supplied
+  {:tldr    "Reformats a potentially multi-line string to include an ascii underline
+             at a specificed location."
+   :desc    "If supplied value for `:form` is a multi-line string, and supplied
              value for `:line-index` is an integer less than the number of lines
              present, inserts an ascii underline below the specified row."
    :options [:map
@@ -3721,8 +3723,9 @@
       \"bold.\"]]
     \"Last line\")
    ```"
-  {:desc     "Giving any number of strings or hiccup-like vectors, returns a string tagged
-              with ANSI SGR codes to style the text."
+  {:tldr     "Returns a styled string tagged with ANSI SGR codes."
+   :desc     "Takes an arbitrary number strings or hiccup-like vectors.
+              Hiccup vectors can be nested."
    :examples [{:desc  "Bold text"
                :forms '[[(bling [:bold "Bold text"])]]}
               {:desc  "Red text"
@@ -3737,8 +3740,13 @@
                :forms '[[(bling [:italic.bold.red "Bold red italic text"]
                                 " and "
                                 [:blue "blue text"])]]}
-              {:desc  "Black on yellow text"
-               :forms '[[(bling [:black.yellow-bg "Black on yellow text"])]]}
+              {:desc  "Italic black on yellow text"
+               :forms '[[(bling [:italic.black.yellow-bg "Black on yellow text"])]]}
+              {:desc  "Italic black on yellow text, with hiccup map syntax"
+               :forms '[[(bling [{:font-style :italic
+                                  :font-color :black
+                                  :background-color :yellow}
+                                 "Black on yellow text"])]]}
               {:desc  "Bling color pallette"
                :forms '[[(bling [:red "Red text"])]
                         [(bling [:orange "Orange text"])]
@@ -3772,7 +3780,9 @@
   (-> coll bling-data* :tagged))
 
 (defn ^:public print-bling
-  "In JVM Clojure, cljs(Node), and bb, `print-bling` is sugar for:
+  "Sugar for (println (bling ...)).
+  
+   In JVM Clojure, cljs(Node), and bb, `print-bling` is sugar for:
    (println (bling [:bold.blue \"my blue text\"]))
    
    In cljs(browser), `print-bling` is sugar for the the following:

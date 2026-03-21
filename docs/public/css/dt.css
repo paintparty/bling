@@ -208,4 +208,25 @@
   --transition-xslow: 1s;
   --transition-2xslow: 2s;
   --transition-3xslow: 4s;
+
+  --shape-rounded-3xs-absolute: 0.0625rem;
+  --shape-rounded-2xs-absolute: 0.125rem;
+  --shape-rounded-xs-absolute: 0.25rem;
+  --shape-rounded-sm-absolute: 0.375rem;
+  --shape-rounded-md-absolute: 0.5rem;
+  --shape-rounded-lg-absolute: 0.75rem;
+  --shape-rounded-xl-absolute: 1rem;
+  --shape-rounded-2xl-absolute: 1.25rem;
+  --shape-rounded-3xl-absolute: 1.5625rem;
+  --shape-rounded-absolute: var(--shape-rounded-md-absolute);
+  --shape-rounded-3xs: 0.04375em;
+  --shape-rounded-2xs: 0.0875em;
+  --shape-rounded-xs: 0.175em;
+  --shape-rounded-sm: 0.2625em;
+  --shape-rounded-md: 0.35em;
+  --shape-rounded-lg: 0.475em;
+  --shape-rounded-xl: 0.625em;
+  --shape-rounded-2xl: 0.775em;
+  --shape-rounded-3xl: 0.925em;
+  --shape-rounded: var(--shape-rounded-md);
 }

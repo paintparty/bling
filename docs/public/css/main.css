@@ -583,7 +583,7 @@ input, select, textarea {
   }
 }
 .terminal {
-  background-color: var(--background-dark-mode);
+  background-color: color-mix(in oklch, var(--background-dark-mode), black 25%);
   height: fit-content;
   min-height: 334px;
   width: fit-content;
