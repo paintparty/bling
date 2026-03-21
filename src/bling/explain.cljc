@@ -689,7 +689,7 @@
 
      (when must-satisfy?
        (section "Must satisfy:"
-                (or (when-not (? (-> problem ::display-schema?))
+                (or (when-not (-> problem ::display-schema?)
                       (indented-string indentation
                                        (:composite-error-message problem)))
                     (if-let [junction-form
