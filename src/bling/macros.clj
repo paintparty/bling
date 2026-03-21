@@ -171,6 +171,17 @@
                 (with-out-str (fireworks.pp/pprint ~x)))))
         ~x))))
 
+(defmacro bling-mood-env-var [] 
+  (System/getenv "BLING_MOOD"))
+
+(defmacro no-color-env-var [] 
+  (System/getenv "NO_COLOR"))
+
+(defmacro force-color-env-var [] 
+  (System/getenv "FORCE_COLOR"))
+
+
+;; Experimental formatting -----------------------------------------------------
 
 (defn interleave-all
   "Returns a lazy seq of the first item in each coll, then the second, etc.
@@ -242,12 +253,3 @@ css-str"
  
  The following css will be returned:<-italic.subtle.bold
  ${css-str}"
-
-(defmacro bling-mood-env-var [] 
-  (System/getenv "BLING_MOOD"))
-
-(defmacro no-color-env-var [] 
-  (System/getenv "NO_COLOR"))
-
-(defmacro force-color-env-var [] 
-  (System/getenv "FORCE_COLOR"))
