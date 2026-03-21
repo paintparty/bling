@@ -1031,7 +1031,8 @@
                    :width      width})))))))
 
 (defn ^:public with-floating-label
-  "Annotates the line at supplied index with floating label.
+  "Annotates a line of text at supplied index with floating label.
+   
    This label is optionally decorated with a supplied `:floating-annotation-style` map.
    
    Options:
@@ -1105,6 +1106,49 @@
 
 ;; TODO - add safety for index out-of-bounds
 (defn ^:public with-ascii-underline
+  "Reformats a potentially multi-line string to include an ascii underline
+   at a specificed location.
+   
+   If supplied value for `:form` is a multi-line string, and supplied
+   value for `:line-index` is an integer less than the number of lines
+   present, inserts an ascii underline below the specified row.
+   
+   Options:
+   
+   * **`:offset`**
+       - `pos-int?`
+       - Required.
+       - Controls offset, in columns, of the underline.
+         If not provided, defaults to index of first non-blank character in line first.
+   
+   * **`:width`**
+       - `pos-int?`
+       - Required.
+       - Defaults to `3`.
+       - Controls the width, in columns, of the underline.
+         If not provided, defaults to the length of the line, minus leading blank spaces
+   
+   * **`:underline-char`**
+       - `keyword?`
+       - Optional.
+       - Char used to build the ascii underline.
+         Overrides `:text-decoration-style`
+   
+   * **`:text-decoration-color`**
+       - `keyword?`
+       - Optional.
+       - Controls the color of the underline.
+   
+   * **`:text-decoration-weight`**
+       - `#{:bold \"normal\" :normal \"bold\"}`
+       - Optional.
+       - Controls the font-weight of the underline.
+   
+   * **`:text-decoration-style`**
+       - `#{:double :wavy :solid :dashed :dotted}`
+       - Optional.
+       - Defaults to `:wavy`.
+       - Controls the ascii char used to construct the underline."
   {:tldr    "Reformats a potentially multi-line string to include an ascii underline
              at a specificed location."
    :desc    "If supplied value for `:form` is a multi-line string, and supplied
@@ -1157,7 +1201,7 @@
            text-decoration-color
            text-decoration-weight]
     :or   {text-decoration-style :wavy
-           line-index ::unsupplied}
+           line-index            ::unsupplied}
     :as   opts}]
   (if-let [lines (some-> s (when-> string?) string/split-lines vec)]
     (let [line-count (count lines)
@@ -2822,7 +2866,7 @@
    
    For callouts of the type `:error`, `:warning`, or `:info`, the label
    string will default to an uppercased version of that string, e.g.
-   {:type :INFO} => \"INFO\". If a `:label` option is supplied, that value is
+   `{:type :INFO} => \"INFO\"`. If a `:label` option is supplied, that value is
    used instead. When you want to omit label for callouts of the type `:error`,
    `:warning`, or `:info`, you must explicitly set the :label option to an
    empty string.
@@ -2861,7 +2905,8 @@
              ;; :padding-block          1
              ;; :padding-inline         2
              }
-    (bling [:bold (str \"Line 1\" \"\\n\" \"Line 2\")])```
+    (bling [:bold (str \"Line 1\" \"\\n\" \"Line 2\")]))
+   ```
    
    Options:
    
@@ -3046,7 +3091,7 @@
 
               For callouts of the type `:error`, `:warning`, or `:info`, the label
               string will default to an uppercased version of that string, e.g.
-              {:type :INFO} => \"INFO\". If a `:label` option is supplied, that value is
+              `{:type :INFO} => \"INFO\"`. If a `:label` option is supplied, that value is
               used instead. When you want to omit label for callouts of the type `:error`,
               `:warning`, or `:info`, you must explicitly set the :label option to an
               empty string.
@@ -3084,7 +3129,7 @@
                       |          ;; :padding-block          1
                       |          ;; :padding-inline         2
                       |          }
-                      | (bling [:bold (str \"Line 1\" \"\\n\" \"Line 2\")])"}
+                      | (bling [:bold (str \"Line 1\" \"\\n\" \"Line 2\")]))"}
               {}]
    :options  [:map
               [:type
@@ -3629,8 +3674,10 @@
      :args   args}))
 
 (defn ^:public bling
-  "Giving any number of strings or hiccup-like vectors, returns a string tagged
-   with ANSI SGR codes to style the text.
+  "Returns a styled string tagged with ANSI SGR codes.
+   
+   Takes an arbitrary number strings or hiccup-like vectors.
+   Hiccup vectors can be nested.
    
    Bold text
    ```clojure
@@ -3665,9 +3712,16 @@
     [:blue \"blue text\"])
    ```
    
-   Black on yellow text
+   Italic black on yellow text
    ```clojure
-   (bling [:black.yellow-bg \"Black on yellow text\"])
+   (bling [:italic.black.yellow-bg \"Black on yellow text\"])
+   ```
+   
+   Italic black on yellow text, with hiccup map syntax
+   ```clojure
+   (bling
+    [{:font-style :italic, :font-color :black, :background-color :yellow}
+     \"Black on yellow text\"])
    ```
    
    Bling color pallette
@@ -3780,23 +3834,24 @@
   (-> coll bling-data* :tagged))
 
 (defn ^:public print-bling
-  "Sugar for (println (bling ...)).
-  
+  "Sugar for `(println (bling ...))`.
+   
    In JVM Clojure, cljs(Node), and bb, `print-bling` is sugar for:
-   (println (bling [:bold.blue \"my blue text\"]))
+   `(println (bling [:bold.blue \"my blue text\"]))`.
    
    In cljs(browser), `print-bling` is sugar for the the following:
-   `(print-to-browser-dev-console (bling [:bold.blue \"my blue text\"]))`
+   `(print-to-browser-dev-console (bling [:bold.blue \"my blue text\"]))`.
    
    print bold text
    ```clojure
    (print-bling [:bold \"Bold text\"])
    ```"
-  {:desc     "In JVM Clojure, cljs(Node), and bb, `print-bling` is sugar for:
-              (println (bling [:bold.blue \"my blue text\"]))
+  {:tldr     "Sugar for `(println (bling ...))`."
+   :desc     "In JVM Clojure, cljs(Node), and bb, `print-bling` is sugar for:
+              `(println (bling [:bold.blue \"my blue text\"]))`.
 
               In cljs(browser), `print-bling` is sugar for the the following:
-              `(print-to-browser-dev-console (bling [:bold.blue \"my blue text\"]))`"
+              `(print-to-browser-dev-console (bling [:bold.blue \"my blue text\"]))`."
 
    :examples [{:desc  "print bold text"
                :forms '[[(print-bling [:bold "Bold text"])]]}]}

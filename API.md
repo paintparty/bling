@@ -4,19 +4,19 @@
 -  [`bling.core`](#bling.core) 
     -  [`!?sgr`](#bling.core/!?sgr) - Temporarily silences debugging of sgr code printing.
     -  [`?sgr`](#bling.core/?sgr) - For debugging of ANSI SGR tagged output.
-    -  [`bling`](#bling.core/bling) - Giving any number of strings or hiccup-like vectors, returns a string tagged with ANSI SGR codes to style the text.
-    -  [`bling-colors`](#bling.core/bling-colors) - Array map of the blink color pallette with light, dark, and medium entries each color.
+    -  [`bling`](#bling.core/bling) - Returns a styled string tagged with ANSI SGR codes.
+    -  [`bling-colors`](#bling.core/bling-colors) - Array map of the blink color pallette with light, dark, and medium entries for each color.
     -  [`bling-colors*`](#bling.core/bling-colors*) - Array map of the blink color pallette.
     -  [`callout`](#bling.core/callout) - Uses a predesigned template to format and print a message block.
     -  [`file-info-str`](#bling.core/file-info-str) - Creates a file-info string consisting of the file name, line number and column number.
     -  [`highlighted-location`](#bling.core/highlighted-location) - Gets position of last occurence of highlighting in a potentially multi-line string.
     -  [`point-of-interest`](#bling.core/point-of-interest) - Formatted and decorated diagram of a form with line, column, and file info.
-    -  [`print-bling`](#bling.core/print-bling) - In JVM Clojure, cljs(Node), and bb, <code>print-bling</code> is sugar for: (println (bling [:bold.blue "my blue text"])) In cljs(browser), <code>print-bling</code> is sugar for the the following: <code>(print-to-browser-dev-console (bling [:bold.blue &quot;my blue text&quot;]))</code> print bold text <code></code><code>clojure (print-bling [:bold &quot;Bold text&quot;]) </code><code></code>.
+    -  [`print-bling`](#bling.core/print-bling) - Sugar for <code>(println (bling ...))</code>.
     -  [`stringified`](#bling.core/stringified) - Stringifies form to a specified with and height, with optionally supplied printing-fn such as <code>pprint</code>.
-    -  [`with-ascii-underline`](#bling.core/with-ascii-underline) - If supplied value for <code>:form</code> is a multi-line string, and supplied value for <code>:line-index</code> is an integer less than the number of lines present, inserts an ascii underline below the specified row.
-    -  [`with-floating-label`](#bling.core/with-floating-label) - Annotates the line at supplied index with floating label.
+    -  [`with-ascii-underline`](#bling.core/with-ascii-underline) - Reformats a potentially multi-line string to include an ascii underline at a specificed location.
+    -  [`with-floating-label`](#bling.core/with-floating-label) - Annotates a line of text at supplied index with floating label.
 -  [`bling.explain`](#bling.explain) 
-    -  [`explain-malli`](#bling.explain/explain-malli) - Prints a Malli validation error "callout" block via bling.core/callout.
+    -  [`explain-malli`](#bling.explain/explain-malli) - Prints a Malli validation error "callout" block via <code>bling.core/callout</code>.
 
 -----
 # <a name="bling.banner">bling.banner</a>
@@ -163,8 +163,10 @@ For debugging of ANSI SGR tagged output.
 ```
 Function.
 
-Giving any number of strings or hiccup-like vectors, returns a string tagged
-   with ANSI SGR codes to style the text.
+Returns a styled string tagged with ANSI SGR codes.
+   
+   Takes an arbitrary number strings or hiccup-like vectors.
+   Hiccup vectors can be nested.
    
    Bold text
    ```clojure
@@ -199,9 +201,16 @@ Giving any number of strings or hiccup-like vectors, returns a string tagged
     [:blue "blue text"])
    ```
    
-   Black on yellow text
+   Italic black on yellow text
    ```clojure
-   (bling [:black.yellow-bg "Black on yellow text"])
+   (bling [:italic.black.yellow-bg "Black on yellow text"])
+   ```
+   
+   Italic black on yellow text, with hiccup map syntax
+   ```clojure
+   (bling
+    [{:font-style :italic, :font-color :black, :background-color :yellow}
+     "Black on yellow text"])
    ```
    
    Bling color pallette
@@ -257,7 +266,7 @@ Giving any number of strings or hiccup-like vectors, returns a string tagged
       "bold."]]
     "Last line")
    ```
-<p><sub><a href="https://github.com/paintparty/bling/blob/0.10.0v2/src/bling/core.cljc#L3629-L3772">Source</a></sub></p>
+<p><sub><a href="https://github.com/paintparty/bling/blob/0.10.0v2/src/bling/core.cljc#L3676-L3834">Source</a></sub></p>
 
 ## <a name="bling.core/bling-colors">`bling-colors`</a>
 
@@ -265,7 +274,7 @@ Giving any number of strings or hiccup-like vectors, returns a string tagged
 
 
 Array map of the blink color pallette with light, dark, and medium entries
-   each color.
+   for each color.
    
    ```Clojure
    {...
@@ -321,7 +330,7 @@ Uses a predesigned template to format and print a message block.
    
    For callouts of the type `:error`, `:warning`, or `:info`, the label
    string will default to an uppercased version of that string, e.g.
-   {:type :INFO} => "INFO". If a `:label` option is supplied, that value is
+   `{:type :INFO} => "INFO"`. If a `:label` option is supplied, that value is
    used instead. When you want to omit label for callouts of the type `:error`,
    `:warning`, or `:info`, you must explicitly set the :label option to an
    empty string.
@@ -360,7 +369,8 @@ Uses a predesigned template to format and print a message block.
              ;; :padding-block          1
              ;; :padding-inline         2
              }
-    (bling [:bold (str "Line 1" "\n" "Line 2")])```
+    (bling [:bold (str "Line 1" "\n" "Line 2")]))
+   ```
    
    Options:
    
@@ -528,7 +538,7 @@ Uses a predesigned template to format and print a message block.
        - Optional.
        - Max width of box in number of chars, aka columns in
          terminal. Overridden by the `:width` value, if set.
-<p><sub><a href="https://github.com/paintparty/bling/blob/0.10.0v2/src/bling/core.cljc#L2804-L3326">Source</a></sub></p>
+<p><sub><a href="https://github.com/paintparty/bling/blob/0.10.0v2/src/bling/core.cljc#L2850-L3373">Source</a></sub></p>
 
 ## <a name="bling.core/file-info-str">`file-info-str`</a>
 ``` clojure
@@ -747,7 +757,7 @@ Formatted and decorated diagram of a form with line, column, and file info.
        - Optional.
        - Defaults to `1`.
        - Controls the number of blank lines below the diagram.
-<p><sub><a href="https://github.com/paintparty/bling/blob/0.10.0v2/src/bling/core.cljc#L1246-L1568">Source</a></sub></p>
+<p><sub><a href="https://github.com/paintparty/bling/blob/0.10.0v2/src/bling/core.cljc#L1292-L1614">Source</a></sub></p>
 
 ## <a name="bling.core/print-bling">`print-bling`</a>
 ``` clojure
@@ -756,17 +766,19 @@ Formatted and decorated diagram of a form with line, column, and file info.
 ```
 Function.
 
-In JVM Clojure, cljs(Node), and bb, [`print-bling`](#bling.core/print-bling) is sugar for:
-   (println (bling [:bold.blue "my blue text"]))
+Sugar for `(println (bling ...))`.
+   
+   In JVM Clojure, cljs(Node), and bb, [`print-bling`](#bling.core/print-bling) is sugar for:
+   `(println (bling [:bold.blue "my blue text"]))`.
    
    In cljs(browser), [`print-bling`](#bling.core/print-bling) is sugar for the the following:
-   `(print-to-browser-dev-console (bling [:bold.blue "my blue text"]))`
+   `(print-to-browser-dev-console (bling [:bold.blue "my blue text"]))`.
    
    print bold text
    ```clojure
    (print-bling [:bold "Bold text"])
    ```
-<p><sub><a href="https://github.com/paintparty/bling/blob/0.10.0v2/src/bling/core.cljc#L3774-L3800">Source</a></sub></p>
+<p><sub><a href="https://github.com/paintparty/bling/blob/0.10.0v2/src/bling/core.cljc#L3836-L3865">Source</a></sub></p>
 
 ## <a name="bling.core/stringified">`stringified`</a>
 ``` clojure
@@ -778,19 +790,59 @@ Function.
 
 Stringifies form to a specified with and height, with optionally
    supplied printing-fn such as `pprint`
-<p><sub><a href="https://github.com/paintparty/bling/blob/0.10.0v2/src/bling/core.cljc#L1214-L1238">Source</a></sub></p>
+<p><sub><a href="https://github.com/paintparty/bling/blob/0.10.0v2/src/bling/core.cljc#L1260-L1284">Source</a></sub></p>
 
 ## <a name="bling.core/with-ascii-underline">`with-ascii-underline`</a>
 ``` clojure
 
-("with-ascii-underline[s {:keys [line-index underline-char text-decoration-style text-decoration-color text-decoration-weight] :or {text-decoration-style :wavy line-index ::unsupplied} :as opts}]")
+(with-ascii-underline s {:keys [line-index underline-char text-decoration-style text-decoration-color text-decoration-weight] :or {text-decoration-style :wavy line-index ::unsupplied} :as opts}])
 ```
 Function.
 
-If supplied value for `:form` is a multi-line string, and supplied
-             value for `:line-index` is an integer less than the number of lines
-             present, inserts an ascii underline below the specified row.
-<p><sub><a href="https://github.com/paintparty/bling/blob/0.10.0v2/src/bling/core.cljc#L1107-L1187">Source</a></sub></p>
+Reformats a potentially multi-line string to include an ascii underline
+   at a specificed location.
+   
+   If supplied value for `:form` is a multi-line string, and supplied
+   value for `:line-index` is an integer less than the number of lines
+   present, inserts an ascii underline below the specified row.
+   
+   Options:
+   
+   * **`:offset`**
+       - `pos-int?`
+       - Required.
+       - Controls offset, in columns, of the underline.
+         If not provided, defaults to index of first non-blank character in line first.
+   
+   * **`:width`**
+       - `pos-int?`
+       - Required.
+       - Defaults to `3`.
+       - Controls the width, in columns, of the underline.
+         If not provided, defaults to the length of the line, minus leading blank spaces
+   
+   * **`:underline-char`**
+       - `keyword?`
+       - Optional.
+       - Char used to build the ascii underline.
+         Overrides `:text-decoration-style`
+   
+   * **`:text-decoration-color`**
+       - `keyword?`
+       - Optional.
+       - Controls the color of the underline.
+   
+   * **`:text-decoration-weight`**
+       - `#{:bold "normal" :normal "bold"}`
+       - Optional.
+       - Controls the font-weight of the underline.
+   
+   * **`:text-decoration-style`**
+       - `#{:double :wavy :solid :dashed :dotted}`
+       - Optional.
+       - Defaults to `:wavy`.
+       - Controls the ascii char used to construct the underline.
+<p><sub><a href="https://github.com/paintparty/bling/blob/0.10.0v2/src/bling/core.cljc#L1108-L1233">Source</a></sub></p>
 
 ## <a name="bling.core/with-floating-label">`with-floating-label`</a>
 ``` clojure
@@ -799,7 +851,8 @@ If supplied value for `:form` is a multi-line string, and supplied
 ```
 Function.
 
-Annotates the line at supplied index with floating label.
+Annotates a line of text at supplied index with floating label.
+   
    This label is optionally decorated with a supplied `:floating-annotation-style` map.
    
    Options:
@@ -819,7 +872,7 @@ Annotates the line at supplied index with floating label.
        - Optional.
        - Defaults to `3`.
        - Controls offset of the floating annotation
-<p><sub><a href="https://github.com/paintparty/bling/blob/0.10.0v2/src/bling/core.cljc#L1033-L1087">Source</a></sub></p>
+<p><sub><a href="https://github.com/paintparty/bling/blob/0.10.0v2/src/bling/core.cljc#L1033-L1088">Source</a></sub></p>
 
 -----
 # <a name="bling.explain">bling.explain</a>
@@ -837,7 +890,7 @@ Annotates the line at supplied index with floating label.
 ```
 Macro.
 
-Prints a Malli validation error "callout" block via bling.core/callout.
+Prints a Malli validation error "callout" block via [`bling.core/callout`](#bling.core/callout).
    
    Within the block, the value is pretty-printed, potentially with syntax
    coloring. The problem value is highlighted with the `:highlight-error`

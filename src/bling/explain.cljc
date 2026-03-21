@@ -941,7 +941,7 @@
            (println success-message)))))))
 
 (defmacro ^:public explain-malli
-  "Prints a Malli validation error \"callout\" block via bling.core/callout.
+  "Prints a Malli validation error \"callout\" block via `bling.core/callout`.
    
    Within the block, the value is pretty-printed, potentially with syntax
    coloring. The problem value is highlighted with the `:highlight-error`
@@ -1031,7 +1031,7 @@
        - `string?`
        - Optional.
        - The message to display if value passes schema validation"
-  {:desc    "Prints a Malli validation error \"callout\" block via bling.core/callout.
+  {:desc    "Prints a Malli validation error \"callout\" block via `bling.core/callout`.
              
              Within the block, the value is pretty-printed, potentially with syntax
              coloring. The problem value is highlighted with the `:highlight-error`

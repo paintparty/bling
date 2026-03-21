@@ -475,9 +475,14 @@
    [:div.docs-section.absolute-block-start-inside 
     {:style {:display (if (not= "Docs" (:active-view @S)) "none" "flex")}}
     [:div 
-     [:p "Official docs can be found. " [:a.foreground {:href "https://github.com/paintparty/bling" :target "_blank"} "here"]]
+     [:p "Official docs can be found. "
+      [:a.foreground {:href   "https://github.com/paintparty/bling"
+                      :target "_blank"} "here"]]
      [:br]
-     [:p "Public APIs are " [:a.foreground {:href "https://github.com/paintparty/bling/API.md" :target "_blank"} "here"]]
+     [:p "Public APIs are " 
+      [:a.foreground {:href   "https://github.com/paintparty/bling/blob/main/API.md"
+                      :target "_blank"}
+       "here"]]
      [:br]
      [:p "New docs site coming soon!"]]]
    
@@ -487,9 +492,17 @@
     [:div 
      [:p "Bling is a library that provides hifi console printing for Clojure dialects."]
      [:br]
-     [:p "Project repo can be found " [:a.foreground {:href "https://github.com/paintparty/bling" :target "_blank"} "here"]]
+     [:p
+      "Project repo can be found " 
+      [:a.foreground
+       {:href   "https://github.com/paintparty/bling"
+        :target "_blank"} 
+       "here"]]
      [:br]
-     [:p "Consumable via " [:a.foreground {:href "https://clojars.org/io.github.paintparty/bling" :target "_blank"} "Clojars" ]]]]
+     [:p 
+      "Consumable via "
+      [:a.foreground {:href   "https://clojars.org/io.github.paintparty/bling"
+                      :target "_blank"} "Clojars" ]]]]
 
    [:div.panel.absolute-block-start-inside.flex-row
     {:style {:display (if (not= "Callout Config" (:active-view @S)) "none" "flex")}}
@@ -497,7 +510,9 @@
      [:span.explanation.foreground 
       [:p "Bling is a library that provides hifi console printing for Clojure dialects."]
       [:br]
-      [:p [:span.code "bling.core/callout"] " is designed for the easy creation of nicely formatted, easy-to-read message blocks." ]
+      [:p
+       [:span.code "bling.core/callout"]
+       " is designed for the easy creation of nicely formatted, easy-to-read message blocks."]
       [:br]
       [:p "The UI below allows you to preview different options, and generate snippets for your own projects."]]
      ;; CALLOUT THEME
