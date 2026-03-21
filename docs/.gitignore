@@ -3,6 +3,7 @@
 # /public/js
 /public/js/main.js.map
 /public/js/manifest.edn
+/public/js/cljs-runtime/
 
 /node_modules
 /target
