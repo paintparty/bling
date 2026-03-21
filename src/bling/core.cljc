@@ -277,21 +277,6 @@
 
 (defn- spaces [n] (string/join (repeat n " ")))
 
-(defn- poi-text-underline-str [n str-index text-decoration-style]
-  ;; "╱╲" <- pretty good look too
-  (when-not (= :none :text-decoration-style)
-    (str (string/join (repeat str-index " "))
-         (string/join (repeat n
-                              (case (some-> text-decoration-style as-str)
-                                "wavy" "^"
-                                "dashed" "-"
-                                "dotted" "•"
-                                "underline" "─"
-                                "double" "═"
-                                "^"))))))
-
-(def ^:private form-limit 33)
-
 (defn- x->sgr [x k]
   (when x
     (let [n (if (= k :fg) 38 48)]
@@ -1073,18 +1058,18 @@
                :desc     "Controls offset of the floating annotation"}
               :pos-int]]}
   [s {:keys [line-index label-text label-style label-offset]}]
-  (if-let [text (when (nat-int? line-index)
-                  (when-> label-text string?))]
-    (let [lines            (-> s string/split-lines vec)
-          line             (nth lines line-index)
-          style            (or (when-> label-style map?) {})
-          offset           (or (when-> label-offset pos-int?) 3)
-          labeled          (str line
-                                (bling (util/char-repeat offset " ")
-                                       [style text]))
-          with-labeled     (assoc lines line-index labeled)
-          with-labeled-str (string/join "\n" with-labeled)]
-      with-labeled-str)
+  (if-let [text (when (nat-int? line-index) (when-> label-text string?))]
+    (let [lines (-> s string/split-lines vec)]
+      (if-let [line (nth lines line-index nil)]
+        (let [style            (or (when-> label-style map?) {})
+              offset           (or (when-> label-offset pos-int?) 3)
+              labeled          (str line
+                                    (bling (util/char-repeat offset " ")
+                                           [style text]))
+              with-labeled     (assoc lines line-index labeled)
+              with-labeled-str (string/join "\n" with-labeled)]
+          with-labeled-str)
+        s))
     s))
 
 (defn- underline-width+offset
