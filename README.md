@@ -87,12 +87,12 @@ Add as a dependency to your project:
 
 lein:
 ```Clojure
-[io.github.paintparty/bling "0.9.2"]
+[io.github.paintparty/bling "0.10.0"]
 ```
 
 deps:
 ```Clojure
-io.github.paintparty/bling {:mvn/version "0.9.2"}
+io.github.paintparty/bling {:mvn/version "0.10.0"}
 ```
 <br>
 
@@ -117,14 +117,14 @@ Or, import into your namespace:
 You can view an exhaustive sampling of Bling output by pasting this snippet into your terminal:
 
 ```clojure
-clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.9.2"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
+clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.10.0"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
 ```
 <br>
 
 To view the above sample with Babashka, paste this snippet into your terminal:
 
 ```clojure
-bb -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.9.2"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
+bb -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.10.0"}}}' -e "(require '[bling.sample]) (println (bling.sample/sample))"
 ```
 <br>
 
@@ -437,72 +437,49 @@ map instead of a hiccup-style keyword:
 <br>
 
 ## Callout blocks
-**`bling.core/callout`** will print a message "block" to the console with a colored bounding border in the inline-start position.
+**`bling.core/callout`** will print a message "block" to the console with a colored bounding border in the inline-start position
 
-<!-- **`callout`** takes any number arguments. The first can optionally be a map with 0 or more of following entries:
-
-| Key               | Pred                    | Description                                                  |
-| :---------------  | -----------------       | ------------------------------------------------------------ |
-| `:type`           | #{`keyword?` `string?`} | Should be one of: `:error`,  `:warning` , or `:info`. <br>Will set the label text (unless provided via `:label`). Will also set the `:colorway`, and override any provided `:colorway` value. |
-| `:colorway`       | #{`keyword?` `string?`} | The color of the sideline border, or gutter, depending on the value of `:theme`.<br />Should be one of: `:error`,  `:warning` , `:info` , `:positive`, or `:subtle`. <br>Can also be any one of the pallete colors such as  `:magenta`, `:green`,  `:negative`, `:neutral`, etc. |
-| `:theme`          | #{`keyword?` `string?`} | Theme of callout. Can be one of `:sideline`, `:sideline-bold`, `:minimal`, `boxed`, or `:gutter`. Defaults to `:sideline`. |
-| `:label`          | `any?`                  | Labels the callout. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string). <br>In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively. |
-| `:side-label`     | `any?`                  | Side label to the the callout label. In a terminal emulator context, the value will be cast to a string. In a browser context, the label can be an instance of `bling.core/Enriched`, or any other value (which will be cast to a string). <br>In the case of a callout `:type` of `:warning`, `:error`, or `:info`, the value of the label will default to `WARNING`, `ERROR`, or `INFO`, respectively. |
-| `:label-theme`    | #{`keyword?` `string?`} | Theme of label. Can be one of `:marquee` or `:minimal`. Defaults to `:minimal`. |
-| `:padding-top`    | `int?`                  | Amount of padding (in newlines) at top, inside callout.<br/>Defaults to `1`. |
-| `:padding-bottom` | `int?`                  | Amount of padding (in newlines) at bottom, inside callout.<br>Defaults to `0`. In browser console, defaults to `1` in the case of callouts of type `:warning` or `:error`.|
-| `:padding-left`   | `int?`                  | Amount of padding (in blank character spaces) at left, inside callout.<br>In console emulator, defaults to `2`. In browser console, defaults to `0`.|
-| `:margin-top`     | `int?`                  | Amount of margin (in newlines) at top, outside callout.<br>Defaults to `1`. Only applies to terminal emulator printing. |
-| `:margin-bottom`  | `int?`                  | Amount of margin (in newlines) at bottom, outside callout.<br>Defaults to `0`. Only applies to terminal emulator printing. |
-| `:margin-left`    | `int?`                  | Amount of margin (in blank character spaces) at left, outside callout.<br>Defaults to `0`. Only applies to terminal emulator printing. |
-| `:border-block-length`    | `int?`                  | The width of the top and bottom border, only applies to the `:minimal` callout theme.<br>Defaults to `50`. Only applies to terminal emulator printing. |
-| `:data?`          | `boolean?`              | Returns a data representation of result instead of printing it. |
-
-<br>
-
-#### Boxed callout, additional options
-
-**`callout`** with a `:theme` of `:boxed` accepts some additional options:
-
-| Key                       | Pred                                 | Description                                                  |
-| :---------------          | -----------------                    | ------------------------------------------------------------ |
-| `:border-char`            | `string?`                            | A char that will override the default box-drawing character. 
-| `:vertical-border-char`   | `string?`                            | A char that will override the default box-drawing character, for the vertical borders. 
-| `:box-drawing-style`      | `#{:thin-round :thin :bold :double}` | The style of box-drawing character used. 
-| `:width`                  | `pos-int?`                           | Width of the box in number of chars, aka columns in terminal. If not set, will be the width of the terminal. If terminal width cannot be detected, will fallback to 80. 
-| `:max-width`              | `pos-int?`                           | Max width of box in number of chars, aka columns in terminal. Overridden by the `:width` value, if set. 
-| `:min-width`              | `pos-int?`                           | Min width of box in number of chars, aka columns in terminal. Overridden by the `:width` value, if set. 
-| `:padding-right`          | `int?`                  | Amount of padding (in blank character spaces) at right, inside callout.<br>In console emulator, defaults to `2`. In browser console, defaults to `0`.|
-| `:padding-block`          | `int?`                  | Amount of padding (in blank character spaces) at top and bottom, inside callout.<br>In console emulator, defaults to `1`. In browser console, defaults to `0`.|
-| `:padding-inline`          | `int?`                  | Amount of padding (in blank character spaces) at left and right, inside callout.<br>In console emulator, defaults to `2`. In browser console, defaults to `0`.|
-<br>
-<br> -->
+[View API for `callout`](https://github.com/paintparty/bling/blob/main/API.md#bling.core/callout)
 
 Examples of `callout` with different `:type` / `:colorway` options:
 
 ```Clojure
 (callout {:type :info}
-         "Example callout, with :type of :info")
+         "Example callout"
+         "\n"
+         "with :type of :info")
 
 (callout {:type  :info
           :label "My custom label"}
-         "Example callout, with :type of :info and custom :label")
+         "Example callout"
+         "\n"
+         "with :type of :info and custom :label")
 
 (callout {:type :warning}
-         "Example callout, with :type of :warning")
+         "Example callout"
+         "\n"
+         "with :type of :warning")
 
 (callout {:type :error}
-         "Example callout, with :type of :error")
+         "Example callout"
+         "\n"
+         "with :type of :error")
 
 (callout {:type  :positive
           :label "SUCCESS!"}
-         "Example callout, with :type of :positive, and custom :label")
+         "Example callout"
+         "\n"
+         "with :type of :positive, and custom :label")
 
 (callout {:type :subtle}
-         "Example callout, with :type of :subtle (or :gray)")
+         "Example callout"
+         "\n"
+         "with :type of :subtle (or :gray)")
 
 (callout {:type :magenta}
-         "Example callout, with :type of :magenta")
+         "Example callout"
+         "\n"
+         "with :type of :magenta")
 
 (callout "Example callout, default")
 ```
@@ -510,19 +487,20 @@ Examples of `callout` with different `:type` / `:colorway` options:
 <br>
 
 The above calls would render the following in your terminal emulator: 
-<p align="center"><img src="resources/docs/chromed/callouts_sideline_minimal_light.png" width="700px" /></p>
-<p align="center"><img src="resources/docs/chromed/callouts_sideline_minimal_dark.png" width="700px" /></p>
+<p align="center"><img src="resources/docs/chromed/callouts_sandwich_light.png" width="700px"/></p>
+<p align="center"><img src="resources/docs/chromed/callouts_sandwich_dark.png" width="700px"/></p>
+
+With `{:theme :sideline}`:
+<p align="center"><img src="resources/docs/chromed/callouts_sideline_minimal_light.png" width="700px"/></p>
+<p align="center"><img src="resources/docs/chromed/callouts_sideline_minimal_dark.png" width="700px"/></p>
 <br>
 
 With `{:theme :sideline :border-weight :bold}`: 
-<p align="center"><img src="resources/docs/chromed/callouts_sideline-bold_minimal_light.png" width="700px" /></p>
-<p align="center"><img src="resources/docs/chromed/callouts_sideline-bold_minimal_dark.png" width="700px" /></p>
+<p align="center"><img src="resources/docs/chromed/callouts_sideline-bold_minimal_light.png" width="700px"/></p>
+<p align="center"><img src="resources/docs/chromed/callouts_sideline-bold_minimal_dark.png" width="700px"/></p>
 <br><br>
 
-With `{:theme :sandwich}`:
 
- <p align="center"><img src="resources/docs/chromed/callouts_minimal_light.png" width="700px" /></p>
-<p align="center"><img src="resources/docs/chromed/callouts_minimal_dark.png" width="700px" /></p>
 
 
 
@@ -530,8 +508,7 @@ With `{:theme :sandwich}`:
 
 <br>
 
-With `{:label-theme :sandwich}`:
-Callout accepts a `:label-theme` option. Supplying a value of `:marquee`, will render
+`callout` accepts a `:label-theme` option. Supplying a value of `:marquee`, will render
 the label inside a box: 
 
 <p align="center"><img src="resources/docs/chromed/callouts_sideline_marquee_light.png" width="700px" /></p>
@@ -738,6 +715,8 @@ More example values of `2` for `:margin-left`, to increase the weight:
 Bling offers `bling.hifi` for colorized pretty-printing of Clojure, Java, and JavaScript data structures.
 `bling.hifi/hifi` will return an ansi-sgr decorated string, while `bling.hifi/print-hifi` will print such a string.
 
+[View API for `hifi`](https://github.com/paintparty/bling/blob/main/API.md#bling.hifi/hifi)
+
 Under the hood, the formatting/colorizing is achieved with <a href="https://github.com/paintparty/fireworks" target="_blank">Fireworks ↗</a>.
 
 By default, the theme of this output will be `Universal Neutral`.
@@ -762,7 +741,9 @@ Check out <a href="https://github.com/paintparty/fireworks?tab=readme-ov-file#th
 
 ## Usage with Malli
 
-Bling offers `bling.explain/explain-malli` to present [Malli](https://github.com/metosin/malli) validation errors:
+Bling offers `bling.explain/explain-malli` to present [Malli](https://github.com/metosin/malli) schema validation errors.
+
+[View API for `explain-malli`](https://github.com/paintparty/bling/blob/main/API.md#bling.explain-malli/explain-malli)
 
 ```Clojure
 (require '[bling.explain :refer [explain-malli]])
@@ -792,7 +773,6 @@ The above code would print the following:
 
 <div align="center"><img src="resources/docs/chromed/malli-explain-missing-key_dark-0.7.0.png" width="700px"/></div>
 
-
 You can also pass an optional trailing options map to customize the appearance of the printed output. In the example below, we are leaving out the display of the schema within the callout block:
 
 ```Clojure
@@ -810,24 +790,9 @@ The above code would print the following:
 
 <div align="center"><img src="resources/docs/chromed/malli-explain-bad-set-value-with-no-schema_dark-0.7.0.png" width="700px"/></div>
 
-<!-- ### Options for `explain-malli`
-The trailing options map for `explain-malli` accepts the following:
-| Key                      | Pred                    | Description                                                  |
-| :---------------         | ----------------------- | ------------------------------------------------------------ |
-| `:function-name`         | `string?`               | The name of the function that can be used to construct the source location info.
-| `:file`                  | `pos-int?` or `string?` | The file name that can be used to construct the source location.
-| `:line`                  | `pos-int?` or `string?` | The line number that can be used to construct the source location.
-| `:column`                | `pos-int?` or `string?` | The column number that can be used to construct the source location.
-| `:spacing`               | `#{:compact}`           | If the value of `:spacing` is set to `:compact`, the callout is compacted vertically.
-| `:display-schema?`       | `boolean?`              | Displays the schema passed to the underlying call to `malli.core/explain`. Defaults to `true`.
-| `:display-explain-data?` | `boolean?`              | Displays the output of `malli.core/explain` within the callout block. Defaults to `false`.
-| `:callout-opts`          | `map?`                  | A map of options for the underlying call to `bling.core/callout`. With this you can change the theme of the callout template, colorway of the callout, theme of the callout label, text in the callout label, etc. See the docstring for `bling.core/callout.`  |"
-
-<br> -->
-
 You can preview several examples of bling.explain/explain-malli in your terminal with the following snippet:
 ```
-clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.9.2"}}}' -e "(require '[bling.sample]) (bling.sample/explain-malli-examples)"
+clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.10.0"}}}' -e "(require '[bling.sample]) (bling.sample/explain-malli-examples)"
 ```
 
 <br>
@@ -860,9 +825,11 @@ banners with <a href="https://github.com/busyloop/lolcat" target="_blank">lolcat
 small handful of ported Figlet fonts. The glyph layout implementation is bare-bones and there is currently no support for standard figlet
 smushing. Figlet banners only work in terminal context (JVM Clojure or Node.js ClojureScript).
 
+[View API for `banner`](https://github.com/paintparty/bling/blob/main/API.md#bling.banner/banner)
+
 For a quick sample in your terminal:
 ```clojure
-clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.9.2"}}}' -e "(require '[bling.sample]) (println (bling.sample/print-bling-banner-font-samples))"
+clj -Sdeps '{:deps {io.github.paintparty/bling {:mvn/version "0.10.0"}}}' -e "(require '[bling.sample]) (println (bling.sample/print-bling-banner-font-samples))"
 ```
 ### Banner usage
 
@@ -940,23 +907,6 @@ Below are the example calls that render the screenshot at the the top of this se
 
 <br>
 
-<!-- ### All the options for `banner` 
-
-| Key                   | Pred       | Description   |
-| :---------------      | -----------| ------------- |
-| `:font`               | `map?`     | Must be one of the fonts that ships with Bling: `bling.fonts.ansi-shadow/ansi-shadow`,  `bling.fonts.big-money.big-money/big-money` , `bling.fonts.big/big`, `bling.fonts.miniwi/miniwi`, `bling.fonts.drippy/drippy,` or `bling.fonts.isometric-1/isometric-1`. Defaults to `bling.fonts.ansi-shadow/ansi-shadow`. |
-| `:text`               | `string?`  | The text to set in the banner.
-| `:font-weight`        | `keyword?` | If set to `:bold`, each subchar in figlet characters will be bolded. Only applies when a gradient is set.
-| `:gradient-colors`    | `vector?`  | Expects a vector of 2 keywords. Only the following color pairs are valid: `[:green :blue]`, `[:red :magenta]`, `[:yellow :purple]`, `[:orange :purple]`, `[:cool :warm]`.  Only applies to terminal emulator printing|
-| `:gradient-direction` | `keyword?` | Expects a keyword. Must be one of: `:to-top`, `:to-bottom`, `:to-right`, and `:to-left`.  Only applies to terminal emulator printing|
-| `:gradient-shift`     | `int?`     | If gradient is `[:warm :cool]` pair, this will shift the hue. `0-5`. Defaults to `0`.|
-| `:contrast`           | `keyword?` | If gradient is set, this will force an overall lighter or darker tone. Defaults to `:medium`. If the user has a `BLING_MOOD` env var set, it will default to `:high` in order to optimize contrast for the users terminal theme (light or dark) |
-| `:margin-top`         | `int?`     | Amount of margin (in newlines) at top, outside banner. <br>Defaults to `1`. Only applies to terminal emulator printing. |
-| `:margin-bottom`      | `int?`     | Amount of margin (in newlines) at bottom, outside banner. <br>Defaults to `0`. Only applies to terminal emulator printing. |
-| `:margin-left`        | `int?`     | Amount of margin (in blank character spaces) at left, outside banner. <br>Defaults to `0`. Only applies to terminal emulator printing. |
-| `:margin-right`       | `int?`     | Amount of margin (in blank character spaces) at right, outside banner. <br>Defaults to `0`. Only applies to terminal emulator printing. |"
-
-<br> -->
 
 > [!NOTE]
 Figlet banners only work in terminal context (JVM Clojure or Node.js ClojureScript).
