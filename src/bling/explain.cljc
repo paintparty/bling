@@ -723,6 +723,7 @@
 
 (defn- of-one? [x] (some-> x count (= 1)))
 
+;; TODO - Revisit this and decide if different defaults for :display-schema? would be better
 (defn- maybe-display-schema
   [multiple-problems? problems schema display-schema? display-explain-data? hifi+ malli-schema section-opts malli-ex-data]
   (let [single-problem-top-level?
@@ -941,7 +942,7 @@
            (println success-message)))))))
 
 (defmacro ^:public explain-malli
-  "Prints a Malli validation error \"callout\" block via `bling.core/callout`.
+  "Prints a Malli validation error callout block via `bling.core/callout`.
    
    Within the block, the value is pretty-printed, potentially with syntax
    coloring. The problem value is highlighted with the `:highlight-error`
@@ -1031,7 +1032,7 @@
        - `string?`
        - Optional.
        - The message to display if value passes schema validation"
-  {:desc    "Prints a Malli validation error \"callout\" block via `bling.core/callout`.
+  {:desc    "Prints a Malli validation error callout block via `bling.core/callout`.
              
              Within the block, the value is pretty-printed, potentially with syntax
              coloring. The problem value is highlighted with the `:highlight-error`

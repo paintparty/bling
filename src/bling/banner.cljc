@@ -1181,31 +1181,7 @@
                            outside banner."}
                :int]]}
   [m]
-  #?(:cljs
-     (if node?
-       (banner* m)
-       (let [style (:browser-style m)]
-         (when style
-           (when-not (string? style)
-             (js/console.warn
-              (str "Warning"
-                   "\n\n"
-                   "bling.banner/banner."
-                   "\n\n"
-                   "The :browser-style option must be a valid css style string."
-                   "\n\n"
-                   "Example:"
-                   "\n\n"
-                   "(bling.banner/banner\n"
-                   " {:text  \"My Banner\"})"
-                   "\n  :style \"color: blue; font-size: 24px;\""))))
-         (.apply js/console.log
-                 js/console
-                 #js[(str "%c" (:text m) "%c")
-                     (str style)
-                     "font-size:default;"])))
-     :clj
-     (banner* m)))
+  (banner* m))
 
 ;; TODO currently, font-weight has no effect if no gradient is specified.
 ;;      you can set it with bling though.

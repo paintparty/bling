@@ -3,6 +3,7 @@
  --foreground: rgb(53, 53, 53);
  --background-dark-mode: color-mix(in oklch, rgb(18, 18, 18), white 8%);
  --foreground-dark-mode: rgb(190, 190, 190);
+ --terminal-background: color-mix(in oklch, var(--background-dark-mode), black 25%);
  --line-height: 23px;
  --control-section-label-width: 175px;
 }
@@ -582,8 +583,9 @@ input, select, textarea {
     transform-origin: top center;
   }
 }
+
 .terminal {
-  background-color: color-mix(in oklch, var(--background-dark-mode), black 25%);
+  background-color: var(--terminal-background);
   height: fit-content;
   min-height: 334px;
   width: fit-content;
@@ -810,6 +812,10 @@ input, select, textarea {
   }
 }
 
+.terminal-background {
+  var(--terminal-background);
+}
+
 .background {
   background-color: var(--background);
   .dark & {
@@ -825,7 +831,9 @@ input, select, textarea {
 }
 
 .snippet {
+  max-width: 71ch;
 }
+
 .snippet-header {
   font-family: var(--code-font-stack);
   translate: 1px 1px;
@@ -919,3 +927,14 @@ label {
 }
 
 
+#shadow-hud-container {
+  color: rgb(233, 233, 233)!important;
+  background-color: rgb(36, 36, 36)!important;
+  border: 5px solid #8d0000;
+  &>div {
+    background-color: rgb(36, 36, 36)!important;
+  }
+  pre {
+    font-size: large;
+  }
+}

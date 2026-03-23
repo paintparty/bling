@@ -1,245 +1,117 @@
-;; anaylitics
-
 
 (ns bling.demo.browser
   (:require
-  ;;  [bling.core :refer [bling print-bling point-of-interest]]
-  ;;  [bling.browser :refer []]
+   [clojure.walk :as walk]
+   [bling.core :refer [bling print-bling point-of-interest ?sgr]]
+   [bling.util :refer [when->]]
+   [bling.hifi :refer [hifi]]
+   [bling.banner :refer [banner]]
+   [bling.browser]
+   [bling.fonts.miniwi :refer [miniwi]]
+   [bling.fonts.ansi-shadow :refer [ansi-shadow]]
+   [bling.fonts.drippy :refer [drippy]]
+   [bling.fonts.big :refer [big]]
+   [bling.fonts.big-money :refer [big-money]]
+   [bling.fonts.rounded :refer [rounded]]
+   [bling.fonts.isometric-1 :refer [isometric-1]]
   ;;  [bling.hifi :refer [print-hifi hifi]]
    [clojure.string :as string]
   ;;  [clojure.math :as math]
    [domo.core :as domo]
-  ;;  [fireworks.core :refer [? !? ?> !?> pprint]]
+   [fireworks.core :refer [? !? ?> !?> pprint]]
   ;;  [fireworks.defs]
+   [reagent.core :as r]
    [reagent.dom :as rdom]
    [reagent.ratom]
    [zprint.core :as zp]
    [goog.string]
-   [me.flowthing.pp :as pp :refer [pprint]]
-   ))
-
-
-(defn inline-style->map [v]
-       (as-> v $
-         (string/split $ #";")
-         (map #(let [kv    (-> % string/trim (string/split #":") )
-                     [k v] (map string/trim kv)]
-                 [(keyword k) v]) 
-              $)
-         (into {} $)))
-
-
-(defn console-args->hiccup [args]
-  (let [[format & styles] args
-        escape            #(-> %
-                               (clojure.string/replace "&" "&amp;")
-                               (clojure.string/replace "<" "&lt;")
-                               (clojure.string/replace ">" "&gt;")
-                               (clojure.string/replace " " goog.string/Unicode.NBSP))
-        segments          (mapcat
-                           (fn [i part]
-                             (let [lines (clojure.string/split part #"\n")
-                                   wrap  (if (and (pos? i) (seq (nth styles (dec i) "")))
-                                           (let [style (nth styles (dec i) "")]
-                                             (fn [text] [:span {:style (inline-style->map style)} text]))
-                                           identity)]
-                               (map-indexed
-                                (fn [j line]
-                                  {:line-break? (pos? j)
-                                   :content     (wrap (escape line))})
-                                lines)))
-                           (range)
-                           (clojure.string/split format #"%c"))
-        lines             (reduce
-                           (fn [acc {:keys [line-break? content]}]
-                             (if line-break?
-                               (conj acc [content])
-                               (update acc (dec (count acc)) conj content)))
-                           [[]]
-                           segments)]
-    (mapv (fn [line-contents] (into [:p] line-contents)) lines)))
-
-
-
+   [me.flowthing.pp :as pp :refer [pprint]])
+  (:require-macros [bling.demo.browser :refer [example-with-source]]))
 
 (def sample-side-label-text
   "my.ns.core:44:2")
 
 (def simple-body-example
-  {:hiccup [:<>
-            [:p "The body of your callout goes here."]
-            [:br]
-            [:p "Second line of copy."]
-            [:br]
-            [:p "Third line of copy."]]
-   :source ['(bling.core/bling
-              [:p "The body of your callout goes here."]
-              [:p "Second like with" [:red "red"] " and" [:italic "italic"] "text"]
-              [:p {:href "www.pets.com"} "Example hyperlink"])]})
+  {:ansi-sgr-string (bling.core/bling "The body of your callout goes here."
+                                      "\n\n"
+                                      "Second line of copy."
+                                      "\n\n"
+                                      "Third line of copy.")
+   :source          ["The body of your callout goes here."
+                     "\n\n"
+                     "Second line of copy."
+                     "\n\n"
+                     "Third line of copy."]})
+
+(def example-with-source [["cool"]])
+
 
 (def poi-body-example
-  {:hiccup [:<>
-            "You are trying to add a boolean to a number."
-            [:br]
-            [:br]
-            [:p " "]
-            [:p
-             "   "
-             [:span {:style {:line-height "1.45"
-                             :color       "#b2b2b2"}} " ┌──── "]
-             [:span {:style {:line-height "1.45"}} ""]
-             [:span {:style {:font-style  "italic"
-                             :line-height "1.45"}} "foo"]
-             [:span {:style {:line-height "1.45"}} ""]
-             [:span {:style {:font-style  "italic"
-                             :line-height "1.45"}} ":"]
-             [:span {:style {:line-height "1.45"}} ""]
-             [:span {:style {:font-style  "italic"
-                             :line-height "1.45"}} "111"]
-             [:span {:style {:line-height "1.45"}} ""]
-             [:span {:style {:font-style  "italic"
-                             :line-height "1.45"}} ":"]
-             [:span {:style {:line-height "1.45"}} ""]
-             [:span {:style {:font-style  "italic"
-                             :line-height "1.45"}} "33"]
-             [:span {:style {:line-height "1.45"}} ""]]
-            [:p
-             [:span {:style {:line-height "1.45"}} "   "]
-             [:span {:style {:line-height "1.45"
-                             :color       "#b2b2b2"}} " │  "]]
-            [:p
-             [:span {:style {:font-style  "italic"
-                             :line-height "1.45"}} "111"]
-             [:span {:style {:line-height "1.45"}} ""]
-             [:span {:style {:line-height "1.45"
-                             :color       "#b2b2b2"}} " │  "]
-             [:span {:style {:line-height "1.45"}} ""]
-             [:span {:style {:line-height "1.45"
-                             :color       "#bcbcbc"}} "("]
-             [:span {:style {:line-height "1.45"}} ""]
-             [:span
-              {:style {:line-height "1.45"
-                       :color       "rgb(110, 171, 237)"}}
-              "+"]
-             [:span {:style {:line-height "1.45"}} ""]
-             [:span {:style {:line-height "1.45"}} " "]
-             [:span {:style {:line-height "1.45"}} ""]
-             [:span
-              {:style {:line-height "1.45"
-                       :color       "rgb(110, 171, 237)"}}
-              "1"]
-             [:span {:style {:line-height "1.45"}} ""]
-             [:span {:style {:line-height "1.45"}} " "]
-             [:span {:style {:line-height "1.45"}} ""]
-             [:span
-              {:style {:line-height "1.45"
-                       :color       "rgb(182, 150, 181)"}}
-              "true"]
-             [:span {:style {:line-height "1.45"}} ""]
-             [:span {:style {:line-height "1.45"
-                             :color       "#bcbcbc"}} ")"]
-             [:span {:style {:line-height "1.45"}} ""]]
-            [:p
-             [:span {:style {:line-height "1.45"}} "   "]
-             [:span {:style {:line-height "1.45"
-                             :color       "#b2b2b2"}} " │  "]
-             [:span {:style {:line-height "1.45"}} ""]
-             [:span {:style {:line-height "1.45"
-                             :color       "#ff5f5f"}} "^^^^^^^^^^"]
-             [:span {:style {:line-height "1.45"}} ""]]
-            [:p
-             [:span {:style {:line-height "1.45"}} "   "]
-             [:span {:style {:line-height "1.45"
-                             :color       "#b2b2b2"}} " │  "]]
-            [:br]
-            [:p "Additional information can go here"]
-            [:br]
-            [:p "Another line of text."]]
-   :source ["You are trying to add a boolean to a number."
-            "\n\n"
-            '(->> (bling.core/point-of-interest
-                   {:margin-top             1
-                    :header-file-info-style {:font-style :italic}
-                    :form                   '(let [s (bling.hifi/hifi '(+ 1 true))]
-                                               (-> s
-                                                   (bling.core/with-ascii-underline
-                                                     (assoc {:line-index 0}
-                                                            :text-decoration-color :red))))
-                    :file                   "foo"
-                    :line                   111
-                    :column                 33}))
-            "\n"
-            "Additional information can go here"
-            "\n\n"
-            "Another line of text"]})
+  {:ansi-sgr-string (bling.core/bling
+                     [:p "You are trying to add a boolean to a number."]
+                     (->> (bling.core/point-of-interest
+                           {:margin-top             1
+                            :header-file-info-style {:font-style :italic}
+                            :form                   (let [s (bling.hifi/hifi '(+ 1 true))]
+                                                      (-> s
+                                                          (bling.core/with-ascii-underline
+                                                            (assoc {:line-index 0}
+                                                                   :text-decoration-color :red))))
+                            :file                   "foo"
+                            :line                   111
+                            :column                 33}))
+                     [:p "Additional information can go here"]
+                     [:p "Another line of text"])
+   :source          ["You are trying to add a boolean to a number."
+                     "\n\n"
+                     '(->> (bling.core/point-of-interest
+                            {:margin-top             1
+                             :header-file-info-style {:font-style :italic}
+                             :form                   (let [s (bling.hifi/hifi '(+ 1 true))]
+                                                       (-> s
+                                                           (bling.core/with-ascii-underline
+                                                             (assoc {:line-index 0}
+                                                                    :text-decoration-color :red))))
+                             :file                   "foo"
+                             :line                   111
+                             :column                 33}))
+                     "\n"
+                     "Additional information can go here"
+                     "\n\n"
+                     "Another line of text"]})
 
 
 (def simple-body-with-bling-example
-  {:hiccup [:<>
-            [:p "Example of callout body with Bling styling."]
-            [:br]
-            [:p
-             "Line with "
-             [:span
-              {:style {:line-height "1.45"
-                       :font-weight "bold"
-                       :color       "#afafff"}}
-              "bold purple"]
-             [:span {:style {:line-height "1.45"}} " and "]
-             [:span
-              {:style {:line-height "1.45"
-                       :font-style  "italic"
-                       :color       "#5fd7ff"}}
-              "italic blue"]
-             [:span {:style {:line-height "1.45"}} " text"]
-             [:span {:style {:line-height "1.45"}} ""]
-             [:span {:style {:line-height "1.45"}} ""]
-             [:span {:style {:line-height "1.45"}} ""]]
-            [:br]
-            [:p 
-             [:span {:style {:line-height "1.45"}} "Lines in a "]
-             [:span {:style {:line-height "1.45"}} ""]
-             [:span {:style {:line-height "1.45"
-                             :color       "#5fd7ff"}} ":p"]
-             [:span {:style {:line-height "1.45"}} ""]
-             [:span
-              {:style {:line-height "1.45"}}
-              " hiccup tag will insert a trailing "] ]
-            [:p 
-             [:span {:style {:line-height "1.45"}} ""]
-             [:span {:style {:line-height "1.45"
-                             :color       "#afaf5f"}} "\"\\n\\n\""]
-             [:span {:style {:line-height "1.45"}}
-              " for spacing between paragraphs."]
-             
-             ]
-            [:br]
-            [:p
-             [:span
-              {:style {:line-height     "1.45"}}
-              "Example hyperlink:"]]
-            [:p
-             [:span
-              {:style {:line-height     "1.45"
-                       :text-decoration :underline}}
-              "View the official Bling docs"]]
-            
-            ]
-   :source ['(bling.core/bling
-              "Example of callout body with Bling styling."
-              "\n\n"
-              "Line with " [:bold.purple "bold purple"] " and " [:italic.blue "italic blue"] " text"
-              "\n\n"
-              [:p "Lines in a " [:blue ":p"] " hiccup tag will insert a trailing\n"
-               [:olive "\"\\n\\n\""] " for spacing between paragraphs."]
-              [:p
-               "Example hyperlink:"
-               [{:href "https://github.com/paintparty/bling"} "View the official Bling docs"]])]})
+  {:ansi-sgr-string (bling.core/bling
+                     [:p "Example of callout body with Bling styling."]
+                     [:p
+                      "Line with "
+                      [:bold.purple "bold purple"]
+                      " and "
+                      [:italic.blue "italic blue"]
+                      " text."]
+                     [:p "Lines in a " [:blue ":p"] " hiccup tag will insert a trailing\n"
+                      [:olive "\"\\n\\n\""] " for spacing between paragraphs."]
+                     [:p
+                      "Example hyperlink:\n"
+                      (bling.core/html-hyperlink
+                       [{:href "https://github.com/paintparty/bling"}
+                        "View the official Bling docs"])])
+   :source          ['(bling.core/bling
+                       "Example of callout body with Bling styling."
+                       "\n\n"
+                       "Line with " [:bold.purple "bold purple"] " and " [:italic.blue "italic blue"] " text."
+                       "\n\n"
+                       [:p "Lines in a " [:blue ":p"] " hiccup tag will insert a trailing\n"
+                        [:olive "\"\\n\\n\""] " for spacing between paragraphs."]
+                       [:p
+                        "Example hyperlink:\n"
+                        [{:href "https://github.com/paintparty/bling"} "View the official Bling docs"]])]})
 
 (def sample-body-content
-  {"Simple"                             simple-body-example
-   "With additional Bling styling" simple-body-with-bling-example
-   "With Point Of Interest Diagram"     poi-body-example})
+  {"Simple"                         simple-body-example
+   "With additional Bling styling"  simple-body-with-bling-example
+   "With Point Of Interest Diagram" poi-body-example})
 
 
 
@@ -406,255 +278,258 @@
    [:path
     {:d "M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Zm0 2.445L6.615 5.5a.75.75 0 0 1-.564.41l-3.097.45 2.24 2.184a.75.75 0 0 1 .216.664l-.528 3.084 2.769-1.456a.75.75 0 0 1 .698 0l2.77 1.456-.53-3.084a.75.75 0 0 1 .216-.664l2.24-2.183-3.096-.45a.75.75 0 0 1-.564-.41L8 2.694Z"}]])
 
+(defn bling->reagent-unsafe-html-attr
+  ([s]
+   (bling->reagent-unsafe-html-attr s nil))
+  ([s attrs]
+   (merge attrs
+          {:dangerouslySetInnerHTML (->> s
+                                         bling.core/ansi-sgr-string->html
+                                         r/unsafe-html)})))
+
 (defn main-view []
-  ;; #_(? :pp #_(->> (point-of-interest
-  ;;                  {:margin-top             1
-  ;;                   :header-file-info-style {:font-style :italic}
-  ;;                   :form                   (let [s (bling.hifi/hifi '(+ 1 true))]
-  ;;                                             (-> s
-  ;;                                                 (bling.core/with-ascii-underline
-  ;;                                                   (assoc {:line-index 0}
-  ;;                                                          :text-decoration-color
-  ;;                                                          :red))))
-  ;;                   :file                   "foo"
-  ;;                   :line                   111
-  ;;                   :column                 33})
-  ;;                 bling.browser/ansi-sgr-string->browser-dev-console-array
-  ;;                 console-args->hiccup
-  ;;                 (into [:<>]))
+  (into [:div.code]
+        (? :+ (bling.core/ansi-sgr-string->hiccup
+               (bling.banner/banner
+                {
+                ;;  :gradient-colors    [:green :blue]
+                ;;  :gradient-direction :to-bottom
+                 :text               "B"
+                 :font               big}))))
+  #_[:div
+     {:style                   {:font-family "var(--code-font-stack)"}
+      :dangerouslySetInnerHTML (bling->reagent-unsafe-html-attr
+                                (bling.banner/banner
+                                 {:gradient-colors    [:green :blue]
+                                  :gradient-direction :to-bottom
+                                  :text               "bling"
+                                  ;;  :font               ansi-shadow
+                                  :font               big 
+                                  })
+                                )}]
 
-  ;;      #_(-> (bling.core/bling
-  ;;             "Example of callout body with Bling styling."
-  ;;             "\n\n"
-  ;;             "Line with " [:bold.purple "bold purple"] " and " [:italic.blue "italic blue"] " text"
-  ;;             "\n\n"
-  ;;             [:p "Lines in a " [:blue ":p"] " hiccup tag will insert a trailing" [:olive "\"\\n\\n\""]]
-  ;;             [:p
-  ;;              "Example hyperlink -> "
-  ;;              [{:href "https://github.com/paintparty/bling"} "Official Bling docs"]])
-  ;;            bling.browser/ansi-sgr-string->browser-dev-console-array
-  ;;            console-args->hiccup))
-  [:<> 
-   
-   
-   [:nav.absolute-block-start-inside.flex-row-center
-    [:div.inner.flex-row-space-between
-     [:div.badges.flex-row-start
-      [:div.versioned-badge.flex-row-start
-       [:span.badge "Bling"]
-       [:span.version "v0.20.0"]]
-      #_[:div.versioned-badge.flex-row-start
-         [:span.badge.playground "Playground"]
-         [:span.version "alpha"]]]
-     (into [:div.menu.flex-row-center ]
-           (for [v ["About" "Callout Config" "Docs"]]
-             [:button.pill.foreground
-              {:class         [(-> v string/lower-case (string/replace #" " "-"))
-                               (when (= v (:active-view @S))
-                                 "selected")]
-               :on-mouse-down #(swap! S assoc :active-view v)}
-              v]))
-     [:div.end-menu.flex-row-end 
-      [counter-badge
-       octicon-star
-       "Star"
-       "215"
-       "https://github.com/paintparty/bling"]
-      [counter-badge
-       [:img
-        {:src   "./public/graphics/clojars-logo-bw2.png"
-         :style {:height :17px
-                 :filter "grayscale(1) contrast(1) brightness(1) invert()"}}]
-       "Clojars"
-       "168K"
-       "https://clojars.org/io.github.paintparty/bling"]]]]
+  #_[:<> 
+     
+     
+     [:nav.absolute-block-start-inside.flex-row-center
+      [:div.inner.flex-row-space-between
+       [:div.badges.flex-row-start
+        [:div.versioned-badge.flex-row-start
+         [:span.badge "Bling"]
+         [:span.version "v0.20.0"]]
+        #_[:div.versioned-badge.flex-row-start
+           [:span.badge.playground "Playground"]
+           [:span.version "alpha"]]]
+       (into [:div.menu.flex-row-center ]
+             (for [v ["About" "Callout Config" "Docs"]]
+               [:button.pill.foreground
+                {:class         [(-> v
+                                     string/lower-case
+                                     (string/replace #" " "-"))
+                                 (when (= v (:active-view @S))
+                                   "selected")]
+                 :on-mouse-down #(swap! S assoc :active-view v)}
+                v]))
+       [:div.end-menu.flex-row-end 
+        [counter-badge
+         octicon-star
+         "Star"
+         "218"
+         "https://github.com/paintparty/bling"]
+        [counter-badge
+         [:img
+          {:src   "./public/graphics/clojars-logo-bw2.png"
+           :style {:height :17px
+                   :filter "grayscale(1) contrast(1) brightness(1) invert()"}}]
+         "Clojars"
+         "168K"
+         "https://clojars.org/io.github.paintparty/bling"]]]]
 
-   
+     
 
-   ;; DOCS
-   [:div.docs-section.absolute-block-start-inside 
-    {:style {:display (if (not= "Docs" (:active-view @S)) "none" "flex")}}
-    [:div 
-     [:p "Official docs can be found. "
-      [:a.foreground {:href   "https://github.com/paintparty/bling"
-                      :target "_blank"} "here"]]
-     [:br]
-     [:p "Public APIs are " 
-      [:a.foreground {:href   "https://github.com/paintparty/bling/blob/main/API.md"
-                      :target "_blank"}
-       "here"]]
-     [:br]
-     [:p "New docs site coming soon!"]]]
-   
-   ;; ABOUT
-   [:div.about-section.absolute-block-start-inside.foreground
-    {:style {:display (if (not= "About" (:active-view @S)) "none" "flex")}}
-    [:div 
-     [:p "Bling is a library that provides hifi console printing for Clojure dialects."]
-     [:br]
-     [:p
-      "Project repo can be found " 
-      [:a.foreground
-       {:href   "https://github.com/paintparty/bling"
-        :target "_blank"} 
-       "here"]]
-     [:br]
-     [:p 
-      "Consumable via "
-      [:a.foreground {:href   "https://clojars.org/io.github.paintparty/bling"
-                      :target "_blank"} "Clojars" ]]]]
+     ;; DOCS
+     [:div.docs-section.absolute-block-start-inside 
+      {:style {:display (if (not= "Docs" (:active-view @S)) "none" "flex")}}
+      [:div 
+       [:p "Official docs can be found. "
+        [:a.foreground {:href   "https://github.com/paintparty/bling"
+                        :target "_blank"} "here"]]
+       [:br]
+       [:p "Public APIs are " 
+        [:a.foreground {:href   "https://github.com/paintparty/bling/blob/main/API.md"
+                        :target "_blank"}
+         "here"]]
+       [:br]
+       [:p "New docs site coming soon!"]]]
+     
+     ;; ABOUT
+     [:div.about-section.absolute-block-start-inside.foreground
+      {:style {
+               :display (if (not= "About" (:active-view @S)) "none" "flex")}}
+      [:div 
+       [:p "Bling is a library that provides hifi console printing for Clojure dialects."]
+       [:br]
+       [:p
+        "Project repo can be found " 
+        [:a.foreground
+         {:href   "https://github.com/paintparty/bling"
+          :target "_blank"} 
+         "here"]]
+       [:br]
+       [:p 
+        "Consumable via "
+        [:a.foreground {:href   "https://clojars.org/io.github.paintparty/bling"
+                        :target "_blank"} "Clojars" ]]]]
 
-   [:div.panel.absolute-block-start-inside.flex-row
-    {:style {:display (if (not= "Callout Config" (:active-view @S)) "none" "flex")}}
-    [:div.controls.flex-col
-     [:span.explanation.foreground 
-      [:p "Bling is a library that provides hifi console printing for Clojure dialects."]
-      [:br]
-      [:p
-       [:span.code "bling.core/callout"]
-       " is designed for the easy creation of nicely formatted, easy-to-read message blocks."]
-      [:br]
-      [:p "The UI below allows you to preview different options, and generate snippets for your own projects."]]
-     ;; CALLOUT THEME
-     [control-radio-group {:kw     :callout-theme
-                           :values ["sandwich" "sideline" "gutter" "boxed"]}]
+     [:div.panel.absolute-block-start-inside.flex-row
+      {
+       :style {:display (if (not= "Callout Config" (:active-view @S)) "none" "flex")}}
+      [:div.controls.flex-col
+       [:span.explanation.foreground 
+        [:p "Bling is a library that provides hifi console printing for Clojure dialects."]
+        [:br]
+        [:p
+         [:span.code "bling.core/callout"]
+         " is designed for the easy creation of nicely formatted, easy-to-read message blocks."]
+        [:br]
+        [:p "The UI below allows you to preview different options, and generate snippets for your own projects."]]
+       ;; CALLOUT THEME
+       [control-radio-group {:kw     :callout-theme
+                             :values ["sandwich" "sideline" "gutter" "boxed"]}]
 
-     ;; CALLOUT TYPE
-     [control-radio-group {:kw     :callout-type
-                           :values ["neutral" "error" "warning" "info"]}]
+       ;; CALLOUT TYPE
+       [control-radio-group {:kw     :callout-type
+                             :values ["neutral" "error" "warning" "info"]}]
 
-     ;; BORDER SHAPE
-     [control-radio-group {:kw     :border-shape
-                           :values ["sharp" "round"]}]
+       ;; BORDER SHAPE
+       [control-radio-group {:kw     :border-shape
+                             :values ["sharp" "round"]}]
 
-     ;; LABEL THEME
-     [control-radio-group {:kw     :label-theme
-                           :values ["simple" "marquee"]}]
+       ;; LABEL THEME
+       [control-radio-group {:kw     :label-theme
+                             :values ["simple" "marquee"]}]
 
 
-     ;; LABEL TEXT
-     [:div.section.flex-row.label-text
-      [easy-checkbox {:k             :label?
-                      :section-label "label text"}]
-      [:div.relative
-       [:input.foreground
-        {:type        "text"
-         :maxlength   26
-         :value       (header-label-text)
-         :placeholder "Your label"
-         ;; :on-focus    #(swap! S assoc :label-text-field-has-focus? true)
-         ;; :on-blur     #(swap! S assoc :label-text-field-has-focus? false)
-         :on-change   #(swap! S assoc :label-text (domo/etv %))}]
-       [:div.text-clear.absolute-inline-end-inside
-        {:role          :button
-         :on-mouse-down #(swap! S assoc :label-text nil)}
-        [:span.material-symbols-outlined "refresh"]]]]
+       ;; LABEL TEXT
+       [:div.section.flex-row.label-text
+        [easy-checkbox {:k             :label?
+                        :section-label "label text"}]
+        [:div.relative
+         [:input.foreground
+          {:type        "text"
+           :maxlength   26
+           :value       (header-label-text)
+           :placeholder "Your label"
+           ;; :on-focus    #(swap! S assoc :label-text-field-has-focus? true)
+           ;; :on-blur     #(swap! S assoc :label-text-field-has-focus? false)
+           :on-change   #(swap! S assoc :label-text (domo/etv %))}]
+         [:div.text-clear.absolute-inline-end-inside
+          {:role          :button
+           :on-mouse-down #(swap! S assoc :label-text nil)}
+          [:span.material-symbols-outlined "refresh"]]]]
 
 
-     ;; SAMPLE SIDE LABEL
-     [easy-checkbox {:k             :sample-side-label?
-                     :section-label "sample side label"}]
+       ;; SAMPLE SIDE LABEL
+       [easy-checkbox {:k             :sample-side-label?
+                       :section-label "sample side label"}]
 
-     ;; SAMPLE BODY TEXT
-     [:div.sample-body-text.flex-row
-      [:div.section-label.foreground
-       "sample body text"]
-      [:div.select-wrapper.foreground
-       (into [:select.foreground
-              {:on-change #(swap! S assoc :body-content (domo/etv %))
-               :value     (:body-content @S)}]
-             (for [value (keys sample-body-content)]
-               [:option {:value value
-                         ;; :selected (when (= (:body-content @S) value) "")
-                         }
-                value]))]]]
+       ;; SAMPLE BODY TEXT
+       [:div.sample-body-text.flex-row
+        [:div.section-label.foreground
+         "sample body text"]
+        [:div.select-wrapper.foreground
+         (into [:select.foreground
+                {:on-change #(swap! S assoc :body-content (domo/etv %))
+                 :value     (:body-content @S)}]
+               (for [value (keys sample-body-content)]
+                 [:option {:value value
+                           ;; :selected (when (= (:body-content @S) value) "")
+                           }
+                  value]))]]]
 
-    ;; CALLOUT PREVIEW IN EMULATED TERMINAL EMULATOR
-    [:div.terminal-section.flex-col 
-     [:div.terminal.flex-col
-      [:div.terminal-header.flex-row
-       [:div.pill]
-       [:div.pill]
-       [:div.pill]]
-      [:div.terminal-body.flex-col
-       [:div.callout.flex-col
-        {:class [(:callout-theme @S)
-                 (or (:callout-type @S) "neutral")
-                 (when (= (:border-shape @S) "round") "rounded-border")]
-         :style {:justify-content :stretch}}
+      ;; CALLOUT PREVIEW IN EMULATED TERMINAL EMULATOR
+      [:div.terminal-section.flex-col 
+       [:div.terminal.flex-col
+        [:div.terminal-header.flex-row
+         [:div.pill]
+         [:div.pill]
+         [:div.pill]]
+        [:div.terminal-body.flex-col
+         [:div.callout.flex-col
+          {:class [(:callout-theme @S)
+                   (or (:callout-type @S) "neutral")
+                   (when (= (:border-shape @S) "round") "rounded-border")]
+           :style {:justify-content :stretch}}
 
-        ;; header
-        (let [header-label-text* (when (:label? @S)
-                                   (let [s (header-label-text)]
-                                     (when (and s (not (string/blank? s)))
-                                       s)))]
-          [:div.callout-header.flex-row
-           {:class [(str (name (or (:label-theme @S) :simple)) "-label")
-                    (when (:side-label? @S) "with-side-label")
-                    (when-not header-label-text* "no-label")
-                    (when-not (:sample-side-label? @S) "no-side-label")]}
-           [:div.header-padding-left.header-border]
-           (when header-label-text*
-             [:div.callout-label.background header-label-text*])
-           [:div.header-gap.header-border]
-           (when (:sample-side-label? @S)
-             [:div.callout-side-label.background sample-side-label-text])
-           [:div.header-padding-right.header-border]])
+          ;; header
+          (let [header-label-text* (when (:label? @S)
+                                     (let [s (header-label-text)]
+                                       (when (and s (not (string/blank? s)))
+                                         s)))]
+            [:div.callout-header.flex-row
+             {:class [(str (name (or (:label-theme @S) :simple)) "-label")
+                      (when (:side-label? @S) "with-side-label")
+                      (when-not header-label-text* "no-label")
+                      (when-not (:sample-side-label? @S) "no-side-label")]}
+             [:div.header-padding-left.header-border]
+             (when header-label-text*
+               [:div.callout-label.termina-background header-label-text*])
+             [:div.header-gap.header-border]
+             (when (:sample-side-label? @S)
+               [:div.callout-side-label.terminal-background sample-side-label-text])
+             [:div.header-padding-right.header-border]])
+          
+          ;; body
+          [:div.callout-body.flex-col
+           [:div.body-text
+            (->> @S
+                 :body-content 
+                 (get sample-body-content)
+                 :ansi-sgr-string
+                 bling->reagent-unsafe-html-attr)
 
-        ;; body
-        [:div.callout-body.flex-col
+            #_(->> @S :body-content (get sample-body-content) :hiccup)]]
 
-         ;; from css tricks
-         #_[:form {:action "#0"}
-            [:div.grow-wrap
-             [:textarea#text {:name     "text"
-                              :on-input "this.parentNode.dataset.replicatedValue = this.value"}]]]
-         #_[elastic-text-area "Callout body"]
+          ;; footer
+          [:div.callout-footer-wrap [:div.callout-footer.flex-row]]]]]
 
-         [:div.body-text
-          (->> @S :body-content (get sample-body-content) :hiccup)]]
-
-        ;; footer
-        [:div.callout-footer-wrap [:div.callout-footer.flex-row]]]]]
-
-     ;; SNIPPET TO GET THE CODE
-     [:div.snippet
-      [snippet-textarea
-       (zp/zprint-str
-        (str 
-         (with-out-str 
-           (pprint 
-            (remove nil?
-                    (list 'require 
-                          (symbol "'bling.core")
-                          (when (= (:body-content @S)
-                                   "With Point Of Interest Diagram"     )
-                            (symbol "'bling.hifi"))))))
-         "\n\n"
-         (with-out-str
-           (pprint
-            (concat
-             (list
-              'bling.core/callout
-              (merge {:type            (keyword (:callout-type @S))
-                      :theme           (keyword (:callout-theme @S))
-                      :label-theme     (keyword (:label-theme @S))
-                      :border-notches? true
-                      :border-shape    (keyword (:border-shape @S))
-                      :side-label      (when (keyword (:sample-side-label? @S))
-                                         sample-side-label-text)}
-                     (some->> (:sample-side-label? @S)
-                              keyword
-                              (hash-map :side-label))
-                     {:label (str "\"" (:label-text @S) "\"")}))
-             (:source (get sample-body-content  (:body-content @S)))))))
-        {:parse-string-all? true
-         :parse             {:interpose "\n\n"} 
-         :style             :community
-         :map               {:comma? false}
-         :fn-force-nl       #{:flow}
-         :fn-map            {:default :flow}})]]
-     ]]])
+       ;; SNIPPET TO GET THE CODE
+       [:div.snippet
+        [snippet-textarea
+         (zp/zprint-str
+          (str 
+           (with-out-str 
+             (pprint 
+              (remove nil?
+                      (list 'require 
+                            (symbol "'bling.core")
+                            (when (= (:body-content @S)
+                                     "With Point Of Interest Diagram")
+                              (symbol "'bling.hifi"))))))
+           "\n\n"
+           (with-out-str
+             (pprint
+              (concat
+               (list
+                'bling.core/callout
+                (merge {:type            (keyword (:callout-type @S))
+                        :theme           (keyword (:callout-theme @S))
+                        :label-theme     (keyword (:label-theme @S))
+                        :border-notches? true
+                        :border-shape    (keyword (:border-shape @S))
+                        :side-label      (when (keyword (:sample-side-label? @S))
+                                           sample-side-label-text)}
+                       (some->> (:sample-side-label? @S)
+                                keyword
+                                (hash-map :side-label))
+                       {:label (str "\"" (:label-text @S) "\"")}))
+               (:source (get sample-body-content  (:body-content @S)))))))
+          {:parse-string-all? true
+           :parse             {:interpose "\n\n"} 
+           :style             :community
+           :map               {:comma? false}
+           :fn-force-nl       #{:flow}
+           :fn-map            {:default :flow}})]]]]])
 
 (defn ^:dev/after-load start []
   (js/console.clear)

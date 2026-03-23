@@ -107,8 +107,6 @@
             }
            comment-box-text))
 
-(commented-box-callout)
-
 
 (defn write-tests-ns!
   "This updates/generates a bling.test-suite namespace.

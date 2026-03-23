@@ -838,6 +838,30 @@
      opts)
     (explain-malli Address v opts)))
 
+
+(defn explain-malli-with-schema []
+  (let [v {:id      "Lillan"
+           :tags    #{:artesan "coffee" :garden}
+           :address {:street "Ahlmanintie 29"
+                     :city   "Tempare"
+                     :zip    33100
+                     :lonlat [61.4858322, 87.34]}}
+        opts {:file                  "myns.core"
+              :function-name         "my-function"
+              :line                  21
+              :column                33
+              ;; :display-explain-data? true
+              ;; :display-schema?       true
+              :callout-opts          {:label-theme :marquee
+                                      :label       (bling [:red "Malli Schema Error"])}
+              }]
+    (print-explain-malli-example-header
+     "The result of bling.core/explain-malli, with source file location and `malli/explain` data:"
+     v
+     opts)
+    (explain-malli Address v opts)))
+
+
 (defn explain-malli-bad-key-in-map []
   (println "\nThe result of bling.core/explain-malli, with bad key value in map:")
    (print-explain-malli-example-header
@@ -847,15 +871,16 @@
   (explain-malli [:map-of :keyword :int] {"foo" 2}))
 
 (defn explain-malli-examples []
-  ;; (explain-malli-with-explain-data)
-
-  ;; (explain-malli-bad-map-value)
-
-  ;; (explain-malli-with-source-info)
-  ;; (explain-malli-default)
+  (explain-malli-with-explain-data)
+  (explain-malli-with-source-info)
   (explain-malli-missing-map-key)
-  ;; (explain-malli-bad-key-in-map)
-  ;; (explain-malli-no-schema)
+  (explain-malli-bad-key-in-map)
+  (explain-malli-no-schema)
+
+  ;; Unused
+  ;; (explain-malli-with-schema)
+  ;; (explain-malli-bad-map-value)
+  ;; (explain-malli-default)
   ;; (explain-malli-no-schema-compact)
   )
 

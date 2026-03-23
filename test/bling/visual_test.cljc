@@ -35,6 +35,7 @@
    [bling.fonts.isometric-1 :refer [isometric-1]]
    [bling.fontlib]
    [bling.banner]
+   [bling.browser :as browser]
   ;;  [bling.hifi :refer [print-hifi hifi chopped]]
    [malli.core :as m]
    [clojure.string :as string]
@@ -48,9 +49,66 @@
    [bling.visual-test-impl :refer [random-callouts bling-basics]]
    
    [fireworks.ansi :as ansi]
-   [fireworks.state :as state]
-   [bling.browser :as browser]))
+   [fireworks.state :as state]))
 
+
+
+;; (callout {:type :info}
+;;          "Example callout"
+;;          "\n"
+;;          "with :type of :info")
+
+;; (callout {:type  :info
+;;           :label "My custom label"}
+;;          "Example callout"
+;;          "\n"
+;;          "with :type of :info and custom :label")
+
+;; (callout {:type :warning}
+;;          "Example callout"
+;;          "\n"
+;;          "with :type of :warning")
+
+;; (callout {:type :error}
+;;          "Example callout"
+;;          "\n"
+;;          "with :type of :error")
+
+;; (callout {:colorway :positive}
+;;          "Example callout"
+;;          "\n"
+;;          "with :colorway of :positive")
+
+;; (callout {:colorway :subtle}
+;;          "Example callout"
+;;          "\n"
+;;          "with :type of :subtle (or :gray)")
+
+;; (callout {:colorway :magenta}
+;;          "Example callout"
+;;          "\n"
+;;          "with :type of :magenta")
+
+
+;; (callout "ライブラリは中国語、日本語、韓国語のテキストをサポートしています")
+#_(println (bling.banner/banner
+          {
+          ;;  :gradient-colors    [:green :blue]
+          ;;  :gradient-direction :to-bottom
+           :text               "b"
+          ;;  :font               ansi-shadow
+           :font               big 
+           }))
+
+
+
+#_(?  {:print-with println} (with-floating-label
+         "One
+Two
+Three
+Four"
+         {:line-index 4
+          :label-text "<-foo"}))
 
 #_(let [js-console-array
       (? :+ (-> (point-of-interest
@@ -358,7 +416,7 @@
 
 #_(sample/print-bling-color-contrast)
 
-#_(sample/explain-malli-examples)
+(println (sample/explain-malli-examples))
 
 
 

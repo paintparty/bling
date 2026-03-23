@@ -10,6 +10,7 @@
   :dependencies [[org.clojure/clojure "1.11.1"]
                  [io.github.paintparty/fireworks "0.20.0"]
                  [metosin/malli "0.20.0"]
+                 [taipei.404/html-to-hiccup "0.1.8"]
 
                 ;;  [dev.weavejester/cljfmt "0.15.6"]
                 ;;  [com.taoensso/tufte "3.0.0"]

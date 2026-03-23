@@ -11,21 +11,20 @@
 ;; Hi-Fidelity printing 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn ^:public chopped
+(defn ^:public ^:no-doc chopped
   "Truncates lines in a formatted paragraph at supplied max-width, adding
    ellipsis. Accounts for ansi sgr tags."
   [s max-width]
   (->> (string/split s #"\n")
-      (mapv #(let [sgr-count (bling.ansi/sgr-count %)]
-               (if (> (- (count %) sgr-count) max-width)
-                 (str (subs % 0 (- max-width 3)) "...")
-                 %)))
-      join-lines))
-
+       (mapv #(let [sgr-count (bling.ansi/sgr-count %)]
+                (if (> (- (count %) sgr-count) max-width)
+                  (str (subs % 0 (- max-width 3)) "...")
+                  %)))
+       join-lines))
 
 (defn- hifi-impl [x user-opts]
-  (let [ret  
-        (->> x 
+  (let [ret
+        (->> x
              (fireworks.core/_p2
               (merge user-opts
                      {:user-opts user-opts
@@ -39,7 +38,6 @@
                  (chopped ret))
         ret)))
 
-
 (defn ^:public hifi
   "Hi-fidelity, pretty-printed string with syntax-coloring.
    
@@ -50,8 +48,7 @@
   ([x]
    (hifi x nil))
   ([x opts]
-  (hifi-impl x opts)))
-
+   (hifi-impl x opts)))
 
 (defn ^:public print-hifi
   "Prints a structurally formatted value with syntax-coloring based on

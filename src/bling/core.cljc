@@ -5,14 +5,13 @@
             [fireworks.util]
             [clojure.walk :as walk]
             [bling.ansi :as ansi :refer [strlen-minus-ansi-sgr]]
-            [bling.browser]
-            [bling.hifi :refer [hifi]]
+            [bling.browser :as browser]
+            [bling.sgr :as sgr]
             [bling.defs :as defs]
             [bling.macros :refer [let-map keyed]]
             [bling.util :as util :refer [maybe-> when-> when->> char-repeat]]
             #?(:cljs [bling.js-env :refer [node?]])
-            ;; TODO - eliminate goog.object req
-            #?(:cljs [goog.object])))
+            [taipei-404.html :refer [html->hiccup]]))
 
 (declare xterm-colors-by-id)
 
@@ -137,7 +136,7 @@
 ;; TODO Add the light and dark variants to x-term-colors-by-id
 ;; TODO - Move to colors namespace?
 (def ^:public bling-colors*
-  "Array map of the blink color pallette.
+  "Array map of the bling color pallette.
    
    ```Clojure
    {...
@@ -169,7 +168,7 @@
     "white"      {:sgr 231 :css "#ffffff"}]))
 
 (def ^:public bling-colors
-  "Array map of the blink color pallette with light, dark, and medium entries
+  "Array map of the bling color pallette with light, dark, and medium entries
    for each color.
    
    ```Clojure
@@ -515,11 +514,13 @@
 (defn- et-vec? [x]
   (boolean (when-not (map-entry? x)
              (and (vector? x)
-                  (= 2 (count x))
                   (-> x
                       (nth 0)
                       (maybe-> #(or (keyword? %)
-                                    (map? %))))))))
+                                    (map? %))))
+                  (or (= 2 (count x))
+                      (and (< 2 (count x))
+                           (every? string? (rest x))))))))
 
 ;; Unicode characters ----------------------------------------------------------
 
@@ -816,6 +817,30 @@
               (maybe-> nameable?)
               name))))
 
+;; WWWWWWWW                           WWWWWWWWEEEEEEEEEEEEEEEEEEEEEEBBBBBBBBBBBBBBBBB   
+;; W::::::W                           W::::::WE::::::::::::::::::::EB::::::::::::::::B  
+;; W::::::W                           W::::::WE::::::::::::::::::::EB::::::BBBBBB:::::B 
+;; W::::::W                           W::::::WEE::::::EEEEEEEEE::::EBB:::::B     B:::::B
+;;  W:::::W           WWWWW           W:::::W   E:::::E       EEEEEE  B::::B     B:::::B
+;;   W:::::W         W:::::W         W:::::W    E:::::E               B::::B     B:::::B
+;;    W:::::W       W:::::::W       W:::::W     E::::::EEEEEEEEEE     B::::BBBBBB:::::B 
+;;     W:::::W     W:::::::::W     W:::::W      E:::::::::::::::E     B:::::::::::::BB  
+;;      W:::::W   W:::::W:::::W   W:::::W       E:::::::::::::::E     B::::BBBBBB:::::B 
+;;       W:::::W W:::::W W:::::W W:::::W        E::::::EEEEEEEEEE     B::::B     B:::::B
+;;        W:::::W:::::W   W:::::W:::::W         E:::::E               B::::B     B:::::B
+;;         W:::::::::W     W:::::::::W          E:::::E       EEEEEE  B::::B     B:::::B
+;;          W:::::::W       W:::::::W         EE::::::EEEEEEEE:::::EBB:::::BBBBBB::::::B
+;;           W:::::W         W:::::W          E::::::::::::::::::::EB:::::::::::::::::B 
+;;            W:::W           W:::W           E::::::::::::::::::::EB::::::::::::::::B  
+;;             WWW             WWW            EEEEEEEEEEEEEEEEEEEEEEBBBBBBBBBBBBBBBBB   
+
+#?(:cljs
+   (do
+     (defn ^:public ^:no-doc print-to-browser-dev-console [s]
+       (->> s
+            browser/ansi-sgr-string->browser-dev-console-array
+            (.apply js/console.log js/console)))))
+
 ;; HHHHHHHHH     HHHHHHHHHIIIIIIIIII      GGGGGGGGGGGGGHHHHHHHHH     HHHHHHHHH
 ;; H:::::::H     H:::::::HI::::::::I   GGG::::::::::::GH:::::::H     H:::::::H
 ;; H:::::::H     H:::::::HI::::::::I GG:::::::::::::::GH:::::::H     H:::::::H
@@ -837,29 +862,6 @@
 
 ;; TODO - maybe this should happen at comptime and produce a map, so that 
 ;; hifi is not called x number of times at runtime?
-(defn- sgr-highlighting-tags
-  {:desc     "Given a style map and a `supports-color-level` int, produces a
-              vector of opening and closing ansi-sgr tags for that style, when
-              used with bling.hifi/hifi printing with highlighting via `:find`
-              option"
-   :examples [^:no-print
-              {:desc  "foo"
-               :forms '[[(let [m {:background-color "#670013"
-                                  :color            "#ffe0e0"
-                                  :font-weight      :bold}]
-                           (sgr-highlighting-tags
-                            (hifi {:a 1 :b 3}
-                                  {:find {:path [:b] :style m}})
-                            m))
-                         ["\033[38;2;255;224;224;1;48;2;103;0;19m"
-                          "\033m"]]]}]}
-  [m n]
-  (let [s (hifi '_
-                {:find                 {:pred #(= % '_) :style m}
-                 :supports-color-level n})
-        i (string/index-of s "_")]
-    [(subs s 0 i)
-     (subs s (inc i))]))
 
 (defn- ansi-sgr-pattern-re [ansi-sgr-needle]
   (let [ansi-sgr-pattern (string/replace
@@ -905,7 +907,7 @@
                   ;; (?sgr (second vc))
                   (when (string/index-of s (first vc)) vc))
                 (!? {:print-with println}
-                    (mapv (partial sgr-highlighting-tags m)
+                    (mapv (partial sgr/sgr-highlighting-tags m)
                           [3 2 1]))))
         (cond
           (map? target-highlight-style)
@@ -2574,13 +2576,6 @@
         s
         (some-> s println)))))
 
-#?(:cljs
-   (do
-     (defn ^:public ^:no-doc print-to-browser-dev-console [s]
-       (->> s
-            bling.browser/ansi-sgr-string->browser-dev-console-array
-            (.apply js/console.log js/console)))))
-
 (defn- default-opt [m k set-of-strs default]
   (or (some-> (k m)
               as-str
@@ -2901,7 +2896,7 @@
        - The color of the border, or gutter, depending on the value of `:theme`.
    
    * **`:theme`**
-       - `#{\"boxed\" \"sideline\" :boxed :sideline \"gutter\" :sandwich \"simple\" :gutter}`
+       - `#{:boxed :sideline :sandwich :gutter}`
        - Optional.
        - Defaults to `:sideline`.
        - Name of callout layout template.
@@ -2921,7 +2916,7 @@
          will default to `WARNING`, `ERROR`, or `INFO`, respectively.
    
    * **`:label-theme`**
-       - `#{:simple \"marquee\" :marquee \"simple\"}`
+       - `#{:simple :marquee}`
        - Optional.
        - Defaults to `:simple`.
        - Name of label flavor.
@@ -2994,19 +2989,19 @@
        - The gap (in character spaces) the label and the optional side lable, in the callout header.
    
    * **`:border-style`**
-       - `#{:double :solid \"solid\" \"double\"}`
+       - `#{:double :solid}`
        - Optional.
        - Defaults to `:solid`.
        - The style of box-drawing character used.
    
    * **`:border-weight`**
-       - `#{:bold \"normal\" :normal \"bold\"}`
+       - `#{:bold :normal}`
        - Optional.
        - Defaults to `:normal`.
        - The weight of box-drawing character used. Applies only to `:border-style` of `:solid`
    
    * **`:border-shape`**
-       - `#{\"sharp\" :round :sharp \"round\"}`
+       - `#{:round :sharp}`
        - Optional.
        - Defaults to `:sharp`.
        - The corner shape of the borders, either sharp or round. Only applies when `:border-style` is
@@ -3155,7 +3150,7 @@
                {:optional true
                 :default  :sideline
                 :desc     "Name of callout layout template."}
-               [:enum :sideline "sideline" :sandwich "simple" :gutter "gutter" :boxed "boxed"]]
+               [:enum :sideline :sandwich :gutter :boxed]]
 
               [:label
                {:optional true
@@ -3175,7 +3170,7 @@
                {:optional true
                 :default  :simple
                 :desc     "Name of label flavor."}
-               [:enum :marquee "marquee" :simple "simple"]]
+               [:enum :marquee :simple]]
 
               [:padding-block
                {:optional true
@@ -3248,20 +3243,20 @@
                {:optional true
                 :default  :solid
                 :desc     "The style of box-drawing character used."}
-               [:enum :solid "solid" :double "double"]]
+               [:enum :solid :double]]
 
               [:border-weight
                {:optional true
                 :default  :normal
                 :desc     "The weight of box-drawing character used. Applies only to `:border-style` of `:solid`"}
-               [:enum :normal "normal" :bold "bold"]]
+               [:enum :normal :bold]]
 
               [:border-shape
                {:optional true
                 :default  :sharp
                 :desc     "The corner shape of the borders, either sharp or round. Only applies when `:border-style` is
                            `:solid` AND `:border-weight` is `:normal`"}
-               [:enum :sharp "sharp" :round "round"]]
+               [:enum :sharp :round]]
 
               [:border-notches?
                {:optional true
@@ -3331,11 +3326,11 @@
                :pos-int]]}
   [x & args]
   (if (empty? args)
-    (callout {} (bling.hifi/hifi x))
+    (callout {} x)
 
     (let [opts          (maybe-> x map?)
           callout-opts  (some-> opts callout-opts*)
-          callout-opts+ (merge {:value (string/join "" args)
+          callout-opts+ (merge {:value             (string/join "" args)
                                 ::no-callout-body? (or (= args '(nil))
                                                        (every? nil? args))}
                                opts
@@ -3356,16 +3351,6 @@
 
          :clj
          (callout* callout-opts+)))))
-
-#_{:marquee-label {:line-1 {:margin-str " "
-                            :header-padding-left-str "  "
-                            :first-char '(resolve-char based on border style)}
-                   :line-2 {:margin-str " "
-                            :header-padding-left-str '(resolve str based on theme and border-style)
-                            :first-char '(resolve-char based on border style and theme and header-padding-inline)}
-                   :line-3 {:margin-str " "
-                            :header-padding-left-str '(resolve str based on theme and border-style)
-                            :first-char '(resolve-char based on border style)}}}
 
 ;;   BBBBBBBBBBBBBBBBB      LLLLLLLLLLL                       GGGGGGGGGGGGG
 ;;   B::::::::::::::::B     L:::::::::L                    GGG::::::::::::G
@@ -3456,8 +3441,12 @@
                                 :color       {:sgr 39
                                               :css \"#00afff\"}
                         :value \"hi\"}"
-  [[style v]]
-  (let [[style v] #?(:cljs
+  [[style & children]]
+  (let [v         (if (and (< 1 (count children))
+                           (every? string? children))
+                    (apply str children)
+                    (first children))
+        [style v] #?(:cljs
                      (let [f (if node? href-console href-browser-dev-console)]
                        (f style v))
                      :clj
@@ -3848,3 +3837,59 @@
          (print-to-browser-dev-console bling-str))
        :clj
        (println bling-str))))
+
+(defn ^:public ^:no-doc html-hyperlink
+  "Converts a hyperlink in Bling's hiccup syntax to an escaped string
+   representation which will get converted to html in 
+   `bling.core/ansi-sgr-string->html`. This should only be used in the
+   rare case when the intended output (of `bling.core/*` public fn) is
+   not a system or browser console, but rather html on a webpage.
+   
+   Basic example
+   ```clojure
+   (->> (bling.core/bling [{:href \"www.pets.com\"} pets.com])
+        bling.browser/ansi-sgr-string->browser-dev-console-array
+        bling.browser/browser-dev-console-array->html-string)
+   ```"
+  {:desc    "Converts a hyperlink in Bling's hiccup syntax to an escaped string
+             representation which will get converted to html in 
+             `bling.core/ansi-sgr-string->html`. This should only be used in the
+             rare case when the intended output (of `bling.core/*` public fn) is
+             not a system or browser console, but rather html on a webpage."
+   :examples [{:desc  "Basic example"
+               :forms "(->> (bling.core/bling [{:href \"www.pets.com\"} pets.com])
+                      |     bling.browser/ansi-sgr-string->browser-dev-console-array
+                      |     bling.browser/browser-dev-console-array->html-string)"}]}
+  [x]
+  (if-let [href (and (vector? x)
+                     (< 1 (count x))
+                     (some-> x
+                             first
+                             (when-> map?)
+                             :href))]
+    (let [text (second x)]
+      [{:color                 :red
+        :text-decoration-color :blue}
+       (str "〠_〠AHREF〠_〠" href "〠_〠")
+       text
+       "〠_〠/A〠_〠"])
+    x))
+
+(defn ^:public ^:no-doc ansi-sgr-string->html
+  "Converts an ANSI SGR tagged string into html with inline styles."
+  ([s]
+   (ansi-sgr-string->html s nil))
+  ([s opts]
+   (-> s
+       browser/ansi-sgr-string->browser-dev-console-array
+       (browser/browser-dev-console-array->html-string opts))))
+
+(defn ^:public ^:no-doc ansi-sgr-string->hiccup
+  "Converts an ANSI SGR tagged string into hiccup."
+  [s]
+  (walk/postwalk (comp browser/maybe-inline-style->map
+                       browser/maybe-replace-escaped-html)
+                 (-> s
+                     (ansi-sgr-string->html #_{:html-escape? false})
+                     browser/nbsp->unicode
+                     html->hiccup)))

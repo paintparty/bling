@@ -20,7 +20,10 @@
                                  :source-paths [
                                                 "src/bling/core.cljc"
                                                 "src/bling/banner.cljc"
-                                                "src/bling/explain.cljc"]}}
+                                                "src/bling/explain.cljc"
+                                                "src/bling/browser.cljc"
+                                                "src/bling/hifi.cljc"
+                                                ]}}
          
          docstring {:doc        "Invoke docstring to generate docstrings from function metadata maps"
                     :extra-deps {io.github.paintparty/docstring {:local/root "./../docstring/"}
@@ -32,6 +35,8 @@
                                                  "src/bling/core.cljc"
                                                  "src/bling/banner.cljc"
                                                  "src/bling/explain.cljc"
+                                                 "src/bling/browser.cljc"
+                                                 "src/bling/hifi.cljc"
                                                 ;;  "src/bling/ansi.cljc"
                                                 
                                                 ]

@@ -1,4 +1,5 @@
-(ns bling.ansi)
+(ns bling.ansi
+  (:require [clojure.string :as string]))
 
 (def esc "\u001b\\[")
 
