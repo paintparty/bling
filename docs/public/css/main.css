@@ -561,6 +561,10 @@ input, select, textarea {
         display: none;
       }
    }
+   /* temp fix */
+   p:nth-child(5) {
+      display:none;
+   }
 }
   @media screen and (max-width: 599px) {
       .explanation {
@@ -591,6 +595,8 @@ input, select, textarea {
 
 .terminal-section {
   margin-top: 107px;
+  /* temp fix */
+  margin-top: 137px;
   gap: 60px;
   @media screen and (max-width: 1168px) {
     margin-top: unset;

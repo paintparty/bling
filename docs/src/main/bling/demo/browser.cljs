@@ -5,19 +5,19 @@
    [bling.core :refer [bling print-bling point-of-interest ?sgr]]
    [bling.util :refer [when->]]
    [bling.hifi :refer [hifi]]
-   [bling.banner :refer [banner]]
-   [bling.fonts.miniwi :refer [miniwi]]
-   [bling.fonts.ansi-shadow :refer [ansi-shadow]]
-   [bling.fonts.drippy :refer [drippy]]
-   [bling.fonts.big :refer [big]]
-   [bling.fonts.big-money :refer [big-money]]
-   [bling.fonts.rounded :refer [rounded]]
-   [bling.fonts.isometric-1 :refer [isometric-1]]
+  ;;  [bling.banner :refer [banner]]
+  ;;  [bling.fonts.miniwi :refer [miniwi]]
+  ;;  [bling.fonts.ansi-shadow :refer [ansi-shadow]]
+  ;;  [bling.fonts.drippy :refer [drippy]]
+  ;;  [bling.fonts.big :refer [big]]
+  ;;  [bling.fonts.big-money :refer [big-money]]
+  ;;  [bling.fonts.rounded :refer [rounded]]
+  ;;  [bling.fonts.isometric-1 :refer [isometric-1]]
   ;;  [bling.hifi :refer [print-hifi hifi]]
    [clojure.string :as string]
   ;;  [clojure.math :as math]
    [domo.core :as domo]
-   [fireworks.core :refer [? !? ?> !?> pprint]]
+  ;;  [fireworks.core :refer [? !? ?> !?>]]
   ;;  [fireworks.defs]
    [reagent.core :as r]
    [reagent.dom :as rdom]
@@ -294,127 +294,127 @@
 
 (defn main-view []
 
-  #_(println
-     (->> (bling.core/point-of-interest
-           {:margin-top             1
-            :header-file-info-style {:font-style :italic}
-            :form                   (let [s (bling.hifi/hifi '(+ 1 true))]
-                                      (-> s
-                                          (bling.core/with-ascii-underline
-                                            (assoc {:line-index 0}
-                                                   :text-decoration-color :red))))
-            :file                   "foo"
-            :line                   111
-            :column                 33})))
+  ;; #_(println
+  ;;    (->> (bling.core/point-of-interest
+  ;;          {:margin-top             1
+  ;;           :header-file-info-style {:font-style :italic}
+  ;;           :form                   (let [s (bling.hifi/hifi '(+ 1 true))]
+  ;;                                     (-> s
+  ;;                                         (bling.core/with-ascii-underline
+  ;;                                           (assoc {:line-index 0}
+  ;;                                                  :text-decoration-color :red))))
+  ;;           :file                   "foo"
+  ;;           :line                   111
+  ;;           :column                 33})))
 
-  #_[:div "HI"]
-  #_(into [:div.code]
-          (? :+ (bling.browser/ansi-sgr-string->hiccup
-                 (bling.banner/banner
-                  {
-                   ;;  :gradient-colors    [:green :blue]
-                   ;;  :gradient-direction :to-bottom
-                   :text "B"
-                   :font big}))))
-  #_[:div
-     {:style                   {:font-family "var(--code-font-stack)"}
-      :dangerouslySetInnerHTML (bling->reagent-unsafe-html-attr
-                                (bling.core/point-of-interest
-                                 {:margin-top             1
-                                  :header-file-info-style {:font-style :italic}
-                                  :form                   (let [s (bling.hifi/hifi '(+ 1 true))]
-                                                            (-> s
-                                                                (bling.core/with-ascii-underline
-                                                                  (assoc {:line-index 0}
-                                                                         :text-decoration-color :red))))
-                                  :file                   "foo"
-                                  :line                   111
-                                  :column                 33})
-                                )}]
+  ;; #_[:div "HI"]
+  ;; #_(into [:div.code]
+  ;;         (? :+ (bling.browser/ansi-sgr-string->hiccup
+  ;;                (bling.banner/banner
+  ;;                 {
+  ;;                  ;;  :gradient-colors    [:green :blue]
+  ;;                  ;;  :gradient-direction :to-bottom
+  ;;                  :text "B"
+  ;;                  :font big}))))
+  ;; #_[:div
+  ;;    {:style                   {:font-family "var(--code-font-stack)"}
+  ;;     :dangerouslySetInnerHTML (bling->reagent-unsafe-html-attr
+  ;;                               (bling.core/point-of-interest
+  ;;                                {:margin-top             1
+  ;;                                 :header-file-info-style {:font-style :italic}
+  ;;                                 :form                   (let [s (bling.hifi/hifi '(+ 1 true))]
+  ;;                                                           (-> s
+  ;;                                                               (bling.core/with-ascii-underline
+  ;;                                                                 (assoc {:line-index 0}
+  ;;                                                                        :text-decoration-color :red))))
+  ;;                                 :file                   "foo"
+  ;;                                 :line                   111
+  ;;                                 :column                 33})
+  ;;                               )}]
   
-  #_[:div.absolute-center 
-   {:style {:width :800px}
-    ;; :dangerouslySetInnerHTML (r/unsafe-html
-    ;;                           "<div class=\"absolute-center\" style=\"width: 800px;\">\n  <svg width=\"100%\" viewBox=\"0 0 800 500\" xmlns=\"http://www.w3.org/2000/svg\">\n    <defs>\n      <filter id=\"shadow\" x=\"-8%\" y=\"-12%\" width=\"116%\" height=\"130%\">\n        <feDropShadow dx=\"0\" dy=\"12\" stdDeviation=\"18\"\n                      flood-color=\"#000000\" flood-opacity=\"0.55\"/>\n      </filter>\n    </defs>\n    <rect x=\"100\" y=\"100\" width=\"600\" height=\"300\" rx=\"12\" ry=\"12\"\n          fill=\"#1a1a1a\" filter=\"url(#shadow)\"/>\n    <rect x=\"100\" y=\"100\" width=\"600\" height=\"36\" rx=\"12\" ry=\"12\" fill=\"#252525\"/>\n    <rect x=\"100\" y=\"118\" width=\"600\" height=\"18\" fill=\"#252525\"/>\n    <circle cx=\"120\" cy=\"118\" r=\"7\" fill=\"#696969\"/>\n    <circle cx=\"144\" cy=\"118\" r=\"7\" fill=\"#696969\"/>\n    <circle cx=\"168\" cy=\"118\" r=\"7\" fill=\"#696969\"/>\n    <foreignObject x=\"116\" y=\"152\" width=\"568\" height=\"232\">\n      <div xmlns=\"http://www.w3.org/1999/xhtml\"\n           style=\"font-family: 'JetBrains Mono'; font-size: 18px; line-height: 1.85; color: #ffffff; padding: 8px 8px 8px 0; word-break: break-word; white-space: pre-wrap;\">\n        First line of text here is it going to wrap or not idk, but wwssafdfasda\n      </div>\n    </foreignObject>\n  </svg>\n</div>"
-    ;;                           )
-    }
-   #_[:img {:src "/graphics/terminal.svg"}]
+  ;; #_[:div.absolute-center 
+  ;;  {:style {:width :800px}
+  ;;   ;; :dangerouslySetInnerHTML (r/unsafe-html
+  ;;   ;;                           "<div class=\"absolute-center\" style=\"width: 800px;\">\n  <svg width=\"100%\" viewBox=\"0 0 800 500\" xmlns=\"http://www.w3.org/2000/svg\">\n    <defs>\n      <filter id=\"shadow\" x=\"-8%\" y=\"-12%\" width=\"116%\" height=\"130%\">\n        <feDropShadow dx=\"0\" dy=\"12\" stdDeviation=\"18\"\n                      flood-color=\"#000000\" flood-opacity=\"0.55\"/>\n      </filter>\n    </defs>\n    <rect x=\"100\" y=\"100\" width=\"600\" height=\"300\" rx=\"12\" ry=\"12\"\n          fill=\"#1a1a1a\" filter=\"url(#shadow)\"/>\n    <rect x=\"100\" y=\"100\" width=\"600\" height=\"36\" rx=\"12\" ry=\"12\" fill=\"#252525\"/>\n    <rect x=\"100\" y=\"118\" width=\"600\" height=\"18\" fill=\"#252525\"/>\n    <circle cx=\"120\" cy=\"118\" r=\"7\" fill=\"#696969\"/>\n    <circle cx=\"144\" cy=\"118\" r=\"7\" fill=\"#696969\"/>\n    <circle cx=\"168\" cy=\"118\" r=\"7\" fill=\"#696969\"/>\n    <foreignObject x=\"116\" y=\"152\" width=\"568\" height=\"232\">\n      <div xmlns=\"http://www.w3.org/1999/xhtml\"\n           style=\"font-family: 'JetBrains Mono'; font-size: 18px; line-height: 1.85; color: #ffffff; padding: 8px 8px 8px 0; word-break: break-word; white-space: pre-wrap;\">\n        First line of text here is it going to wrap or not idk, but wwssafdfasda\n      </div>\n    </foreignObject>\n  </svg>\n</div>"
+  ;;   ;;                           )
+  ;;   }
+  ;;  #_[:img {:src "/graphics/terminal.svg"}]
    
-   (let [height (reagent.ratom/atom 300)]
-     [:svg {:width   "100%"
-            :viewBox (? (str "0 0 600 " @height))
-            :xmlns   "http://www.w3.org/2000/svg"}
-      [:defs
-       [:filter#shadow {:x      "-8%"
-                        :y      "-12%"
-                        :width  "116%"
-                        :height "130%"}
-        [:feDropShadow {:dx            "0"
-                        :dy            "12"
-                        :stdDeviation  "18"
-                        :flood-color   "#000000"
-                        :flood-opacity "0.55"}]]]
-      (comment "Terminal window (100px margin on all sides of an 800×500 canvas)")
-      [:rect {:x      "100"
-              :y      "100"
-              :width  "600"
-              :height "300"
-              :rx     "12"
-              :ry     "12"
-              :fill   "#1a1a1a"
-              :filter "url(#shadow)"}]
-      (comment "Title bar")
-      [:rect {:x      "100"
-              :y      "100"
-              :width  "600"
-              :height "36"
-              :rx     "12"
-              :ry     "12"
-              :fill   "#252525"}]
-      [:rect {:x      "100"
-              :y      "118"
-              :width  "600"
-              :height "18"
-              :fill   "#252525"}]
-      (comment "Traffic light dots")
-      [:circle {:cx   "120"
-                :cy   "118"
-                :r    "7"
-                ;; :fill "#ff5f57"
-                :fill "#696969"
-                }]
-      [:circle {:cx   "144"
-                :cy   "118"
-                :r    "7"
-                ;; :fill "#febc2e"
-                :fill "#696969"
-                }]
-      [:circle {:cx   "168"
-                :cy   "118"
-                :r    "7"
-                ;; :fill "#28c840"
-                :fill "#696969"
-                }]
-      #_(comment
-          "Body text — edit the content inside <div>")
-      [:foreignObject {:x      "116"
-                       :y      "152"
-                       :width  "568"
-                       :height "232"}
-       [:div
-        {:xmlns "http://www.w3.org/1999/xhtml"
-         :style {:font-family "JetBrains Mono"
-                 :font-size   :18px
-                 :line-height 1.85
-                 :color       "#ffffff"
-                 :padding     "8px 8px 8px 0"
-                 :word-break  :break-word
-                 :white-space :pre-wrap}}
-        "First line of text here is it going to wrap or not idk, but wwssafdfasda"]]])
-   ]
-  #_[:div.absolute.centered
+  ;;  (let [height (reagent.ratom/atom 300)]
+  ;;    [:svg {:width   "100%"
+  ;;           :viewBox (? (str "0 0 600 " @height))
+  ;;           :xmlns   "http://www.w3.org/2000/svg"}
+  ;;     [:defs
+  ;;      [:filter#shadow {:x      "-8%"
+  ;;                       :y      "-12%"
+  ;;                       :width  "116%"
+  ;;                       :height "130%"}
+  ;;       [:feDropShadow {:dx            "0"
+  ;;                       :dy            "12"
+  ;;                       :stdDeviation  "18"
+  ;;                       :flood-color   "#000000"
+  ;;                       :flood-opacity "0.55"}]]]
+  ;;     (comment "Terminal window (100px margin on all sides of an 800×500 canvas)")
+  ;;     [:rect {:x      "100"
+  ;;             :y      "100"
+  ;;             :width  "600"
+  ;;             :height "300"
+  ;;             :rx     "12"
+  ;;             :ry     "12"
+  ;;             :fill   "#1a1a1a"
+  ;;             :filter "url(#shadow)"}]
+  ;;     (comment "Title bar")
+  ;;     [:rect {:x      "100"
+  ;;             :y      "100"
+  ;;             :width  "600"
+  ;;             :height "36"
+  ;;             :rx     "12"
+  ;;             :ry     "12"
+  ;;             :fill   "#252525"}]
+  ;;     [:rect {:x      "100"
+  ;;             :y      "118"
+  ;;             :width  "600"
+  ;;             :height "18"
+  ;;             :fill   "#252525"}]
+  ;;     (comment "Traffic light dots")
+  ;;     [:circle {:cx   "120"
+  ;;               :cy   "118"
+  ;;               :r    "7"
+  ;;               ;; :fill "#ff5f57"
+  ;;               :fill "#696969"
+  ;;               }]
+  ;;     [:circle {:cx   "144"
+  ;;               :cy   "118"
+  ;;               :r    "7"
+  ;;               ;; :fill "#febc2e"
+  ;;               :fill "#696969"
+  ;;               }]
+  ;;     [:circle {:cx   "168"
+  ;;               :cy   "118"
+  ;;               :r    "7"
+  ;;               ;; :fill "#28c840"
+  ;;               :fill "#696969"
+  ;;               }]
+  ;;     #_(comment
+  ;;         "Body text — edit the content inside <div>")
+  ;;     [:foreignObject {:x      "116"
+  ;;                      :y      "152"
+  ;;                      :width  "568"
+  ;;                      :height "232"}
+  ;;      [:div
+  ;;       {:xmlns "http://www.w3.org/1999/xhtml"
+  ;;        :style {:font-family "JetBrains Mono"
+  ;;                :font-size   :18px
+  ;;                :line-height 1.85
+  ;;                :color       "#ffffff"
+  ;;                :padding     "8px 8px 8px 0"
+  ;;                :word-break  :break-word
+  ;;                :white-space :pre-wrap}}
+  ;;       "First line of text here is it going to wrap or not idk, but wwssafdfasda"]]])
+  ;;  ]
+  ;; #_[:div.absolute.centered
      
-     ]
+  ;;    ]
 
   [:<> 
      [:nav.absolute-block-start-inside.flex-row-center
