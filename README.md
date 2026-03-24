@@ -917,7 +917,7 @@ If you want a simple banner in a browser dev console, you can do the following:
 
 
 <p align="center">
-  <img src="resources/docs/chromed/terminal.svg" width="700px" />
+  <img src="./resources/docs/chromed/terminal.svg" width="700px" />
 </p>
 
 
