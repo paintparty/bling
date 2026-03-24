@@ -51,7 +51,8 @@
    [fireworks.ansi :as ansi]
    [fireworks.state :as state]))
 
-(println
+
+#_(println
  (->> (bling.core/point-of-interest
        {:margin-top             1
         :header-file-info-style {:font-style :italic}

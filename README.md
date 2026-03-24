@@ -916,10 +916,6 @@ If you want a simple banner in a browser dev console, you can do the following:
 <br>
 
 
-<p align="center">
-  <img src="./resources/docs/chromed/terminal.svg" width="700px" />
-</p>
-
 
 ## Development
 

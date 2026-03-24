@@ -150,6 +150,7 @@ body {
  color: var(--foreground);
  &.dark {
   background-color: var(--background-dark-mode);
+  background-color: #555555;
   color: var(--foreground-dark-mode);
   .callout {
     color: color-mix(in oklch, var(--foreground-dark-mode), black 10%);
