@@ -96,7 +96,7 @@
                       " text."]
                      [:p "Lines in a " [:blue ":p"] " hiccup tag will insert a trailing\n"
                       [:olive "\"\\n\\n\""] " for spacing between paragraphs."]
-                     [:p
+                     #_[:p
                       "Example hyperlink:\n"
                       [{:href "https://github.com/paintparty/bling"}
                        "View the official Bling docs"]
@@ -110,7 +110,7 @@
                        "\n\n"
                        [:p "Lines in a " [:blue ":p"] " hiccup tag will insert a trailing\n"
                         [:olive "\"\\n\\n\""] " for spacing between paragraphs."]
-                       [:p
+                       #_[:p
                         "Example hyperlink:\n"
                         [{:href "https://github.com/paintparty/bling"} "View the official Bling docs"]])]})
 
@@ -332,7 +332,7 @@
                                   :column                 33})
                                 )}]
   
-  [:div.absolute-center 
+  #_[:div.absolute-center 
    {:style {:width :800px}
     ;; :dangerouslySetInnerHTML (r/unsafe-html
     ;;                           "<div class=\"absolute-center\" style=\"width: 800px;\">\n  <svg width=\"100%\" viewBox=\"0 0 800 500\" xmlns=\"http://www.w3.org/2000/svg\">\n    <defs>\n      <filter id=\"shadow\" x=\"-8%\" y=\"-12%\" width=\"116%\" height=\"130%\">\n        <feDropShadow dx=\"0\" dy=\"12\" stdDeviation=\"18\"\n                      flood-color=\"#000000\" flood-opacity=\"0.55\"/>\n      </filter>\n    </defs>\n    <rect x=\"100\" y=\"100\" width=\"600\" height=\"300\" rx=\"12\" ry=\"12\"\n          fill=\"#1a1a1a\" filter=\"url(#shadow)\"/>\n    <rect x=\"100\" y=\"100\" width=\"600\" height=\"36\" rx=\"12\" ry=\"12\" fill=\"#252525\"/>\n    <rect x=\"100\" y=\"118\" width=\"600\" height=\"18\" fill=\"#252525\"/>\n    <circle cx=\"120\" cy=\"118\" r=\"7\" fill=\"#696969\"/>\n    <circle cx=\"144\" cy=\"118\" r=\"7\" fill=\"#696969\"/>\n    <circle cx=\"168\" cy=\"118\" r=\"7\" fill=\"#696969\"/>\n    <foreignObject x=\"116\" y=\"152\" width=\"568\" height=\"232\">\n      <div xmlns=\"http://www.w3.org/1999/xhtml\"\n           style=\"font-family: 'JetBrains Mono'; font-size: 18px; line-height: 1.85; color: #ffffff; padding: 8px 8px 8px 0; word-break: break-word; white-space: pre-wrap;\">\n        First line of text here is it going to wrap or not idk, but wwssafdfasda\n      </div>\n    </foreignObject>\n  </svg>\n</div>"
@@ -415,7 +415,8 @@
   #_[:div.absolute.centered
      
      ]
-  #_[:<> 
+
+  [:<> 
      [:nav.absolute-block-start-inside.flex-row-center
       [:div.inner.flex-row-space-between
        [:div.badges.flex-row-start
@@ -491,13 +492,10 @@
        :style {:display (if (not= "Callout Config" (:active-view @S)) "none" "flex")}}
       [:div.controls.flex-col
        [:span.explanation.foreground 
-        [:p "Bling is a library that provides hifi console printing for Clojure dialects."]
-        [:br]
+        [:p.intro "Bling is a library that provides hifi console printing for Clojure dialects."]
         [:p
          [:span.code "bling.core/callout"]
-         " is designed for the easy creation of nicely formatted, easy-to-read message blocks."]
-        [:br]
-        [:p "The UI below allows you to preview different options, and generate snippets for your own projects."]]
+         " is designed for the construction of cleanly formatted, easy-to-read message blocks. The UI below allows you to preview different options, and generate snippets for your own projects."]]
        ;; CALLOUT THEME
        [control-radio-group {:kw     :callout-theme
                              :values ["sandwich" "sideline" "gutter" "boxed"]}]
@@ -522,7 +520,7 @@
         [:div.relative
          [:input.foreground
           {:type        "text"
-           :maxlength   26
+           :max-length   26
            :value       (header-label-text)
            :placeholder "Your label"
            ;; :on-focus    #(swap! S assoc :label-text-field-has-focus? true)

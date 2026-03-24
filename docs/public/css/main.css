@@ -150,7 +150,7 @@ body {
  color: var(--foreground);
  &.dark {
   background-color: var(--background-dark-mode);
-  background-color: #555555;
+  /* background-color: #555555; */
   color: var(--foreground-dark-mode);
   .callout {
     color: color-mix(in oklch, var(--foreground-dark-mode), black 10%);
@@ -548,17 +548,29 @@ input, select, textarea {
 
 
 .explanation {
-   display:none;
+   /* display:none; */
+   padding-bottom: 24px;
+   border-bottom: 1px solid var(--neutral-800);
+   max-width: 527px;
+   p {
+      font-family: var(--sans-serif-font-stack);
+      font-size: var(--font-size-sm);
+      line-height: 1.7;
+      max-width: 500px;
+      &.intro {
+        display: none;
+      }
+   }
 }
   @media screen and (max-width: 599px) {
       .explanation {
-        padding-bottom: 24px;
-        border-bottom: 1px solid var(--neutral-800);
         display: block;
-        p {
-          font-family: var(--sans-serif-font-stack);
-          font-size: var(--font-size-sm);
-          max-width: 375px;
+        p {max-width: 374px;
+
+          &.intro {
+            display: block;
+            margin-bottom: 1em;
+          }
         }
       }
       min-width: 300px;
@@ -578,9 +590,13 @@ input, select, textarea {
 }
 
 .terminal-section {
+  margin-top: 107px;
   gap: 60px;
+  @media screen and (max-width: 1168px) {
+    margin-top: unset;
+  }
   @media screen and (max-width: 599px) {
-    scale: 0.65;
+    scale: 0.67;
     transform-origin: top center;
   }
 }
@@ -854,7 +870,7 @@ input, select, textarea {
   border: 1px solid rgba(128, 128, 128, 0.549);
   background: transparent!important;
   font-family: var(--code-font-stack);
-  padding: 50px 18px 18px 18px;
+  padding: 69px 18px 18px 18px;
   border-radius: 5px;
   resize: none;
   width: 71ch;
