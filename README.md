@@ -52,7 +52,6 @@
 <br>
 <br>
 
-
 <p align="left">
   <img src="resources/docs/chromed/bling-banner-dark-0.6.0.png" width="700px" />
 </p>
@@ -915,6 +914,12 @@ If you want a simple banner in a browser dev console, you can do the following:
 (banner {:text "Hello" :browser-style "font-color:red;font-size:24px"})
 ```
 <br>
+
+
+<p align="center">
+  <img src="resources/docs/chromed/terminal.svg" width="700px" />
+</p>
+
 
 ## Development
 
