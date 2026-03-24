@@ -1,0 +1,33 @@
+<svg width="100%" viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <filter id="shadow" x="-8%" y="-12%" width="116%" height="130%">
+        <feDropShadow dx="0" dy="12" stdDeviation="18"
+                      flood-color="#000000" flood-opacity="0.55"/>
+      </filter>
+    </defs>
+
+    <!-- Terminal window (100px margin on all sides of an 800×500 canvas) -->
+    <rect x="100" y="100" width="600" height="300" rx="12" ry="12"
+          fill="#1a1a1a" filter="url(#shadow)"/>
+
+    <!-- Title bar -->
+    <rect x="100" y="100" width="600" height="36" rx="12" ry="12" fill="#252525"/>
+    <rect x="100" y="118" width="600" height="18" fill="#252525"/>
+
+    <!-- Traffic light dots -->
+    <circle cx="120" cy="118" r="7" fill="#696969"/>
+    <circle cx="144" cy="118" r="7" fill="#696969"/>
+    <circle cx="168" cy="118" r="7" fill="#696969"/>
+
+    <!-- Body text -->
+    <foreignObject x="116" y="152" width="568" height="232">
+      <div xmlns="http://www.w3.org/1999/xhtml"
+           style="font-family: 'JetBrains Mono';
+                  font-size: 18px;
+                  line-height: 1.85;
+                  color: #ffffff;
+                  padding: 8px 8px 8px 0;
+                  word-break: break-word;
+                  white-space: pre-wrap;">First line of text here is it going to wrap or not idk, but wwssafdfasda</div>
+    </foreignObject>
+  </svg>

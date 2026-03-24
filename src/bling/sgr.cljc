@@ -2,6 +2,7 @@
   (:require [clojure.string :as string]
             [bling.hifi :refer [hifi]]))
 
+;; ansi-color
 (defn ^:no-doc sgr-highlighting-tags
   {:desc     "Given a style map and a `supports-color-level` int, produces a
               vector of opening and closing ansi-sgr tags for that style, when

@@ -36,7 +36,7 @@
    [bling.fontlib]
    [bling.banner]
    [bling.browser :as browser]
-  ;;  [bling.hifi :refer [print-hifi hifi chopped]]
+   [bling.hifi :refer [print-hifi hifi chopped]]
    [malli.core :as m]
    [clojure.string :as string]
    ;; [taoensso.tufte :as tufte :refer [p profile]]
@@ -51,7 +51,18 @@
    [fireworks.ansi :as ansi]
    [fireworks.state :as state]))
 
-
+(println
+ (->> (bling.core/point-of-interest
+       {:margin-top             1
+        :header-file-info-style {:font-style :italic}
+        :form                   (let [s (bling.hifi/hifi '(+ 1 true))]
+                                  (-> s
+                                      (bling.core/with-ascii-underline
+                                        (assoc {:line-index 0}
+                                               :text-decoration-color :red))))
+        :file                   "foo"
+        :line                   111
+        :column                 33})))
 
 ;; (callout {:type :info}
 ;;          "Example callout"
@@ -416,7 +427,7 @@ Four"
 
 #_(sample/print-bling-color-contrast)
 
-(println (sample/explain-malli-examples))
+#_(println (sample/explain-malli-examples))
 
 
 

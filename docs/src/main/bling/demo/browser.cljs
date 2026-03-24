@@ -6,7 +6,6 @@
    [bling.util :refer [when->]]
    [bling.hifi :refer [hifi]]
    [bling.banner :refer [banner]]
-   [bling.browser]
    [bling.fonts.miniwi :refer [miniwi]]
    [bling.fonts.ansi-shadow :refer [ansi-shadow]]
    [bling.fonts.drippy :refer [drippy]]
@@ -25,7 +24,12 @@
    [reagent.ratom]
    [zprint.core :as zp]
    [goog.string]
-   [me.flowthing.pp :as pp :refer [pprint]])
+   [me.flowthing.pp :as pp :refer [pprint]]
+  ;;  ["ansi-to-html" :as Convert]
+  ;;  ["ansi_up" :refer [AnsiUp]]
+   [bling.browser :as browser]
+   [bling.demo.ansi-to-html :as ansi-to-html]
+   )
   (:require-macros [bling.demo.browser :refer [example-with-source]]))
 
 (def sample-side-label-text
@@ -94,7 +98,9 @@
                       [:olive "\"\\n\\n\""] " for spacing between paragraphs."]
                      [:p
                       "Example hyperlink:\n"
-                      (bling.core/html-hyperlink
+                      [{:href "https://github.com/paintparty/bling"}
+                       "View the official Bling docs"]
+                      #_(bling.ansi-to-html/html-hyperlink
                        [{:href "https://github.com/paintparty/bling"}
                         "View the official Bling docs"])])
    :source          ['(bling.core/bling
@@ -272,45 +278,143 @@
     :width       "16"
     :height      "16"
     :aria-hidden "true"
-    :style       {:height :17px
-                  :filter "grayscale(1) contrast(1) brightness(1) invert()"}
-    }
+    :style       {:height :17pxn
+                  :filter "grayscale(1) contrast(1) brightness(1) invert()"}}
    [:path
     {:d "M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Zm0 2.445L6.615 5.5a.75.75 0 0 1-.564.41l-3.097.45 2.24 2.184a.75.75 0 0 1 .216.664l-.528 3.084 2.769-1.456a.75.75 0 0 1 .698 0l2.77 1.456-.53-3.084a.75.75 0 0 1 .216-.664l2.24-2.183-3.096-.45a.75.75 0 0 1-.564-.41L8 2.694Z"}]])
 
 (defn bling->reagent-unsafe-html-attr
   ([s]
-   (bling->reagent-unsafe-html-attr s nil))
+   (bling->reagent-unsafe-html-attr s {}))
   ([s attrs]
    (merge attrs
           {:dangerouslySetInnerHTML (->> s
-                                         bling.core/ansi-sgr-string->html
+                                         ansi-to-html/->html
                                          r/unsafe-html)})))
 
 (defn main-view []
-  (into [:div.code]
-        (? :+ (bling.core/ansi-sgr-string->hiccup
-               (bling.banner/banner
-                {
-                ;;  :gradient-colors    [:green :blue]
-                ;;  :gradient-direction :to-bottom
-                 :text               "B"
-                 :font               big}))))
+
+  #_(println
+     (->> (bling.core/point-of-interest
+           {:margin-top             1
+            :header-file-info-style {:font-style :italic}
+            :form                   (let [s (bling.hifi/hifi '(+ 1 true))]
+                                      (-> s
+                                          (bling.core/with-ascii-underline
+                                            (assoc {:line-index 0}
+                                                   :text-decoration-color :red))))
+            :file                   "foo"
+            :line                   111
+            :column                 33})))
+
+  #_[:div "HI"]
+  #_(into [:div.code]
+          (? :+ (bling.browser/ansi-sgr-string->hiccup
+                 (bling.banner/banner
+                  {
+                   ;;  :gradient-colors    [:green :blue]
+                   ;;  :gradient-direction :to-bottom
+                   :text "B"
+                   :font big}))))
   #_[:div
      {:style                   {:font-family "var(--code-font-stack)"}
       :dangerouslySetInnerHTML (bling->reagent-unsafe-html-attr
-                                (bling.banner/banner
-                                 {:gradient-colors    [:green :blue]
-                                  :gradient-direction :to-bottom
-                                  :text               "bling"
-                                  ;;  :font               ansi-shadow
-                                  :font               big 
-                                  })
+                                (bling.core/point-of-interest
+                                 {:margin-top             1
+                                  :header-file-info-style {:font-style :italic}
+                                  :form                   (let [s (bling.hifi/hifi '(+ 1 true))]
+                                                            (-> s
+                                                                (bling.core/with-ascii-underline
+                                                                  (assoc {:line-index 0}
+                                                                         :text-decoration-color :red))))
+                                  :file                   "foo"
+                                  :line                   111
+                                  :column                 33})
                                 )}]
-
+  
+  [:div.absolute-center 
+   {:style {:width :800px}
+    ;; :dangerouslySetInnerHTML (r/unsafe-html
+    ;;                           "<div class=\"absolute-center\" style=\"width: 800px;\">\n  <svg width=\"100%\" viewBox=\"0 0 800 500\" xmlns=\"http://www.w3.org/2000/svg\">\n    <defs>\n      <filter id=\"shadow\" x=\"-8%\" y=\"-12%\" width=\"116%\" height=\"130%\">\n        <feDropShadow dx=\"0\" dy=\"12\" stdDeviation=\"18\"\n                      flood-color=\"#000000\" flood-opacity=\"0.55\"/>\n      </filter>\n    </defs>\n    <rect x=\"100\" y=\"100\" width=\"600\" height=\"300\" rx=\"12\" ry=\"12\"\n          fill=\"#1a1a1a\" filter=\"url(#shadow)\"/>\n    <rect x=\"100\" y=\"100\" width=\"600\" height=\"36\" rx=\"12\" ry=\"12\" fill=\"#252525\"/>\n    <rect x=\"100\" y=\"118\" width=\"600\" height=\"18\" fill=\"#252525\"/>\n    <circle cx=\"120\" cy=\"118\" r=\"7\" fill=\"#696969\"/>\n    <circle cx=\"144\" cy=\"118\" r=\"7\" fill=\"#696969\"/>\n    <circle cx=\"168\" cy=\"118\" r=\"7\" fill=\"#696969\"/>\n    <foreignObject x=\"116\" y=\"152\" width=\"568\" height=\"232\">\n      <div xmlns=\"http://www.w3.org/1999/xhtml\"\n           style=\"font-family: 'JetBrains Mono'; font-size: 18px; line-height: 1.85; color: #ffffff; padding: 8px 8px 8px 0; word-break: break-word; white-space: pre-wrap;\">\n        First line of text here is it going to wrap or not idk, but wwssafdfasda\n      </div>\n    </foreignObject>\n  </svg>\n</div>"
+    ;;                           )
+    }
+   [:img {:src "/graphics/terminal.svg"}]
+   
+   #_[:svg {:width   "100%"
+          :viewBox "0 0 800 500"
+          :xmlns   "http://www.w3.org/2000/svg"}
+    [:defs
+     [:filter#shadow {:x      "-8%"
+                      :y      "-12%"
+                      :width  "116%"
+                      :height "130%"}
+      [:feDropShadow {:dx            "0"
+                      :dy            "12"
+                      :stdDeviation  "18"
+                      :flood-color   "#000000"
+                      :flood-opacity "0.55"}]]]
+    (comment "Terminal window (100px margin on all sides of an 800×500 canvas)")
+    [:rect {:x      "100"
+            :y      "100"
+            :width  "600"
+            :height "300"
+            :rx     "12"
+            :ry     "12"
+            :fill   "#1a1a1a"
+            :filter "url(#shadow)"}]
+    (comment "Title bar")
+    [:rect {:x      "100"
+            :y      "100"
+            :width  "600"
+            :height "36"
+            :rx     "12"
+            :ry     "12"
+            :fill   "#252525"}]
+    [:rect {:x      "100"
+            :y      "118"
+            :width  "600"
+            :height "18"
+            :fill   "#252525"}]
+    (comment "Traffic light dots")
+    [:circle {:cx   "120"
+              :cy   "118"
+              :r    "7"
+              ;; :fill "#ff5f57"
+              :fill "#696969"
+              }]
+    [:circle {:cx   "144"
+              :cy   "118"
+              :r    "7"
+              ;; :fill "#febc2e"
+              :fill "#696969"
+              }]
+    [:circle {:cx   "168"
+              :cy   "118"
+              :r    "7"
+              ;; :fill "#28c840"
+              :fill "#696969"
+              }]
+    #_(comment
+      "Body text — edit the content inside <div>")
+    [:foreignObject {:x      "116"
+                     :y      "152"
+                     :width  "568"
+                     :height "232"}
+     [:div
+      {:xmlns "http://www.w3.org/1999/xhtml"
+       :style {:font-family "JetBrains Mono"
+               :font-size   :18px
+               :line-height 1.85
+               :color       "#ffffff"
+               :padding     "8px 8px 8px 0"
+               :word-break  :break-word
+               :white-space :pre-wrap}}
+      "First line of text here is it going to wrap or not idk, but wwssafdfasda"]]]
+   ]
+  #_[:div.absolute.centered
+   
+   ]
   #_[:<> 
-     
-     
      [:nav.absolute-block-start-inside.flex-row-center
       [:div.inner.flex-row-space-between
        [:div.badges.flex-row-start
@@ -466,7 +570,7 @@
                                      (let [s (header-label-text)]
                                        (when (and s (not (string/blank? s)))
                                          s)))]
-            [:div.callout-header.flex-row
+            [:div.callout-header.flex-row.terminal-background
              {:class [(str (name (or (:label-theme @S) :simple)) "-label")
                       (when (:side-label? @S) "with-side-label")
                       (when-not header-label-text* "no-label")

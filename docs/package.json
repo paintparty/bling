@@ -10,6 +10,8 @@
     "shadow-cljs": "^3.3.5"
   },
   "dependencies": {
+    "ansi_up": "^6.0.6",
+    "ansi-to-html": "^0.7.2",
     "react": "17.0.2",
     "react-dom": "17.0.2"
   }

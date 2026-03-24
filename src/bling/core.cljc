@@ -11,16 +11,18 @@
             [bling.macros :refer [let-map keyed]]
             [bling.util :as util :refer [maybe-> when-> when->> char-repeat]]
             #?(:cljs [bling.js-env :refer [node?]])
-            [taipei-404.html :refer [html->hiccup]]))
+            ))
 
 (declare xterm-colors-by-id)
 
 ;; TODO - Move to ansi ns
+;; ansi-color
 (def ^:private ESC "\u001B[")
 (def ^:private OSC "\u001B]")
 (def ^:private BEL "\u0007")
 (def ^:private SEP ";")
 
+;; ansi-color
 (defn- hyperlink [text url]
   #?(:cljs
      url
@@ -39,44 +41,8 @@
              SEP
              BEL])))
 
-;; TODO - Move to defs namespace
-(def ^:private browser-dev-console-props
-  [:text-decoration-line
-   :text-decoration-style
-   :text-decoration-color
-   :text-underline-offset
-   :text-decoration-thickness
-   :text-decoration
-   :line-height
-   :font-weight
-   :font-style
-   :color
-   :contrast
-   :background-color
-   :border-radius
-   :padding
-   :padding-block
-   :padding-block-start
-   :padding-block-end
-   :padding-inline
-   :padding-inline-start
-   :padding-inline-end
-   :padding-bottom
-   :padding-top
-   :padding-right
-   :padding-left
-   :margin
-   :margin-block
-   :margin-block-start
-   :margin-block-end
-   :margin-inline
-   :margin-inline-start
-   :margin-inline-end
-   :margin-bottom
-   :margin-top
-   :margin-right
-   :margin-left])
 
+;; ansi-color
 ;; TODO - Move to colors namespace?
 (def ^:public ^:no-doc system-colors-source
   {"system-black"   {:sgr 0}
@@ -102,6 +68,7 @@
 ;; support "light-orange to force light"
 
 ;; TODO - Move to colors namespace?
+;; ansi-color
 (def ^:private bling-colors-dark
   (apply
    array-map
@@ -118,6 +85,7 @@
     "white"   {:sgr 231}]))
 
 ;; TODO - Move to colors namespace?
+;; ansi-color
 (def ^:private bling-colors-light
   (apply
    array-map
@@ -135,6 +103,7 @@
 
 ;; TODO Add the light and dark variants to x-term-colors-by-id
 ;; TODO - Move to colors namespace?
+;; ansi-color
 (def ^:public bling-colors*
   "Array map of the bling color pallette.
    
@@ -167,6 +136,8 @@
     "black"      {:sgr 16 :css "#000000"}
     "white"      {:sgr 231 :css "#ffffff"}]))
 
+
+;; ansi-color
 (def ^:public bling-colors
   "Array map of the bling color pallette with light, dark, and medium entries
    for each color.
@@ -214,10 +185,12 @@
               []
               bling-colors*)))
 
+;; ansi-color
 (def ^:private colors-source
   (merge bling-colors
          system-colors-source))
 
+;; ansi-color
 (def ^:private semantics-by-semantic-type
   {"error"    "negative"
    "warning"  "warning"
@@ -227,6 +200,7 @@
    "subtle"   "subtle"
    "neutral"  "neutral"})
 
+;; ansi-color
 (def ^:private all-color-names
   ;; TODO - perf use reduce here?
   (into #{}
@@ -234,6 +208,7 @@
                       (vals semantics-by-semantic-type)
                       (keys colors-source))))
 
+;; ansi-color
 (def ^:private color-names-by-semantic*
   (reduce-kv (fn [m color {:keys [semantic]}]
                (if semantic
@@ -244,6 +219,7 @@
 
 ;; Helper functions -----------------------------------------------------------
 
+;; ansi-color
 (defn ^:public ?sgr
   "For debugging of ANSI SGR tagged output.
 
@@ -262,6 +238,7 @@
                         )))
   s)
 
+;; ansi-color
 (defn ^:public !?sgr
   "Temporarily silences debugging of sgr code printing.
    Returns the value."
@@ -276,6 +253,7 @@
 
 (defn- spaces [n] (string/join (repeat n " ")))
 
+;; ansi-color
 (defn- x->sgr [x k]
   (when x
     (let [n (if (= k :fg) 38 48)]
@@ -285,6 +263,7 @@
               ret (str n ";2;" r ";" g ";" b)]
           ret)))))
 
+;; ansi-color
 (def ^:private underline-style-codes-by-style
   {"straight" 1
    "double"   2
@@ -292,6 +271,7 @@
    "dotted"   4
    "dashed"   5})
 
+;; ansi-color
 (defn- sgr-text-decoration [m]
   (when-not (:disable-text-decoration? m)
     (cond
@@ -307,6 +287,7 @@
                  (:text-decoration m))
       "9")))
 
+;; ansi-color
 (defn- m->sgr
   [{fgc*  :color
     bgc*  :background-color
@@ -336,6 +317,7 @@
 
     ret))
 
+;; ansi-color
 ;; Move to colors namespace? or you already have them in vector by index?
 ;; Color-related fns  ---------------------------------------------------------
 (def ^:private xterm-colors-by-id
@@ -393,6 +375,7 @@
    247 "#9e9e9e"                                            ;; gray
    })
 
+;; ansi-color
 (defn- assoc-hex-colors [m]
   (reduce-kv (fn [m color {:keys [sgr sgr-light sgr-dark css-light css-dark css]}]
                (let [hex
@@ -409,12 +392,14 @@
              {}
              m))
 
+;; ansi-color
 (defn- reduce-colors [m1 m2]
   (reduce-kv (fn [m k color]
                (assoc m k (get m2 color)))
              {}
              m1))
 
+;; ansi-color
 (def ^:private color-codes
   (let [colors    (assoc-hex-colors colors-source)
         semantics (reduce-colors color-names-by-semantic* colors)
@@ -429,6 +414,7 @@
 (declare bling)
 (declare print-bling)
 
+;; ansi-color?
 (defn- reduce-colors-to-sgr
   "This is where the actual color value gets pulled out of the color map that is
    associated with each color (in bling.core/all-color-names).
@@ -498,6 +484,7 @@
              {}
              m))
 
+;; ansi-color?
 (defn- convert-color [m k v]
   (assoc m
          k
@@ -524,6 +511,7 @@
 
 ;; Unicode characters ----------------------------------------------------------
 
+;; ansi-color
 (def ^:private text-decoration-styles
   {:wavy   "^"
    :solid  "─"
@@ -531,6 +519,7 @@
    :dotted "•"
    :double "═"})
 
+;; ansi-color
 (def ^:private bdc
   {:h   {:double     "═"
          :bold       "━"
@@ -587,6 +576,7 @@
          :thin       "┘"
          :thin-round "╯"}})
 
+;; ansi-color?
 (def ^:private box-drawing-styles (into #{} (-> bdc :h keys)))
 
 (defn- horizontal-border-char* [style weight]
@@ -863,6 +853,7 @@
 ;; TODO - maybe this should happen at comptime and produce a map, so that 
 ;; hifi is not called x number of times at runtime?
 
+;; ansi-color
 (defn- ansi-sgr-pattern-re [ansi-sgr-needle]
   (let [ansi-sgr-pattern (string/replace
                           ansi-sgr-needle
@@ -898,6 +889,7 @@
       (string/replace (re-pattern (str "[^\\" uc "]"))
                       " ")))
 
+;; TODO - rename with highlight-related term
 (defn- opening-sgr-tag [s target-highlight-style]
   (some (fn [m]
           (some (fn [vc]
@@ -1854,6 +1846,7 @@
           (:padding-left-str m)
           s))))
 
+;; ansi-color?
 (defn- restore-ansi-sgr-over-lines [s]
   (let [lns (string/split s #"\n")
         lns (if-let [[_ ansi-sgr-tag]
@@ -2493,9 +2486,11 @@
 ;; Boxed callout end 
 ;; -----------------------------------------------------------------------------
 
+;; ansi-color?
 (def ^:private rainbow-colors
   ["red" "orange" "yellow" "green" "black" "white" "blue" "purple" "magenta"])
 
+;; ansi-color?
 (def ^:private rainbow-colors-system
   (reverse ["system-maroon"
             "system-yellow"
@@ -3382,6 +3377,7 @@
        (:value o)
        "\033[0;m"))
 
+;; ansi-color?
 (defn- tag->map
   ([acc s]
    (tag->map false acc s))
@@ -3838,58 +3834,3 @@
        :clj
        (println bling-str))))
 
-(defn ^:public ^:no-doc html-hyperlink
-  "Converts a hyperlink in Bling's hiccup syntax to an escaped string
-   representation which will get converted to html in 
-   `bling.core/ansi-sgr-string->html`. This should only be used in the
-   rare case when the intended output (of `bling.core/*` public fn) is
-   not a system or browser console, but rather html on a webpage.
-   
-   Basic example
-   ```clojure
-   (->> (bling.core/bling [{:href \"www.pets.com\"} pets.com])
-        bling.browser/ansi-sgr-string->browser-dev-console-array
-        bling.browser/browser-dev-console-array->html-string)
-   ```"
-  {:desc    "Converts a hyperlink in Bling's hiccup syntax to an escaped string
-             representation which will get converted to html in 
-             `bling.core/ansi-sgr-string->html`. This should only be used in the
-             rare case when the intended output (of `bling.core/*` public fn) is
-             not a system or browser console, but rather html on a webpage."
-   :examples [{:desc  "Basic example"
-               :forms "(->> (bling.core/bling [{:href \"www.pets.com\"} pets.com])
-                      |     bling.browser/ansi-sgr-string->browser-dev-console-array
-                      |     bling.browser/browser-dev-console-array->html-string)"}]}
-  [x]
-  (if-let [href (and (vector? x)
-                     (< 1 (count x))
-                     (some-> x
-                             first
-                             (when-> map?)
-                             :href))]
-    (let [text (second x)]
-      [{:color                 :red
-        :text-decoration-color :blue}
-       (str "〠_〠AHREF〠_〠" href "〠_〠")
-       text
-       "〠_〠/A〠_〠"])
-    x))
-
-(defn ^:public ^:no-doc ansi-sgr-string->html
-  "Converts an ANSI SGR tagged string into html with inline styles."
-  ([s]
-   (ansi-sgr-string->html s nil))
-  ([s opts]
-   (-> s
-       browser/ansi-sgr-string->browser-dev-console-array
-       (browser/browser-dev-console-array->html-string opts))))
-
-(defn ^:public ^:no-doc ansi-sgr-string->hiccup
-  "Converts an ANSI SGR tagged string into hiccup."
-  [s]
-  (walk/postwalk (comp browser/maybe-inline-style->map
-                       browser/maybe-replace-escaped-html)
-                 (-> s
-                     (ansi-sgr-string->html #_{:html-escape? false})
-                     browser/nbsp->unicode
-                     html->hiccup)))

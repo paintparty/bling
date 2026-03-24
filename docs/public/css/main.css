@@ -928,10 +928,12 @@ label {
 
 
 #shadow-hud-container {
+
+  span {color: rgb(233, 233, 233)!important;}
   color: rgb(233, 233, 233)!important;
   background-color: rgb(36, 36, 36)!important;
   border: 5px solid #8d0000;
-  &>div {
+  div {
     background-color: rgb(36, 36, 36)!important;
   }
   pre {
