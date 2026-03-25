@@ -100,9 +100,10 @@
                       "Example hyperlink:\n"
                       [{:href "https://github.com/paintparty/bling"}
                        "View the official Bling docs"]
-                      #_(bling.ansi-to-html/html-hyperlink
-                       [{:href "https://github.com/paintparty/bling"}
-                        "View the official Bling docs"])])
+                      ;; (bling.ansi-to-html/html-hyperlink
+                      ;;  [{:href "https://github.com/paintparty/bling"}
+                      ;;   "View the official Bling docs"])
+                        ])
    :source          ['(bling.core/bling
                        "Example of callout body with Bling styling."
                        "\n\n"

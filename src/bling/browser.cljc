@@ -1,6 +1,6 @@
 (ns bling.browser
   (:require [clojure.string :as string]
-            [fireworks.core :refer [? !? ?> !?>]]
+            ;; [fireworks.core :refer [? !? ?> !?>]]
             [bling.ansi :as ansi]
             [fireworks.color]))
 

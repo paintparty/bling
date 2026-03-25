@@ -1,6 +1,6 @@
 (ns ^:dev/always bling.core
   (:require [clojure.string :as string]
-            [fireworks.core :refer [? !? ?> !?>]]
+            ;; [fireworks.core :refer [? !? ?> !?>]]
             [fireworks.defs]
             [fireworks.util]
             [clojure.walk :as walk]
@@ -898,9 +898,8 @@
                   ;; (?sgr (first vc))
                   ;; (?sgr (second vc))
                   (when (string/index-of s (first vc)) vc))
-                (!? {:print-with println}
-                    (mapv (partial sgr/sgr-highlighting-tags m)
-                          [3 2 1]))))
+                (mapv (partial sgr/sgr-highlighting-tags m)
+                      [3 2 1])))
         (cond
           (map? target-highlight-style)
           [target-highlight-style]

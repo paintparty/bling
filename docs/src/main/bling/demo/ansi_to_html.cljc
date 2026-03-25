@@ -1,7 +1,6 @@
 (ns bling.demo.ansi-to-html
   (:require [clojure.string :as string]
             [clojure.walk :as walk]
-            [fireworks.core :refer [? !? ?> !?>]]
             [bling.util :as util :refer [when->]]
             [bling.browser :as browser]
             [fireworks.color]
@@ -81,8 +80,8 @@
               (inline-style->map {:keywordize-keys? true}))
       x))
 
-(def ^:private html-string-ahref-style
-  "color:inherit;text-decoration:underline;text-underline-offset:3px;")
+;; (def ^:private html-string-ahref-style
+;;   "color:inherit;text-decoration:underline;text-underline-offset:3px;")
 
 
 (defn ^:no-doc browser-dev-console-array->html
@@ -95,13 +94,13 @@
          escaped      (if (false? html-escape?) s (html-escape s))
          escaped      (-> escaped
                           space->nbsp
-                          (sr #"〠_〠AHREF〠_〠([^〠]+)〠_〠"
-                              #(str "<a style=\""
-                                    html-string-ahref-style
-                                    "\" href=\""
-                                    (second %)
-                                    "\">"))
-                          (sr #"〠_〠/A〠_〠" "</a>")
+                          ;; (sr #"〠_〠AHREF〠_〠([^〠]+)〠_〠"
+                          ;;     #(str "<a style=\""
+                          ;;           html-string-ahref-style
+                          ;;           "\" href=\""
+                          ;;           (second %)
+                          ;;           "\">"))
+                          ;; (sr #"〠_〠/A〠_〠" "</a>")
                           (sr #"\n" "<br>"))
          html         (reduce-kv (fn [s i style]
                                    (string/replace-first
@@ -115,23 +114,23 @@
      html)))
 
 
-(defn ^:no-doc with-hyperlinks [args]
-  (walk/postwalk
-   (fn [x]
-     (if-let [href (and (vector? x)
-                        (< 1 (count x))
-                        (some-> x
-                                first
-                                (when-> map?)
-                                :href))]
-       (let [text (second x)]
-         [{:color                 :red
-           :text-decoration-color :blue}
-          (str "〠_〠AHREF〠_〠" href "〠_〠")
-          text
-          "〠_〠/A〠_〠"])
-       x))
-   args))
+;; (defn ^:no-doc with-hyperlinks [args]
+;;   (walk/postwalk
+;;    (fn [x]
+;;      (if-let [href (and (vector? x)
+;;                         (< 1 (count x))
+;;                         (some-> x
+;;                                 first
+;;                                 (when-> map?)
+;;                                 :href))]
+;;        (let [text (second x)]
+;;          [{:color                 :red
+;;            :text-decoration-color :blue}
+;;           (str "〠_〠AHREF〠_〠" href "〠_〠")
+;;           text
+;;           "〠_〠/A〠_〠"])
+;;        x))
+;;    args))
 
 
 (defn ^:no-doc maybe-replace-escaped-html [x]
@@ -150,42 +149,42 @@
   (string/replace s #"&nbsp;" "\u00A0"))
 
 
-(defn ^:public ^:no-doc html-hyperlink
-  "Converts a hyperlink in Bling's hiccup syntax to an escaped string
-   representation which will get converted to html in 
-   `bling.core/ansi-sgr-string->html`. This should only be used in the
-   rare case when the intended output (of `bling.core/*` public fn) is
-   not a system or browser console, but rather html on a webpage.
+;; (defn ^:public ^:no-doc html-hyperlink
+;;   "Converts a hyperlink in Bling's hiccup syntax to an escaped string
+;;    representation which will get converted to html in 
+;;    `bling.core/ansi-sgr-string->html`. This should only be used in the
+;;    rare case when the intended output (of `bling.core/*` public fn) is
+;;    not a system or browser console, but rather html on a webpage.
    
-   Basic example
-   ```clojure
-   (->> (bling.core/bling [{:href \"www.pets.com\"} pets.com])
-        bling.browser/ansi-sgr-string->browser-dev-console-array
-        bling.browser/browser-dev-console-array->html-string)
-   ```"
-  {:desc    "Converts a hyperlink in Bling's hiccup syntax to an escaped string
-             representation which will get converted to html in 
-             `bling.core/ansi-sgr-string->html`. This should only be used in the
-             rare case when the intended output (of `bling.core/*` public fn) is
-             not a system or browser console, but rather html on a webpage."
-   :examples [{:desc  "Basic example"
-               :forms "(->> (bling.core/bling [{:href \"www.pets.com\"} pets.com])
-                      |     bling.browser/ansi-sgr-string->browser-dev-console-array
-                      |     bling.browser/browser-dev-console-array->html-string)"}]}
-  [x]
-  (if-let [href (and (vector? x)
-                     (< 1 (count x))
-                     (some-> x
-                             first
-                             (when-> map?)
-                             :href))]
-    (let [text (second x)]
-      [{:color                 :red
-        :text-decoration-color :blue}
-       (str "〠_〠AHREF〠_〠" href "〠_〠")
-       text
-       "〠_〠/A〠_〠"])
-    x))
+;;    Basic example
+;;    ```clojure
+;;    (->> (bling.core/bling [{:href \"www.pets.com\"} pets.com])
+;;         bling.browser/ansi-sgr-string->browser-dev-console-array
+;;         bling.browser/browser-dev-console-array->html-string)
+;;    ```"
+;;   {:desc    "Converts a hyperlink in Bling's hiccup syntax to an escaped string
+;;              representation which will get converted to html in 
+;;              `bling.core/ansi-sgr-string->html`. This should only be used in the
+;;              rare case when the intended output (of `bling.core/*` public fn) is
+;;              not a system or browser console, but rather html on a webpage."
+;;    :examples [{:desc  "Basic example"
+;;                :forms "(->> (bling.core/bling [{:href \"www.pets.com\"} pets.com])
+;;                       |     bling.browser/ansi-sgr-string->browser-dev-console-array
+;;                       |     bling.browser/browser-dev-console-array->html-string)"}]}
+;;   [x]
+;;   (if-let [href (and (vector? x)
+;;                      (< 1 (count x))
+;;                      (some-> x
+;;                              first
+;;                              (when-> map?)
+;;                              :href))]
+;;     (let [text (second x)]
+;;       [{:color                 :red
+;;         :text-decoration-color :blue}
+;;        (str "〠_〠AHREF〠_〠" href "〠_〠")
+;;        text
+;;        "〠_〠/A〠_〠"])
+;;     x))
 
 
 (defn ^:public ^:no-doc ->html
@@ -193,7 +192,6 @@
   ([s]
    (->html s nil))
   ([s opts]
-   (? :pp s)
    (-> s
        browser/ansi-sgr-string->browser-dev-console-array
        (browser-dev-console-array->html opts))))

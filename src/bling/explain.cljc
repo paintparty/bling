@@ -5,7 +5,7 @@
    [bling.util :as util :refer [when-> when->> insert-at]]
    [clojure.string :as string]
    [clojure.walk :as walk]
-   [fireworks.core :refer [!? ?]]
+  ;;  [fireworks.core :refer [!? ?]]
    [malli.core :as m]
    [malli.util :as mu]
    [malli.error :as me])
@@ -169,13 +169,13 @@
   (let [frm (problem :value-schema/form)]
     (or
      ;; Turns [:enum :foo :bar :baz] => #{:foo :bar :baz}
-     (!? (some-> frm enum-schema->set))
+     (some-> frm enum-schema->set)
 
      ;; Something like :int => int?
-     (!? (:value-schema/sym problem))
+     (:value-schema/sym problem)
 
      ;; Returns the :error/message from schema
-     (!? (some-> problem :value-schema m/properties :error/message))
+     (some-> problem :value-schema m/properties :error/message)
 
      ;; Returns the :error/fn from schema
      (some-> problem :value-schema m/properties :error/fn)
@@ -217,10 +217,10 @@
   (cond
     (or (map? acc) (set? acc))
     (do (swap! p conj [get x])
-        (!? 'map-or-set (get acc x)))
+        (get acc x))
     (coll? acc)
     (do (swap! p conj [nth x])
-        (!? 'coll? (nth acc x)))
+        (nth acc x))
     :else
     acc))
 
@@ -440,14 +440,11 @@
 (defn- narrow-problems
   [{:keys [value schema errors]
     :as   malli-ex-data}]
-  (!? (m/form schema))
-  (!? value)
-  (!? errors)
   (let [[missing-key-errors errors]
         (util/partition-by-pred #(-> % :type (= :malli.core/missing-key)) errors)
 
         missing-key-errors-grouped
-        (!? (group-by #(-> % :in pop) missing-key-errors))
+        (group-by #(-> % :in pop) missing-key-errors)
 
         narrowed-missing-key-errors
         (reduce-kv
@@ -467,25 +464,25 @@
 
         ;; Filter out errors that are ancestors of other errors so that we only report directly erroneous results ala m/humanize
         narrowed-problem-groups*
-        (!? (reduce-kv
-             (fn [vc
-                  {in-path-for-group :in
-                   path-for-group    :path
-                   bad-value         :value}
-                  grouped-errors]
-               (if (ancestor-path? grouped in-path-for-group)
-                 vc
-                 (conj vc
-                       (narrowed-problem-group schema
-                                               bad-value
-                                               in-path-for-group
-                                               path-for-group
-                                               grouped-errors
-                                               value))))
-             []
-             grouped))]
-    (into (!? narrowed-missing-key-errors)
-          (!? narrowed-problem-groups*))))
+        (reduce-kv
+         (fn [vc
+              {in-path-for-group :in
+               path-for-group    :path
+               bad-value         :value}
+              grouped-errors]
+           (if (ancestor-path? grouped in-path-for-group)
+             vc
+             (conj vc
+                   (narrowed-problem-group schema
+                                           bad-value
+                                           in-path-for-group
+                                           path-for-group
+                                           grouped-errors
+                                           value))))
+         []
+         grouped)]
+    (into narrowed-missing-key-errors
+          narrowed-problem-groups*)))
 
 (defn- prune-schema-for-display
   "Truncates the `:registry` entry. If a schema node has an options map with
@@ -697,7 +694,7 @@
                                (:parent-schema/form problem))]
                       (hifi+ junction-form {:print-level           3
                                             :scalar-max-length 44})
-                      (hifi+ (get-satisfaction (!? problem)))))
+                      (hifi+ (get-satisfaction problem))))
                 section-opts))
 
      (when-let [schema-fq-name (:schema/fq-name problem)]
@@ -895,20 +892,20 @@
                     (str " (" num-problems ")")))]
 
          (callout
-          (!? (merge {:type                :error
-                      :theme               :sandwich
-                      :label-theme         :simple
-                      :label               callout-label
-                      :side-label          file-info
-                      :margin-top          callout-margin-block
-                      :margin-bottom       callout-margin-block
-                      ;; :min-width           60
-                      :border-notches?     true
-                      :header-padding-left 3
-                      :padding-left        2
-                      :padding-top         callout-padding-block
-                      :padding-bottom      callout-padding-block}
-                     callout-opts))
+          (merge {:type                :error
+                  :theme               :sandwich
+                  :label-theme         :simple
+                  :label               callout-label
+                  :side-label          file-info
+                  :margin-top          callout-margin-block
+                  :margin-bottom       callout-margin-block
+                  ;; :min-width           60
+                  :border-notches?     true
+                  :header-padding-left 3
+                  :padding-left        2
+                  :padding-top         callout-padding-block
+                  :padding-bottom      callout-padding-block}
+                 callout-opts)
           (apply str (flatten printed-with-numbering)))
 
          problems)
