@@ -22,6 +22,17 @@
                   %)))
        join-lines))
 
+
+(defn ^:public double-truncated-map
+  "Given a map and a key, returns a representation of a map with leading and
+   trailing truncation (ellipsis), showing only the single specified entry. This format is
+   recognized within fireworks.serialize and formatted appropriately."
+  [m k]
+  {(symbol "... ") (symbol "")
+   k               (get m k)
+   (symbol "...")  (symbol "")})
+
+
 (defn- hifi-impl [x user-opts]
   (let [ret
         (->> x
