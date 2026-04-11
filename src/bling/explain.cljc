@@ -692,7 +692,8 @@
                     (if-let [junction-form
                              (when (contains? problem :junction-type)
                                (:parent-schema/form problem))]
-                      (hifi+ junction-form {:print-level           3
+                      (hifi+ junction-form {:print-level       3
+                                            :truncate?         false
                                             :scalar-max-length 44})
                       (hifi+ (get-satisfaction problem))))
                 section-opts))
