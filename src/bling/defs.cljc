@@ -17,14 +17,17 @@
   (into #{} banner-fonts-vec))
 
 (def gutter-char "█")
-(def gutter-char-lower-seven-eighths "▆")
+(def gutter-char-lower-three-quarters "▆")
+(def gutter-char-lower-five-eighths "▅")
+(def gutter-char-lower-half "▄")
+
 
 (def sideline-bold-char-top "┏")
 (def sideline-bold-char "┃")
 (def sideline-bold-char-bottom "┗")
 
 (def internal-warning-border-chars
-  {:gutter        [gutter-char-lower-seven-eighths
+  {:gutter        [gutter-char-lower-three-quarters
                    gutter-char 
                    gutter-char]
    :sideline-bold [sideline-bold-char-top

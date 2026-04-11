@@ -771,7 +771,7 @@
                      :zip    33100
                      :lonlat [61.4858322, 87.34]}}
         opts {:display-schema? false
-              :callout-opts    {:label "My custom label"}}]
+              :callout-opts    {:label (bling [:error "My custom label"])}}]
     (print-explain-malli-example-header
      "The result of bling.core/explain-malli, with :display-schema? set to false, and a custom callout label:"
      v

@@ -1662,6 +1662,7 @@
            header-padding-left
            margin-left
            label
+           label-theme
            theme
            border-style
            border-top-style
@@ -1670,7 +1671,7 @@
            border-style-map
            border-notches?
            side-label]
-    :as m}]
+    :as   m}]
 
   (let [margin-left-str    (char-repeat margin-left
                                         (if (= "gutter" theme)
@@ -1678,7 +1679,7 @@
                                           " "))
         margin-left-str-0  (char-repeat margin-left
                                         (if (= "gutter" theme)
-                                          defs/gutter-char-lower-seven-eighths
+                                          defs/gutter-char-lower-half
                                           " "))
 
         ;; TODO experimental :marquee-tab theme --------------------------------
@@ -1690,11 +1691,11 @@
         ;; ┌──────────────────────────────────┐
         ;; │  Your Header Message goes here   └───────────────
 
-        tab?                 false
+        tab?                (= "tab" label-theme)
         ;; 
         ;; ---------------------------------------------------------------------
 
-        sandwich-theme?      (= theme "sandwich")
+        sandwich-theme?     (= theme "sandwich")
         ;; This currently takes the first line of a multi-line label
         ;; AKA multi-line labels in the marquee label theme are not supported
         ;; Maybe add support in the future? Would have to figure out how to
@@ -1709,10 +1710,10 @@
 
         ;; TODO  header-padding-left is not working
         top-line-str       (bling [bs
-                                   (str (if (= theme "gutter")
+                                   (str (if (or (= theme "gutter") tab?)
                                           margin-left-str-0
                                           margin-left-str)
-                                        (char-repeat header-padding-left " ")
+                                        (when-not tab? (char-repeat header-padding-left " "))
                                         (first-or-last-horizontal-border-char
                                          (assoc m ::marquee-label true)
                                          :top
@@ -1739,6 +1740,9 @@
                                   (= theme "gutter")
                                   " "
 
+                                  tab?
+                                  (vertical-border-char* border-style border-weight)
+
                                   (or (= theme "sideline")
                                       (and sandwich-theme?
                                            border-notches?
@@ -1754,10 +1758,18 @@
                                                  (zero? header-padding-left))
                                     (horizontal-border-char* border-top-style
                                                              border-top-weight)))
+
                                 (char-repeat (dec header-padding-left)
-                                             (if (= theme "gutter") " " hbc))
+                                             (cond
+                                               tab?
+                                               ""
+                                               (= theme "gutter")
+                                               " "
+                                               :else
+                                               hbc))
                                 (cond tab?
-                                      (first-or-last-horizontal-border-char
+                                      ""
+                                      #_(first-or-last-horizontal-border-char
                                        (assoc m ::marquee-label true)
                                        :bottom
                                        :right
@@ -1785,10 +1797,12 @@
                             :bottom
                             :left
                             hbc)
+
                            (and (= theme "sandwich")
                                 (not (string/blank?
                                       sandwich-theme-header-gap-str)))
                            (t-shaped-border-char m :v+r)
+
                            :else
                            vbc)])]
 
@@ -1982,7 +1996,7 @@
           margin-left-str  (bling [border-style-map
                                    (char-repeat margin-left
                                                 (if (= "gutter" theme)
-                                                  defs/gutter-char-lower-seven-eighths
+                                                  defs/gutter-char-lower-three-quarters
                                                   " "))])
           header-with-label  (str (char-repeat padding-left " ") label)
           side-label         (some->> side-label (str " "))]
@@ -2003,7 +2017,7 @@
            side-label]
     :as m}]
   (cond
-    (and label (= label-theme "marquee"))
+    (and label (contains? #{"tab" "marquee"} label-theme))
     (sideline-marquee-label  m)
 
     :else
@@ -2079,7 +2093,7 @@
                           (string/join (repeat (dec label-line-length)
                                                border-bottom-char)))]))))))
 
-;; Minimal callout end ---------------------------------------------------------
+;; Sandwich callout end ---------------------------------------------------------
 
 (defn- sideline-callout
   [{:keys [theme
@@ -2092,15 +2106,15 @@
            padding-left
            margin-left-str]
     :as m}]
-  (let [marquee-label?
+  (let [marquee-or-tab-label?
         (and label
              (-> m :label as-str string/blank? not)
-             (contains? #{"marquee"} label-theme))
+             (contains? #{"marquee" "tab"} label-theme))
 
         label-line
         (cond
           ; label-theme is :marquee
-          marquee-label?
+          marquee-or-tab-label?
           (sideline-marquee-label m)
 
           ; label-theme is :simple
@@ -2551,9 +2565,9 @@
           gutter-str-zero        (bling [border-style-map
                                          (string/join
                                           (cr :margin-left
-                                              defs/gutter-char-lower-seven-eighths))])
+                                              defs/gutter-char-lower-three-quarters))])
           margin-left-str-zero   gutter-str-zero
-          border-left-str-zero   defs/gutter-char-lower-seven-eighths
+          border-left-str-zero   defs/gutter-char-lower-three-quarters
           margin-left-str        (if rainbow?
                                    rainbow-gutter-str
                                    (cr
@@ -2657,7 +2671,17 @@
 
 (defn- callout-opts* [m]
   (let-map
-   [theme              (default-opt m
+   [callout-type       (some-> (:type m) as-str (maybe-> #{"warning" "error" "info"}))
+    colorway           (or (get semantics-by-semantic-type callout-type)
+                           (some-> (:colorway m) as-str))
+    semantic-type      (or (get semantics-by-semantic-type callout-type)
+                           (get semantics-by-semantic-type colorway))
+    warning?           (= callout-type "warning")
+    error?             (= callout-type "error")
+    color              (or (get semantics-by-semantic-type colorway)
+                           (maybe-> colorway all-color-names)
+                           "subtle")
+    theme              (default-opt m
                                     :theme
                                     #{"sideline"
                                       "gutter"
@@ -2665,8 +2689,13 @@
                                       "sandwich"
                                       "boxed"}
                                     "sandwich")
+    label-theme        (default-opt m
+                                    :label-theme
+                                    #{"marquee" "simple" "tab"}
+                                    "simple")
     ; :"┌" and "└" (or similar) chars are use for the top-left and bottom left "corners" on the header and footer
-    border-notches?     (cond (= theme "sideline")
+    border-notches?     (cond (or (= label-theme "tab")
+                                  (= theme "sideline"))
                               true
                               :else
                               (if (false? (m :border-notches?))
@@ -2674,10 +2703,6 @@
                                 true))
 
     sideline-theme?    (contains? #{"sideline"} theme)
-    label-theme        (default-opt m
-                                    :label-theme
-                                    #{"marquee" "simple" "pipe"}
-                                    "simple")
     label-max-length   (spacing m :label-max-length 68)
     label*             (resolve-label m label-max-length)
     label              (if (string? label*)
@@ -2685,9 +2710,16 @@
                              (string/replace #"\n+( +)$" #(second %))
                              (string/replace #"^( +)\n+" #(second %)))
                          label*)
-    side-label           (some-> m
-                                 :side-label
-                                 (maybe-> string?))
+    label              (if (and (not (some-> label
+                                             ansi/sgr-count
+                                             (when-> number?)
+                                             pos?))
+                                (not= color "subtle"))
+                         (bling [{:color color} label])
+                         label)
+    side-label         (some-> m
+                               :side-label
+                               (maybe-> string?))
     padding-block      (spacing m
                                 :padding-block
                                 (if (and (contains? #{"sideline" "gutter"} theme)
@@ -2703,13 +2735,13 @@
                                   "sideline"
                                   2
                                   "gutter"
-                                  2
+                                  3
                                   "sandwich"
                                   (cond
-                                    (= "marquee" label-theme)
-                                    2
+                                    (contains? #{"tab" "marquee"} label-theme)
+                                    3
                                     border-notches?
-                                    2
+                                    3
                                     :else
                                     0)
                                   0))
@@ -2721,16 +2753,6 @@
                          (if (and (= theme "gutter") (zero? n)) 1 n))
     ;; padding-left       (resolve-padding-left m theme label)
     padding-left       (spacing m :padding-left padding-inline)
-    type               (some-> (:type m) as-str (maybe-> #{"warning" "error" "info"}))
-    colorway           (or (get semantics-by-semantic-type type)
-                           (some-> (:colorway m) as-str))
-    semantic-type      (or (get semantics-by-semantic-type type)
-                           (get semantics-by-semantic-type colorway))
-    warning?           (= type "warning")
-    error?             (= type "error")
-    color              (or (get semantics-by-semantic-type colorway)
-                           (maybe-> colorway all-color-names)
-                           "subtle")
     user-label           (:label m)
 
     ;; deprecated
@@ -2866,7 +2888,7 @@
              ;; :label               \"My label\"      ; overrides label assigned by :type
              :side-label             \"My side label\" ; must have a :label if you want a :side-label        
              :theme                  :sideline         ; :sideline :sandwich :gutter
-             :label-theme            :simple           ; :simple :marquee
+             :label-theme            :simple           ; :simple :marquee :tab
              ;; :padding-block       0                 
              ;; :padding-top         0                 
              ;; :padding-bottom      0                 
@@ -2922,7 +2944,7 @@
          will default to `WARNING`, `ERROR`, or `INFO`, respectively.
    
    * **`:label-theme`**
-       - `#{:simple :marquee}`
+       - `#{:simple :marquee :tab}`
        - Optional.
        - Defaults to `:simple`.
        - Name of label flavor.
@@ -3090,7 +3112,7 @@
                       |          ;; :label               \"My label\"      ; overrides label assigned by :type
                       |          :side-label             \"My side label\" ; must have a :label if you want a :side-label        
                       |          :theme                  :sideline         ; :sideline :sandwich :gutter
-                      |          :label-theme            :simple           ; :simple :marquee
+                      |          :label-theme            :simple           ; :simple :marquee :tab
                       |          ;; :padding-block       0                 
                       |          ;; :padding-top         0                 
                       |          ;; :padding-bottom      0                 
@@ -3176,7 +3198,7 @@
                {:optional true
                 :default  :simple
                 :desc     "Name of label flavor."}
-               [:enum :marquee :simple]]
+               [:enum :marquee :simple :tab]]
 
               [:padding-block
                {:optional true

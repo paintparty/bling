@@ -16,6 +16,7 @@
                                  with-floating-label
                                  with-ascii-underline]]
    [fireworks.core :refer [? !? ?> !?> pprint] :rename {pprint fwpp}]
+   [fireworks.pp]
    [fireworks.defs]
    [fireworks.util]
    [fireworks.state]
@@ -40,7 +41,9 @@
    [malli.core :as m]
    [clojure.string :as string]
    ;; [taoensso.tufte :as tufte :refer [p profile]]
-   [lasertag.core :refer [tag-map]]
+   [lasertag.core :refer [tag-map tag]]
+   [lasertag.cached :as cached]
+   [lasertag.fns]
 
    ;; testing sequence of variants / options
    [bling.cycle]
@@ -49,7 +52,109 @@
    [bling.visual-test-impl :refer [random-callouts bling-basics]]
    
    [fireworks.ansi :as ansi]
-   [fireworks.state :as state]))
+   [fireworks.state :as state]
+   [me.flowthing.pp :as pp]))
+
+
+#_(doseq [sl ["browser.cljs/go:11:11" nil]]
+ (doseq [lt [:marquee :tab :simple]]
+   (println "\n" lt )
+   (doseq [t [:sideline :sandwhich :gutter]]
+     (callout {:type            :error 
+               :theme           t
+               :label-theme     lt
+               :side-label      sl
+               :border-shape    :round
+               :border-notches? false
+               :label           "Malli Schema Error"}
+              (bling [:p "Dude that's cool"])))))
+
+
+
+;; (!? {:find {:path  []
+;;            :class :highlight-error}}
+;;  {:a 1 :b 2})
+
+
+;; (!? {:find {:pred  #(= % {:a 1 :b 2})
+;;            :class :highlight-error}}
+;;  {:a 1 :b 2})
+
+
+;; (? {:find {:path ["a"] :class :highlight-error}} {"a" 1 :b 2})
+
+
+(defrecord QuotedCall [qx x])
+;; (? QuotedCall)
+
+(defn real-number? [n]
+  (and (number? n)
+       (not (infinite? n))
+       (not (NaN? n))))
+
+(defn whole-number? [n]
+  (and (real-number? n)
+       (zero? (mod n 1))))
+
+(defn fractional-number? [n]
+  (and (real-number? n)
+       (not (whole-number? n))))
+
+;; (? (lasertag.core/tag-map ##Inf))
+
+(def my-var :k)
+
+
+#_'(or (ifn? v)
+      #?(:clj
+         (or (instance? java.util.concurrent.Callable v)
+             (instance? Runnable v))))
+#?(:cljs
+   ()
+   :clj
+   (do #_(? cached/freqs)
+    (defmulti different-behavior (fn [x] (:x-type x)))
+       ;;  (? (fn? (java.util.ArrayList. (range 6))))
+       ;;  (? (tag-map java.util.HashMap))
+       ;;  (? :pp (tag-map :kw))
+       ;;  (? :pp (tag-map (->QuotedCall "foo" "bar")))
+       ;;  (? (->QuotedCall "foo" "bar"))
+       ;;  (? (type nil))
+       ;;  (? (get cached/by-class nil))
+       ;;  (? (lasertag.core/cljc-coll-type (transient [1 2 3])))
+       ;;  (? :pp (tag-map (Error. "hi")))
+       ;;  (? :pp (tag-map 2/3))
+        ;; (? (type (with-meta {:a 1} {:type 2})))
+        ;; (? (defmulti different-behavior (fn [x] (:x-type x))))
+      ;;  (? (instance? clojure.lang.IDeref #'my-var))
+      ;;  (? (get cached/by-class java.util.concurrent.Future))
+      ;;  (? (java.lang.AssertionError. "foo"))
+       ;;  (? (get cached/by-class clojure.lang.Var))
+       ;;  (? (get cached/by-class clojure.lang.ReaderConditional))
+       ;;  (? :pp (sequential? [1 2 3 4]))
+       ;;  (? :pp (tag-map [1 2 3 4]))
+       ;;  (? :pp (tag-map (range 3)))
+       ;;  (? :+ (select-keys cached/by-class
+       ;;                    [
+       ;;                    clojure.lang.PersistentQueue
+       
+       ;;                     ]
+       ;;                    ))
+       ;;  (? :+ {:find {:pred #(-> % :tag (= :temporal))}} cached/by-class)
+       ;;  (? :+ {:find {:pred #(= % [1])}} [[1] [3 4 5]])
+       ;;  (? :+ {:find {:pred #(= % [1 2 3])}} [1 2 3])
+       ;;  (? [1 2 3])
+       ;;  (? :+
+       ;;     (filter (fn [[_ v]]
+       ;;               (-> v :all-tags (contains? :transient)))
+       ;;             cached/by-class))
+       ;;  (? :+ (java.sql.Timestamp. (System/currentTimeMillis)))
+       ;;  (? (-> {:a 1} first vector?))
+       #_(? (int? 12N))
+       #_(? (tag-map (map inc [1 2 3])))))
+
+
+#_(? cached/numbers)
 
 
 #_(println
