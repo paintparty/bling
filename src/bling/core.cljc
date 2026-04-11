@@ -3,6 +3,7 @@
             ;; [fireworks.core :refer [? !? ?> !?>]]
             [fireworks.defs]
             [fireworks.util]
+            [fireworks.color]
             [clojure.walk :as walk]
             [bling.ansi :as ansi :refer [strlen-minus-ansi-sgr]]
             [bling.browser :as browser]
@@ -484,18 +485,29 @@
              {}
              m))
 
-;; ansi-color?
 (defn- convert-color [m k v]
   (assoc m
          k
          (if (contains? #{:background-color :color} k)
            (cond
+             ;; TODO - if color-level 2, use rgb value
+             (and (string? v)
+                  (re-find #"^#([A-Fa-f0-9]{8}|[A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$"
+                           v))
+             {:sgr (fireworks.color/hexa->x256 v)}
+
              (nameable? v)
              (get (:all color-codes)
                   (as-str v))
 
              (and (int? v) (<= 0 v 257))
-             {:sgr v})
+             {:sgr v}
+
+             ;; TODO - if color-level 2, use rgb value
+             (and (vector? v)
+                  (= (count v) 3)
+                  (every? int? v))
+             {:sgr (apply fireworks.color/rgb->x256 v)})
            v)))
 
 (defn- et-vec? [x]
