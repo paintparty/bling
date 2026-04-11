@@ -1,4 +1,4 @@
-(defproject io.github.paintparty/bling "0.10.0"
+(defproject io.github.paintparty/bling "0.11.0"
   :description "Hi-fidelity console printing"
   :url "https://github.com/paintparty/bling"
   :license {:name "MIT"}
