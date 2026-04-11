@@ -555,8 +555,8 @@ An example of a `:boxed` callout. If you don't set the `:width`, it will occupy 
 is perfect for creating your own custom error or warning messages. 
 
 Here is an example of creating a custom callout for an error message.
-You must provide the relevant `:file`, `:line`, `:column`, and `:form` values. You can use `bling.core/with-ascii-underline` to decorate a specific
-part of the form.
+You must provide the relevant `:file`, `:line`, `:column`, and `:form` values. You can use **`bling.core/with-ascii-underline`** to decorate a specific
+part of the form, or **`bling.core/with-floating-label`** to annotate a particular line (see examples images [here](https://github.com/paintparty/bling/tree/main?tab=readme-ov-file#usage-with-malli)) 
 
 ```Clojure
 (require '[bling.core :refer [callout point-of-interest with-ascii-underline]])
@@ -740,7 +740,7 @@ Check out <a href="https://github.com/paintparty/fireworks?tab=readme-ov-file#th
 
 ## Usage with Malli
 
-Bling offers `bling.explain/explain-malli` to present [Malli](https://github.com/metosin/malli) schema validation errors.
+Bling offers **`bling.explain/explain-malli`** to present [Malli](https://github.com/metosin/malli) schema validation errors.
 
 [View API for `explain-malli`](https://github.com/paintparty/bling/blob/main/API.md#bling.explain-malli/explain-malli)
 
@@ -908,10 +908,7 @@ Below are the example calls that render the screenshot at the the top of this se
 
 
 > [!NOTE]
-Figlet banners only work in terminal context (JVM Clojure or Node.js ClojureScript).
-If you want a simple banner in a browser dev console, you can do the following:
-```Clojure
-(banner {:text "Hello" :browser-style "font-color:red;font-size:24px"})
+Figlet banners have only been tested in terminal context (JVM Clojure or Node.js ClojureScript).
 ```
 <br>
 

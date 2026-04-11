@@ -1,10 +1,6 @@
 
 (ns bling.demo.browser
   (:require
-   [clojure.walk :as walk]
-   [bling.core :refer [bling print-bling point-of-interest ?sgr]]
-   [bling.util :refer [when->]]
-   [bling.hifi :refer [hifi]]
   ;;  [bling.banner :refer [banner]]
   ;;  [bling.fonts.miniwi :refer [miniwi]]
   ;;  [bling.fonts.ansi-shadow :refer [ansi-shadow]]
@@ -14,23 +10,31 @@
   ;;  [bling.fonts.rounded :refer [rounded]]
   ;;  [bling.fonts.isometric-1 :refer [isometric-1]]
   ;;  [bling.hifi :refer [print-hifi hifi]]
-   [clojure.string :as string]
   ;;  [clojure.math :as math]
-   [domo.core :as domo]
   ;;  [fireworks.core :refer [? !? ?> !?>]]
   ;;  [fireworks.defs]
-   [reagent.core :as r]
-   [reagent.dom :as rdom]
+   [reagent.dom.client :as rdomc]
    [reagent.ratom]
+  ;;  ["ansi-to-html" :as Convert]
+  ;;  ["ansi_up" :refer [AnsiUp]]
+
+   ;; ------------------------------
+
+   [reagent.core :as r]
+   [clojure.walk :as walk]
+   [bling.core :refer [bling print-bling point-of-interest ?sgr]]
+   [bling.util :refer [when->]]
+   [bling.hifi :refer [hifi]]
+   [bling.browser :as browser]
+   [bling.demo.ansi-to-html :as ansi-to-html]
    [zprint.core :as zp]
    [goog.string]
    [me.flowthing.pp :as pp :refer [pprint]]
-  ;;  ["ansi-to-html" :as Convert]
-  ;;  ["ansi_up" :refer [AnsiUp]]
-   [bling.browser :as browser]
-   [bling.demo.ansi-to-html :as ansi-to-html]
-   )
-  (:require-macros [bling.demo.browser :refer [example-with-source]]))
+   [domo.core :as domo]
+   [clojure.string :as string]
+
+   ))
+
 
 (def sample-side-label-text
   "my.ns.core:44:2")
@@ -293,6 +297,7 @@
                                          ansi-to-html/->html
                                          r/unsafe-html)})))
 
+
 (defn main-view []
 
   ;; #_(println
@@ -417,6 +422,8 @@
      
   ;;    ]
 
+
+  #_[:div "HI"]
   [:<> 
      [:nav.absolute-block-start-inside.flex-row-center
       [:div.inner.flex-row-space-between
@@ -635,9 +642,11 @@
            :fn-force-nl       #{:flow}
            :fn-map            {:default :flow}})]]]]])
 
+(defonce root (rdomc/create-root (.getElementById js/document "app")))
+
 (defn ^:dev/after-load start []
   (js/console.clear)
-  (rdom/render [main-view] (.getElementById js/document "app")))
+  (rdomc/render root [main-view]))
 
 (defn init []
   ;; init is called ONCE when the page loads
