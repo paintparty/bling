@@ -1,6 +1,6 @@
 (ns bling.hifi
   (:require [fireworks.core]
-            ;; [fireworks.core :refer [? !? ?> !?>]]
+            [fireworks.core :refer [? !? ?> !?>]]
             [clojure.string :as string]
             [bling.ansi]
             [bling.util :refer [join-lines]]
@@ -34,7 +34,11 @@
 
 
 (defn- hifi-impl [x user-opts]
-  (let [ret
+  (when (not= x (symbol "_")) ;; <- cuts down noise from bling.sgr/sgr-highlighting-tags
+    #_(when (= x {"foo" 2})
+      (? user-opts) ))
+  (let [
+        ret
         (->> x
              (fireworks.core/_p2
               (merge user-opts
