@@ -2710,10 +2710,8 @@
                              (string/replace #"\n+( +)$" #(second %))
                              (string/replace #"^( +)\n+" #(second %)))
                          label*)
-    label              (if (and (not (some-> label
-                                             ansi/sgr-count
-                                             (when-> number?)
-                                             pos?))
+    ;; This syncs the label to the color of the callout
+    label              (if (and (not (ansi/sgr-count label))
                                 (not= color "subtle"))
                          (bling [{:color color} label])
                          label)
