@@ -1,6 +1,6 @@
 (ns ^:dev/always bling.core
   (:require [clojure.string :as string]
-            ;; [fireworks.core :refer [? !? ?> !?>]]
+            [fireworks.core :refer [? !? ?> !?>]]
             [fireworks.defs]
             [fireworks.util]
             [fireworks.color]
@@ -199,6 +199,7 @@
    "info"     "accent"
    "accent"   "accent"
    "subtle"   "subtle"
+   "dim"      "dim"
    "neutral"  "neutral"})
 
 ;; ansi-color
@@ -302,9 +303,12 @@
         italic          (when (and (not disable-italics?)
                                    (contains? #{"italic" :italic} font-style))
                           "3")
-        weight          (when (and (not disable-font-weights?)
-                                   (contains? #{"bold" :bold} font-weight))
-                          "1")
+        weight          (when (not disable-font-weights?)
+                          (cond 
+                            (contains? #{"bold" :bold} font-weight)
+                            "1"
+                            (contains? #{"dim" :dim} font-weight)
+                            "2"))
         text-decoration (sgr-text-decoration m)
         ret             (str "\033["
                              (string/join ";"
@@ -2751,7 +2755,7 @@
                          (if (and (= theme "gutter") (zero? n)) 1 n))
     ;; padding-left       (resolve-padding-left m theme label)
     padding-left       (spacing m :padding-left padding-inline)
-    user-label           (:label m)
+    user-label         (:label m)
 
     ;; deprecated
     border-block-length  (let [bbl (:border-block-length m)]
@@ -2917,7 +2921,7 @@
    Options:
    
    * **`:colorway`**
-       - `#{\"neutral\" \"magenta\" \"warning\" \"positive\" :neutral \"info\" :green :positive \"negative\" :negative \"error\" \"subtle\" :warning \"green\" :info :error :magenta :subtle}`
+       - `#{\"neutral\" \"magenta\" \"warning\" \"positive\" :neutral \"info\" :green :positive \"negative\" :negative \"error\" \"subtle\" :warning \"green\" :info :error :magenta :subtle :dim \"dim\"}`
        - Optional.
        - The color of the border, or gutter, depending on the value of `:theme`.
    
@@ -3415,6 +3419,7 @@
   ([use-color-string? acc s]
    (let [kvs (case s
                "bold"             [[:font-weight "bold"]]
+               "dim"              [[:font-weight "dim"]]
                "italic"           [[:font-style "italic"]]
                "underline"        [[:text-decoration "underline"]]
                "solid-underline"  [[:text-decoration "underline"]]
