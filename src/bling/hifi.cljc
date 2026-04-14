@@ -34,7 +34,7 @@
 
 
 (defn- hifi-impl [x user-opts]
-  (when (not= x (symbol "_")) ;; <- cuts down noise from bling.sgr/sgr-highlighting-tags
+  #_(when (not= x (symbol "_")) ;; <- cuts down noise from bling.sgr/sgr-highlighting-tags
     #_(when (= x {"foo" 2})
       (? user-opts) ))
   (let [

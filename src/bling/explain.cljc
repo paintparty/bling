@@ -5,7 +5,7 @@
    [bling.util :as util :refer [when-> when->> insert-at]]
    [clojure.string :as string]
    [clojure.walk :as walk]
-  ;;  [fireworks.core :refer [!? ?]]
+   [fireworks.core :refer [!? ?]]
    [malli.core :as m]
    [malli.util :as mu]
    [malli.error :as me])
@@ -126,7 +126,7 @@
                                 (if (and omit-section-labels
                                          (contains? omit-section-labels label))
                                   nil
-                                  label))]
+                                  (bling [:subtle.italic label])))]
     (vec
      (remove nil?
              [(when section-break? section-break)
@@ -169,7 +169,8 @@
   (let [frm (problem :value-schema/form)]
     (or
      ;; Turns [:enum :foo :bar :baz] => #{:foo :bar :baz}
-     (some-> frm enum-schema->set)
+    ;; Leave this off for now
+    ;;  (some-> frm enum-schema->set)
 
      ;; Something like :int => int?
      (:value-schema/sym problem)
@@ -558,6 +559,7 @@
 
 (defn- highlighted-problem-section-body
   [{:keys [select-keys-in-problem-path?
+           fallbacks-by-entry  
            missing-keys?
            problem
            hifi+
@@ -573,7 +575,11 @@
                               (let [trimmed (select-keys v path)]
                                 (when (seq trimmed) trimmed)))
         find-opts           (poi-diagram-find-opts path problem narrowed-map)
+
+        ;; This is where the form in the poi-diagram gets hifi'd
+
         formatted-form      (hifi+ v {:margin-inline-start 0
+                                      :scalar-max-length   66
                                       :find                find-opts})
         highlight-loc       (bling/highlighted-location formatted-form
                                                         :error-highlight)
@@ -600,21 +606,38 @@
 
                               (:bad-map-entry-value? problem)
                               (let [k (-> problem :in last)]
-                                (bling [:p "Invalid entry for "
-                                        [:bold (hifi k
-                                                     {:find {:pred #(= % k)}})]]
-                                       #_"\n"))
+                                (bling "Invalid entry for "
+                                       [:bold (hifi k
+                                                    {:find {:pred #(= % k)}})]
+                                       (when-let [v (some-> fallbacks-by-entry
+                                                            (get k)
+                                                            (hifi {:bold? true}))]
+                                         (str "\n\n"
+                                              "The default value of "
+                                              v
+                                              " will be used instead."))))
 
                               (:bad-map-entry-key? problem)
                               (let [k (-> problem :in last)]
                                 (bling "Invalid map key" #_"\n\n\n")))]
-    (str (some-> problem-summary (str "\n\n"))
-         poi-diagram)))
+
+    (bling problem-summary
+           "\n\n" 
+           poi-diagram)))
+
 
 (defn- printed*
   [{:keys [highlighted-problem-section-label
+           conclusion-section-label
+           conclusion-section-body
            preamble-section-label
            preamble-section-body
+           usage-examples-label
+           usage-examples-body
+           fallback-value-desc
+           fallback-value
+           docs-section-label
+           docs-section-body
            omit-sections
            section-opts
            indentation
@@ -689,19 +712,52 @@
                 (or (when-not (-> problem ::display-schema?)
                       (indented-string indentation
                                        (:composite-error-message problem)))
-                    (if-let [junction-form
-                             (when (contains? problem :junction-type)
-                               (:parent-schema/form problem))]
-                      (hifi+ junction-form {:print-level       3
-                                            :truncate?         false
-                                            :scalar-max-length 44})
-                      (hifi+ (get-satisfaction problem))))
+                    (let [hifi-printing-opts
+                          {:print-level       3
+                           :truncate?         false
+                           :scalar-max-length 44
+                           :find              {:pred  #(= % :enum)
+                                               :style {:color :blue}}}]
+                      (if-let [junction-form
+                               (when (contains? problem :junction-type)
+                                 (:parent-schema/form problem))]
+                        (hifi+ junction-form 
+                               hifi-printing-opts)
+                        (hifi+ (get-satisfaction problem)
+                               hifi-printing-opts))))
                 section-opts))
 
      (when-let [schema-fq-name (:schema/fq-name problem)]
        (section "Fails schema:"
                 (indented-string indentation (hifi schema-fq-name))
-                section-opts)))))
+                section-opts))
+
+     (when usage-examples-body
+       (section (or usage-examples-label "Usage examples:")
+                (indented-string indentation usage-examples-body)
+                section-opts))
+
+     (when conclusion-section-body
+       (section (or conclusion-section-label
+                    "Note:")
+                (indented-string indentation conclusion-section-body)
+                section-opts))
+
+     (when fallback-value
+       (section "Fallback value:"
+                (indented-string indentation
+                                 (str (hifi fallback-value)
+                                      "\n"
+                                      fallback-value-desc))
+                section-opts))
+     
+     (when docs-section-body
+       (section (or docs-section-label
+                    "Docs:")
+                (indented-string indentation docs-section-body)
+                section-opts))
+     
+     )))
 
 (defn- maybe-interleaved-with-section-separators
   [printed]
@@ -710,7 +766,7 @@
      printed
      (-> (for [i (range (count printed))]
            ["\n\n\n"
-            (bling [:subtle.italic
+            (bling [:red.italic
                     (str "---- Error #"
                          (+ i 2)
                          " -------------------------------------")])
@@ -765,26 +821,19 @@
    (explain-malli* schema v nil))
   ([schema
     v
-    {:keys [highlighted-problem-section-label
-            select-keys-in-problem-path?
-            section-body-indentation
-            preamble-section-label
-            preamble-section-body
+    {:keys [section-body-indentation
             display-explain-data?
             section-label-style
             omit-section-labels
             display-schema?
             success-message
+            return-boolean?
             file-info-str
             omit-sections
             callout-opts
             hifi-opts
-            spacing
-            column
-            file
-            line]
-     :or   {success-message :bling.explain/explain-malli-success
-            section-label-style {:font-style :italic :color :subtle}}
+            spacing]
+     :or   {section-label-style {:font-style :italic :color :subtle}}
      :as   opts}]
 
    (let [{problems     :errors
@@ -885,7 +934,7 @@
 
              callout-margin-block
              #?(:cljs 0 :clj 1) ;; <- TODO cljs default of 0 should be isolated to browser
-
+             
              callout-label
              (str "Malli Schema Error"
                   (when multiple-problems? "s")
@@ -895,49 +944,50 @@
          (callout
           (merge {:type                :error
                   :theme               :sandwich
-                  :label-theme         :simple
+                  :border-shape        :round
+                  :label-theme         :tab
                   :label               callout-label
                   :side-label          file-info
                   :margin-top          callout-margin-block
                   :margin-bottom       callout-margin-block
                   ;; :min-width           60
                   :border-notches?     true
-                  :header-padding-left 3
-                  :padding-left        2
                   :padding-top         callout-padding-block
                   :padding-bottom      callout-padding-block}
                  callout-opts)
           (apply str (flatten printed-with-numbering)))
 
-         problems)
+         (if return-boolean?
+           false
+           problems))
 
        ;; If validation was successful, and user supplied a success message
-       (when-not (nil? success-message)
-         (case success-message
+       (do (when-not (nil? success-message)
+             (case success-message
+               ::explain-malli-success-verbose
+               (callout (merge {:colorway       :positive
+                                :label-theme    :simple
+                                :padding-top    1
+                                :padding-bottom 1}
+                               callout-opts
+                               {:label "Malli Schema Validation Success"})
+                        (bling (when file-info-str
+                                 [:p [:italic "Source:"]])
+                               (when file-info-str
+                                 [:p
+                                  indentation-str
+                                  file-info-str])
+                               [:p [:italic "Value:"]]
+                               [:p (hifi v {:margin-inline-start 2})]
+                               [:p [:italic "Schema:"]]
+                               (hifi schema {:margin-inline-start 2})))
 
-           ::explain-malli-success-verbose
-           (callout (merge {:colorway       :positive
-                            :label-theme    :simple
-                            :padding-top    1
-                            :padding-bottom 1}
-                           callout-opts
-                           {:label "Malli Schema Validation Success"})
-                    (bling (when file-info-str
-                             [:p [:italic "Source:"]])
-                           (when file-info-str
-                             [:p
-                              indentation-str
-                              file-info-str])
-                           [:p [:italic "Value:"]]
-                           [:p (hifi v {:margin-inline-start 2})]
-                           [:p [:italic "Schema:"]]
-                           (hifi schema {:margin-inline-start 2})))
-
-           ::explain-malli-success-simple
-           (println (str "Malli schema validation success"
-                         (when file-info-str
-                           (str " @ " file-info-str))))
-           (println success-message)))))))
+               ::explain-malli-success-simple
+               (println (str "Malli schema validation success"
+                             (when file-info-str
+                               (str " @ " file-info-str))))
+               (println success-message)))
+           (when return-boolean? true))))))
 
 (defmacro ^:public explain-malli
   "Prints a Malli validation error callout block via `bling.core/callout`.
@@ -1120,7 +1170,11 @@
              [:success-message
               {:optional true
                :desc     "The message to display if value passes schema validation"}
-              :string]]}
+              [:or 
+               [:enum
+                :bling.explain/explain-malli-success-verbose
+                :bling.explain/explain-malli-success-simple]
+               :string]]]}
 
   ([schema v]
    (let [{:keys [file line column]} (meta &form)]
