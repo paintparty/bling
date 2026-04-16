@@ -144,3 +144,59 @@
 (defn insert-at [vc i elem]
   (into (conj (subvec vc 0 i) elem)
         (subvec vc i)))
+
+(defn flatten-map-keys [m]
+  (persistent!
+   (reduce-kv (fn [acc k v]
+                (if (coll? k)
+                  (reduce #(assoc! %1 %2 v) acc k)
+                  (assoc! acc k v)))
+              (transient {})
+              m)))
+
+
+
+;; Emoji utils -----------------------------------------------------------------
+
+
+#?(:clj
+   (def emoji-re
+     ;; Clojure / Babashka
+     ;; Using explicit hex ranges prevents PatternSyntaxExceptions on older JDKs.
+     (let [flags "(?:[\\x{1F1E6}-\\x{1F1FF}]{2})"                 ;; Regional Indicators (Flags)
+           base  "[\\x{2300}-\\x{23FF}\\x{2600}-\\x{27BF}\\x{1F300}-\\x{1FAFF}]" ;; Core Emojis, Symbols, Dingbats
+           vs16  "[\\x{FE0F}]?"                                   ;; Variation Selector 16
+           mods  "[\\x{1F3FB}-\\x{1F3FF}]?"                       ;; Skin tones
+           zwj   "\\x{200D}"                                      ;; Zero Width Joiner
+           cluster (str base vs16 mods "(?:" zwj base vs16 mods ")*")]
+       (re-pattern (str flags "|" cluster))))
+
+   :cljs
+   (def emoji-re
+     ;; ClojureScript, js regex
+     (let [flags "(?:[\\u{1F1E6}-\\u{1F1FF}]{2})"
+           base  "[\\u{2300}-\\u{23FF}\\u{2600}-\\u{27BF}\\u{1F300}-\\u{1FAFF}]"
+           vs16  "[\\uFE0F]?"
+           mods  "[\\u{1F3FB}-\\u{1F3FF}]?"
+           zwj   "\\u200D"
+           cluster (str base vs16 mods "(?:" zwj base vs16 mods ")*")]
+       (js/RegExp. (str flags "|" cluster) "ug"))))
+
+
+(defn contains-emoji?
+  "Checks if a string contains at least one emoji or emoji cluster."
+  [s]
+  (boolean (re-find emoji-re (str s))))
+
+(defn extract-emojis
+  "Returns a sequence of all emojis found in the string.
+   Properly groups ZWJ clusters (👨‍👩‍👧), skin tones (👍🏽), and flags (🇺🇸)."
+  [s]
+  #?(:clj  (re-seq emoji-re (str s))
+     ;; In CLJS, re-seq mapped with first works cleanly over the "ug" RegExp
+     :cljs (map first (re-seq emoji-re (str s)))))
+
+(defn remove-emojis
+  "Strips all emojis and complex grapheme clusters from the string."
+  [s]
+  (string/replace (str s) emoji-re ""))
