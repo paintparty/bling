@@ -4,14 +4,15 @@
   :license {:name "MIT"}
   :source-paths ["src"
                  ;; for local dev of fireworks and lasertag deps
-                 "../lasertag/src"
-                 "../fireworks/src"
+                ;;  "../lasertag/src"
+                ;;  "../fireworks/src"
                  ]
   :dependencies [[org.clojure/clojure "1.11.1"]
                  [io.github.paintparty/fireworks "0.20.0"]
                  [metosin/malli "0.20.0"]
                  [me.flowthing/pp "2026-03-01.107"]
-                 ]
+                 [com.github.danlentz/clj-figlet "0.1.4"]]
+
   :repl-options {:init-ns bling.core}
   :deploy-repositories [["clojars" {:url           "https://clojars.org/repo"
                                     :sign-releases false}]])

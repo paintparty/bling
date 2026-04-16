@@ -2,11 +2,12 @@
   (:require
    [bling.macros :refer [keyed start-dbg! stop-dbg! nth-not-found ?]]
    [fireworks.pp]
-   [bling.util :as util :refer [sjr maybe->]]
+   [bling.util :as util :refer [sjr when->]]
    [bling.defs :as defs]
    [bling.hifi]
    [clojure.string :as string]
    [bling.fonts.ansi-shadow :refer [ansi-shadow]]
+   #?(:clj [clj-figlet.core])
    #?(:cljs [bling.js-env :refer [node?]])))
 
 ;; Change to true for dev, for local debugging inside functions
@@ -169,6 +170,19 @@
                              "m")]
 
     ret))
+
+(def sgr-codes-by-color
+  {:red        196
+   :orange     172
+   :yellow     178
+   :olive      106
+   :green      76
+   :blue       75
+   :purple     141
+   :magenta    171
+   :gray       247
+   :black      16
+   :white      231})
 
 (defn- trim-coll-sides [coll n]
   (reduce
@@ -699,7 +713,7 @@
 
 (defn- split-css-gradient-str [s]
   (some-> s
-          (maybe-> string?)
+          (when-> string?)
           (string/split #" ")))
 
 (def ^:private shift-min 0)
@@ -717,7 +731,7 @@
 
 (defn- valid-gradient-pairs?*
   [vc]
-  (boolean (some->> (maybe-> vc vector?)
+  (boolean (some->> (when-> vc vector?)
                     (into #{})
                     (contains? gradient-pairs-as-keywords-set))))
 
@@ -728,15 +742,53 @@
       (if (< x 0) shift-min shift-max)
       0)))
 
+
+(defn- colorized [s m]
+  (str (m->sgr m)
+       s
+       "\033[0;m"))
+
+(defn- maybe-colorize-foreground [s color]
+  (or (some->> color
+               (get sgr-codes-by-color)
+               (hash-map :color)
+               (colorized s))
+      s))
+
+(defn- atomic-filtered
+  "Maps through all the chars in the formatted banner and atomically styles
+  sub-chars if targeted."
+  [s atomic-filter opts]
+  (some->> s
+           (mapv 
+            (fn [c]
+              (if-let [{:keys [color replacement font-weight background-color]}
+                       (some-> atomic-filter (get (str c)))]
+                (str (colorized
+                      (or (some->
+                           replacement
+                           (when-> #(not (util/contains-emoji? %))))
+                          c)
+                      {:color            (get sgr-codes-by-color color)
+                       ;; :font-weight      font-weight ; <- not working yet
+                       :background-color (get sgr-codes-by-color
+                                              background-color)})
+                     
+                     "\033[0;m")
+                (maybe-colorize-foreground c (:color opts)))))
+           string/join))
+
 (defn- banner*
   [{:keys [text
-           letter-spacing
+           formatted-text
+           contrast
            font-weight
-           gradient-direction
+           atomic-filter
+           letter-spacing
            gradient-colors
            gradient-shift
-           contrast
            :dev/print-font!
+           gradient-direction
            display-missing-chars?]
     :as opts
     :or {display-missing-chars? true
@@ -747,6 +799,10 @@
          font-weight            :normal}
     ;; user-font-kw :font
     user-font :font}]
+;;  #?(:cljs
+;;     ()
+;;     :clj
+;;     (println (clj-figlet.core/render "Doh" "Hello")))
 
   ;; TODO - All these validations should happen in malli
   (try
@@ -762,20 +818,22 @@
           ;; default-font              (get bling.fonts/fonts-by-kw default-font-kw)
           ;; font                      (or resolved-user-font default-font)
           ;; -------------------------------------------------------------------
-
+          
           ;; Use these if we are forcing user to explicitly require fonts ------
           default-font              ansi-shadow
-          valid-font?               (valid-font?* user-font)
+          dispatching-to-clj-figlet? (string? user-font)
+          valid-font?               (or (string? user-font)
+                                        (valid-font?* user-font))
           font                      (if valid-font? user-font default-font)
           ;; -------------------------------------------------------------------
-
+          
           no-gradient?              (or (nil? gradient-colors)
                                         defs/no-color?)
           gradient-colors*          gradient-colors
           gradient-shift*           gradient-shift
           gradient-direction*       gradient-direction
           gradient-colors           (some-> gradient-colors
-                                            (maybe-> valid-gradient-pairs?*))
+                                            (when-> valid-gradient-pairs?*))
           gradient-desired?         (not no-gradient?)
           valid-gradient-pairs?     (boolean (if no-gradient?
                                                true
@@ -882,7 +940,7 @@
       ;;                            default-font-kw
       ;;                            " will be used")]}))
       ;; -----------------------------------------------------------------------
-
+      
       ;; Use these if we are forcing user to explicitly require fonts ----------
       (when-not valid-font?
         (invalid-banner-opt-warning!
@@ -899,26 +957,31 @@
                                  (:font-sym default-font)
                                  " will be used")]}))
       ;; -----------------------------------------------------------------------
-
+      
       ;; Use this if user can choose fonts by keyword --------------------------
       ;; (when (and valid-font-kw? valid-text?)
       ;; -----------------------------------------------------------------------
-
+      
       ;; Use these if we are forcing user to explicitly require fonts ----------
       (when (and valid-font? valid-text?)
         ;; -----------------------------------------------------------------------
-
         (let [opts
               (if valid-gradient-shift?
                 opts
                 (assoc opts :gradient-shift 0))
 
-              {:keys [char-height]}
+              ;; The char-height of the FigFont
+              {
+               :keys [char-height]}
               font
 
+              ;; A vector of vectors used to composed the Figlet Banner.
+              ;; Each vector is a FigCharacter (lines).
               text-str-chars
-              (banner-str-chars font char-height text display-missing-chars?)
+              (when-not dispatching-to-clj-figlet?
+                (banner-str-chars font char-height text display-missing-chars?))
 
+              ;; Make a gradient map, if we doing a gradient
               {:keys [gradient-range vertical-gradient? horizontal-gradient?]}
               (when will-render-gradient?
                 (gradient-map gradient-colors
@@ -927,41 +990,72 @@
                               contrast))
 
               first-char
-              (if vertical-gradient?
-                (sgr-gradient char-height
-                              (first text-str-chars)
-                              gradient-range
-                              font-weight)
-                (first text-str-chars))
+              (when-not dispatching-to-clj-figlet?
+                (if vertical-gradient?
+                  (sgr-gradient char-height
+                                (first text-str-chars)
+                                gradient-range
+                                font-weight)
+                  (first text-str-chars)))
 
               rest-chars
-              (if vertical-gradient?
-                (mapv #(sgr-gradient char-height
-                                     %
-                                     gradient-range
-                                     font-weight)
-                      (rest text-str-chars))
-                (rest text-str-chars))
+              (when-not dispatching-to-clj-figlet?
+                (if vertical-gradient?
+                  (mapv #(sgr-gradient char-height
+                                       %
+                                       gradient-range
+                                       font-weight)
+                        (rest text-str-chars))
+                  (rest text-str-chars)))
 
+              ;; This makes the banner, as a seq of lines
               composed
-              (composed letter-spacing rest-chars first-char)
+              (if formatted-text
+                ;; The user has supplied pre-formatted figlet banner
+                (string/split formatted-text #"\n")
+                ;; The user has supplied text, which was composed into the
+                ;; banner by bling.banner/banner
+                (let [composed (if dispatching-to-clj-figlet?
+                                 #?(:cljs
+                                    nil
+                                    :clj
+                                    (string/split
+                                     (clj-figlet.core/render user-font text)
+                                     #"\n"))
+                                 (composed letter-spacing rest-chars first-char))]
+                  (if horizontal-gradient?
+                    (horizontal-gradient composed gradient-range opts)
+                    composed)))
 
-              composed
-              (if horizontal-gradient?
-                (horizontal-gradient composed gradient-range opts)
-                composed)
-
+              ;; Resolve the margins - a map e.g {:margin-left 3 :margin-top 5}
               margins
-              (banner-margin-map opts)]
-          (->> composed
-               (maybe-with-inline-margins margins)
-               (maybe-with-block-margins margins)))))
+              (banner-margin-map opts)
+
+              ;; If user supplies an :atomic-filter map in :opts, flatten out
+              ;; any keys that are supplied as sets
+              atomic-filter
+              (some-> atomic-filter util/flatten-map-keys)
+              
+              ;; Add margins to the composed messsage
+              with-margins
+              (->> composed
+                   (maybe-with-inline-margins margins)
+                   (maybe-with-block-margins margins))]
+
+          ;; If gradient is not applied, conditionally do atomic filtering
+          ;; and/or uniform colorization
+          (if will-render-gradient?
+            with-margins
+            (if atomic-filter
+              (atomic-filtered with-margins atomic-filter opts)
+              (maybe-colorize-foreground with-margins (:color opts)))))))
+
 
     (catch #?(:cljs js/Object :clj Exception)
            e
       (print-caught-exception! "bling.banner/banner")
       (println "User-supplied options:")
-      (println (string/replace
+      #_(println (string/replace
                 (with-out-str
                   (println
                    (reduce-kv (fn [m k v]
@@ -1154,6 +1248,24 @@
                            it will default to `:high` in order to optimize contrast
                            for the users terminal theme (light or dark)"}
                :keyword]
+
+              [:atomic-filter
+               {:optional true
+                :default  :nil
+                :desc     "A map of char / style-map to edit the color,
+                           background, or weight of specific sub-charachters.
+                           The `:replacment` key in the style map specifies a 
+                           replacement character for the target character."}
+               [:map
+                [:color {:optional true}
+                 :desc "Foreground color of the target sub-character."
+                 :default nil]
+                [:weight {:optional true}
+                 :desc "Weight of the of the target sub-charachter."
+                 :default nil]
+                [:replacement {:optional true}
+                 :desc "Replacement character for the target character."
+                 :default nil]]]
 
               [:margin-top
                {:optional true
