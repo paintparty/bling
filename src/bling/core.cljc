@@ -11,8 +11,7 @@
             [bling.defs :as defs]
             [bling.macros :refer [let-map keyed]]
             [bling.util :as util :refer [maybe-> when-> when->> char-repeat]]
-            #?(:cljs [bling.js-env :refer [node?]])
-            ))
+            #?(:cljs [bling.js-env :refer [node?]])))
 
 (declare xterm-colors-by-id)
 
@@ -62,6 +61,9 @@
    "system-fuchsia" {:sgr 13}
    "system-aqua"    {:sgr 14}
    "system-white"   {:sgr 15}})
+
+
+
 
 ;; figure out light-gray and dark-gray
 ;; support "medium-orange to force medium"
@@ -304,7 +306,7 @@
                                    (contains? #{"italic" :italic} font-style))
                           "3")
         weight          (when (not disable-font-weights?)
-                          (cond 
+                          (cond
                             (contains? #{"bold" :bold} font-weight)
                             "1"
                             (contains? #{"dim" :dim} font-weight)
@@ -313,14 +315,51 @@
         ret             (str "\033["
                              (string/join ";"
                                           (remove nil?
-                                                  [italic
-                                                   fgc
-                                                   weight
-                                                   bgc
-                                                   text-decoration]))
+                                                  (? [italic
+                                                      fgc
+                                                      weight
+                                                      bgc
+                                                      text-decoration])))
                              "m")]
 
     ret))
+
+(def system-colors-4-bit
+  {:system-black            30
+   :system-red              31
+   :system-green            32
+   :system-yellow           33
+   :system-blue             34
+   :system-magenta          35
+   :system-cyan             36
+   :system-white            37
+
+   :system-black-bg         40
+   :system-red-bg           41
+   :system-green-bg         42
+   :system-yellow-bg        43
+   :system-blue-bg          44
+   :system-magenta-bg       45
+   :system-cyan-bg          46
+   :system-white-bg         47
+
+   :system-bright-black     90
+   :system-bright-red       91
+   :system-bright-green     92
+   :system-bright-yellow    93
+   :system-bright-blue      94
+   :system-bright-magenta   95
+   :system-bright-cyan      96
+   :system-bright-white     97
+
+   :system-bright-black-bg  100
+   :system-bright-red-bg    101
+   :system-bright-green-bg  102
+   :system-bright-yellow-bg 103
+   :system-bright-blue-bg   104
+   :system-bright-magenta-bg 105
+   :system-bright-cyan-bg   106
+   :system-bright-white-bg  107})
 
 ;; ansi-color
 ;; Move to colors namespace? or you already have them in vector by index?
@@ -1733,7 +1772,7 @@
      (interpose
       "\n"
       (util/concatv
-       [        ;; The first, or "top" line of the lines that comprise the marquee label
+       [;; The first, or "top" line of the lines that comprise the marquee label
         top-line-str
 
         ;; The second, or "middle" line of the lines that comprise the marquee label
@@ -1774,10 +1813,10 @@
                                 (cond tab?
                                       ""
                                       #_(first-or-last-horizontal-border-char
-                                       (assoc m ::marquee-label true)
-                                       :bottom
-                                       :right
-                                       hbc)
+                                         (assoc m ::marquee-label true)
+                                         :bottom
+                                         :right
+                                         hbc)
                                       (or (= theme "gutter")
                                           (and (= theme "sandwich")
                                                (zero? header-padding-left)))
@@ -1988,7 +2027,7 @@
     (sideline-marquee-label m)
 
     :else
-    (let [          ;; This produces the first (left) part of the header line for a
+    (let [;; This produces the first (left) part of the header line for a
           ;; :gutter callout with a :label-theme of :simple
 
           ;; It is used for callouts with a theme of :gutter
