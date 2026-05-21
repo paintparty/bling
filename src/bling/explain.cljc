@@ -1191,3 +1191,4 @@
                                             :line   ~line
                                             :column ~column}
                                            ~opts)))))
+(defn tester [x] x)

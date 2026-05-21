@@ -1,60 +1,73 @@
 ;; Namespace for visual testing and sandbox dev during development
 
-(ns bling.visual-test
-  (:require
-   #?(:cljs [bling.js-env :refer [node?]])
-   [bling.ansi]
-   [bling.core :as bling :refer [?sgr
-                                 !?sgr
-                                 bling
-                                 print-bling
-                                 callout
-                                 point-of-interest
-                                 bling-colors*
-                                 stringified
-                                 highlighted-location
-                                 with-floating-label
-                                 with-ascii-underline]]
-   [fireworks.core :refer [? !? ?> !?> pprint] :rename {pprint fwpp}]
-   [fireworks.pp]
-   [fireworks.defs]
-   [fireworks.util]
-   [fireworks.state]
-   [fireworks.sample :refer [array-map-of-everything-cljc]]
-   [clojure.pprint :refer [pprint]]
-   [bling.sample :as sample]
-   [bling.util :as util :refer [maybe->> maybe-> when-> when->>]]
-   [bling.defs]
-   [bling.explain]
-   [bling.fonts]
-   [bling.fonts.miniwi :refer [miniwi]]
-   [bling.fonts.ansi-shadow :refer [ansi-shadow]]
-   [bling.fonts.drippy :refer [drippy]]
-   [bling.fonts.big :refer [big]]
-   [bling.fonts.big-money :refer [big-money]]
-   [bling.fonts.rounded :refer [rounded]]
-   [bling.fonts.isometric-1 :refer [isometric-1]]
-   [bling.fontlib]
-   [bling.banner]
-   [bling.browser :as browser]
-   [bling.hifi :refer [print-hifi hifi chopped]]
-   [malli.core :as m]
-   [clojure.string :as string]
-   ;; [taoensso.tufte :as tufte :refer [p profile]]
-   [lasertag.core :refer [tag-map tag]]
-   [lasertag.cached :as cached]
-   [lasertag.fns]
+ (ns bling.visual-test
+   (:require
+    #?(:cljs [bling.js-env :refer [node?]])
+    [bling.ansi]
+    [bling.core :as bling :refer [?sgr
+                                  !?sgr
+                                  bling
+                                  print-bling
+                                  callout
+                                  point-of-interest
+                                  bling-colors*
+                                  stringified
+                                  highlighted-location
+                                  with-floating-label
+                                  with-ascii-underline]]
+    [fireworks.core :refer [? !? ?> !?> pprint] :rename {pprint fwpp}]
+    [fireworks.pp]
+    [fireworks.defs]
+    [fireworks.util]
+    [fireworks.state]
+    [fireworks.color]
+    [fireworks.sample :refer [array-map-of-everything-cljc]]
+    [clojure.pprint :refer [pprint]]
+    [bling.sample :as sample]
+    [bling.util :as util :refer [maybe->> maybe-> when-> when->> as-str]]
+    [bling.core]
+    [bling.defs]
+    [bling.explain]
+    [bling.fonts]
+    [bling.fonts.miniwi :refer [miniwi]]
+    [bling.fonts.ansi-shadow :refer [ansi-shadow]]
+    [bling.fonts.drippy :refer [drippy]]
+    [bling.fonts.big :refer [big]]
+    [bling.fonts.big-money :refer [big-money]]
+    [bling.fonts.rounded :refer [rounded]]
+    [bling.fonts.isometric-1 :refer [isometric-1]]
+    [bling.fontlib]
+    [bling.banner]
+    [bling.browser :as browser]
+    [bling.hifi :refer [print-hifi hifi chopped]]
+    [malli.core :as m]
+    [clojure.string :as string]
+    ;; [taoensso.tufte :as tufte :refer [p profile]]
+    [lasertag.core :refer [tag-map tag]]
+    [lasertag.cached :as cached]
+    [lasertag.fns]
 
-   ;; testing sequence of variants / options
-   [bling.cycle]
+    ;; testing sequence of variants / options
+    [bling.cycle]
 
-   ;; impl ns for the stuff in the visual test suite 
-   [bling.visual-test-impl :refer [random-callouts bling-basics]]
+    ;; impl ns for the stuff in the visual test suite 
+    [bling.visual-test-impl :refer [random-callouts bling-basics]]
+    [clojure.string :as str]
+    [fireworks.ansi :as ansi]
+    [fireworks.state :as state]
+    [me.flowthing.pp :as pp]))
 
-   [fireworks.ansi :as ansi]
-   [fireworks.state :as state]
-   [me.flowthing.pp :as pp]))
 
+;; (fireworks.core/config! {:truncate? false})
+;; (print-bling [:green
+;;               (str/replace
+;;                (str " " 
+;;                     (bling [:green ">"])
+;;                     " "
+;;                     "/foo/bang/bar//"
+;;                     "asdf")
+;;                #"//"
+;;                "/")])
 
 
 ;; (println (str "\033[3;31;1;105m" "My system red" "\033[m"))
@@ -66,40 +79,40 @@
 ;;                :font-weight      :bold}
 ;;               "My system red"])
 
-(println "\n\n")
+;; (println "\n\n")
 
-(println (bling.banner/banner
-          {:text          "FlowerPower"
-           :font          "flowerpower"
-           :color :green
-           :atomic-filter {#{"(" ")" "_"} {:color :yellow}
-                           "o"            {:color :magenta}}}))
-(println "\n\n")
+;; (println (bling.banner/banner
+;;           {:text          "Flower    Power"
+;;            :font          "flowerpower"
+;;            :color :green
+;;            :atomic-filter {#{"(" ")" "_"} {:color :yellow}
+;;                            "o"            {:color :magenta}}}))
+;; (println "\n\n")
 
-(println (bling.banner/banner
-          (let [text "OHIO"]
-            {
-             :text          text
-             :font          "Doh"
-             :atomic-filter {(->> text (map str) (into #{})) {:color :gray}
-                             ":"                {:color :red}}})))
-(println "\n\n")
+;; (println (bling.banner/banner
+;;           (let [text "OHIO"]
+;;             {
+;;              :text          text
+;;              :font          "Doh"
+;;              :atomic-filter {(->> text (map str) (into #{})) {:color :gray}
+;;                              ":"                {:color :red}}})))
+;; (println "\n\n")
 
-(println (bling.banner/banner
-          {:text          "HELLO"
-           :font          isometric-1
-           :atomic-filter {#{"\\" "/" "_"} {:color :red}
-                           ":" {:color :green}
-                           }}))
+;; (println (bling.banner/banner
+;;           {:text          "HELLO"
+;;            :font          isometric-1
+;;            :atomic-filter {#{"\\" "/" "_"} {:color :red}
+;;                            ":" {:color :green}
+;;                            }}))
 
-(println "\n\n")
+;; (println "\n\n")
 
-(println (bling.banner/banner
-          {:text          "HELLO"
-           :font          isometric-1
-           :atomic-filter {#{"\\" "/" "_"} {:color :red}
-                           ":"               {:color       :blue 
-                                              :replacement "*"}}}))
+;; (println (bling.banner/banner
+;;           {:text          "HELLO"
+;;            :font          isometric-1
+;;            :atomic-filter {#{"\\" "/" "_"} {:color :red}
+;;                            ":"               {:color       :blue 
+;;                                               :replacement "*"}}}))
 
 
 #_(doseq [sl ["browser.cljs/go:11:11" nil]]

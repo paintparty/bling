@@ -1,3 +1,13 @@
+banner(
+  "Hello",
+  "isometric-1",
+  {"atomicFilter" [{"target" ["\\", "/", "_"],
+                    "style" {"color" "red"}},
+                  {"target"      [":"],
+                    "style"       {"color" "blue"},
+                    "replacement" "*"}]}
+)
+
 {
   "name": "bling-cljs-tests",
   "version": "1.0.0",

@@ -4,8 +4,8 @@
   :license {:name "MIT"}
   :source-paths ["src"
                  ;; for local dev of fireworks and lasertag deps
-                ;;  "../lasertag/src"
-                ;;  "../fireworks/src"
+                 "../lasertag/src"
+                 "../fireworks/src"
                  ]
   :dependencies [[org.clojure/clojure "1.11.1"]
                  [io.github.paintparty/fireworks "0.20.0"]

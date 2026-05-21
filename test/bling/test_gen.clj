@@ -183,6 +183,14 @@
     (deftest+ gutter-callout-error (callout+ {:theme :gutter :data? true :print-example-call? false :type :error}))
     (deftest+ gutter-callout-positive-label (callout+ {:theme :gutter :data? true :print-example-call? false :colorway :positive :label "SUCCESS!"}))
 
+    (def fixture {:a 1 :b 2})
+
+    ;; macro for defining snapshot tests
+    (snapshot
+     "My test description"
+     (myfn "dude" yeah 'ns/fixture)
+     "My othter description")
+
     (deftests-str)
 
     (def write-tests? true)

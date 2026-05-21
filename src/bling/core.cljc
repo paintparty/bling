@@ -315,11 +315,11 @@
         ret             (str "\033["
                              (string/join ";"
                                           (remove nil?
-                                                  (? [italic
-                                                      fgc
-                                                      weight
-                                                      bgc
-                                                      text-decoration])))
+                                                  [italic
+                                                   fgc
+                                                   weight
+                                                   bgc
+                                                   text-decoration]))
                              "m")]
 
     ret))
@@ -2711,6 +2711,7 @@
 (defn- resolve-padding-top2 [m theme label padding-block]
   (cond (contains? #{"gutter" "rainbow-gutter" "sandwich"} theme)
         (spacing m :padding-top padding-block)))
+
 
 (defn- callout-opts* [m]
   (let-map
