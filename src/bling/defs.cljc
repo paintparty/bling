@@ -118,6 +118,9 @@
           border-char-bottom
           orange-tag-close))))
 
+
+;; TODO - change this out for COLOR_THEME,
+;; which can be "light", "dark", "medium", or something like "Alabaster Light"
 (def ^:public BLING_MOOD
   (macros/bling-mood-env-var))
 

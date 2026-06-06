@@ -470,15 +470,15 @@
    `BLING_MOOD=dark`
    `BLING_MOOD=universal`.
 
-   `UNIVERSAL` would be equivalent to the default (not setting it at all).
+   `universal` would be equivalent to the default (not setting it at all).
    
-   `LIGHT` theme will use a darker version of the color, which would improve the
+   `light` theme will use a darker version of the color, which would improve the
    contrast for users that develop with a light-themed terminal.
 
-   `DARK` theme will use a lighter version of the color, which would improve the
+   `dark` theme will use a lighter version of the color, which would improve the
    contrast for users that develop with a dark-themed terminal.
    
-   If `LIGHT` OR `DARK` values are detected for the `BLING_MOOD` env var, the
+   If `light` OR `dark` values are detected for the `BLING_MOOD` env var, the
    value of the `:sgr` will be changed inside this function, from
    `:sgr` to `:sgr-light` or `:sgr-dark`"
   [{:keys [contrast] :as m}]
