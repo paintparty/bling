@@ -920,6 +920,14 @@
           "((?:(?!\\033).)+)"
           "\\033\\[0?m"))))
 
+(defn- indices-of-tagged-lines
+  [opening-tag lines]
+  (some->> lines
+           (keep-indexed
+            (fn [i line]
+              (when (string/index-of line opening-tag)
+                i)))))
+
 (defn- reverse-index*
   [opening-tag lines]
   (some->> lines
@@ -1032,14 +1040,7 @@
              [:target-highlight-style
               {:optional true
                :desc     "Highlight style used to identify the location"}
-              :keyword]
-             [:class
-              {:optional true
-               :desc     "Highlight style class "}
-              [:enum
-               :highlight-error-dark
-               :highlight-error-light
-               :highlight-error-universal]]]}
+              :keyword]]}
   ([s]
    (highlighted-location s nil))
   ([s
@@ -1047,6 +1048,7 @@
    (when-let [[opening-tag _]
               (opening-sgr-tag s target-highlight-style)]
      (let [lines         (-> s string/split-lines vec)
+           line-indices  (indices-of-tagged-lines opening-tag lines)
            reverse-index (reverse-index* opening-tag lines)]
        (when reverse-index
          (let [line-index  (dec (- (count lines) reverse-index))
@@ -1059,9 +1061,10 @@
                width       (inc (- (or last-index
                                        (count replaced))
                                    (or offset 0)))]
-           (merge {:line-index line-index
-                   :offset     offset
-                   :width      width})))))))
+           (merge {:line-index   line-index
+                   :line-indices line-indices
+                   :offset       offset
+                   :width        width})))))))
 
 (defn ^:public with-floating-label
   "Annotates a line of text at supplied index with floating label.

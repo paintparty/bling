@@ -8,13 +8,17 @@
    [fireworks.core :refer [!? ?]]
    [malli.core :as m]
    [malli.util :as mu]
-   [malli.error :as me])
+   [malli.error :as me]
+   [clojure.string :as str])
   #?(:cljs
      (:require-macros [bling.explain])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Malli explain 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def malli-schema-kw-tags
+  #{:map-of :enum :orn :or :and :cat := :? :* :+  :fn :re})
 
 (def ^:private core-preds-by-keyword
   {:vector  {:fn  vector?
@@ -126,7 +130,7 @@
                                 (if (and omit-section-labels
                                          (contains? omit-section-labels label))
                                   nil
-                                  (bling [:subtle.italic label])))]
+                                  (bling [:italic label])))]
     (vec
      (remove nil?
              [(when section-break? section-break)
@@ -329,12 +333,18 @@
   [grouped-errors]
   (let [paths-by-count* (group-by #(-> % :path drop-last vec) grouped-errors)
         grouped-errors  (if (< 1 (count paths-by-count*))
-                          (let [filtered  (reduce-kv (fn [m k v]
-                                                       (if (< 1 (count v))
-                                                         (assoc m k v)
-                                                         m))
-                                                     {}
-                                                     paths-by-count*)]
+                          (let [paths-by-count-contains-an-entry-with-multiple-errors?
+                                (some (fn [[_ v]] (< 1 (count v))) paths-by-count*)
+
+                                n
+                                (if paths-by-count-contains-an-entry-with-multiple-errors? 1 0)
+                                filtered
+                                (reduce-kv (fn [m k v]
+                                             (if (< n (count v))
+                                               (assoc m k v)
+                                               m))
+                                           {}
+                                           paths-by-count*)]
                             (when (seq filtered)
                               (or (schema-path-siblings filtered)
                                   grouped-errors)))
@@ -353,11 +363,19 @@
      (when map-entry-el? (some-> reduction-path last first (= get)))]))
 
 (defn- composite-error-message [error-type errors]
-  (when-let [messages (and (contains? #{:or :and} error-type)
-                           (let [messages (keep :error/message errors)]
-                             (when (= (count messages)
-                                      (count errors))
-                               messages)))]
+  (when-let [messages
+             (and (contains? #{:or :and} error-type)
+                  (let [messages
+                        (keep (fn [m]
+                                (some-> m
+                                        :error/message
+                                        (when-> #(not (str/blank? %)))
+                                        (when-> #(not= "invalid type" %))
+                                        (when-> #(not= "unknown error" %))))
+                              errors)]
+                    (when (= (count messages)
+                             (count errors))
+                      messages)))]
     (string/join (bling "\n" [:italic.subtle "  or"] "\n")
                  messages)))
 
@@ -397,7 +415,8 @@
    bad-value
    in-path-for-group
    schema-path-for-group
-   grouped-errors value]
+   grouped-errors
+   value]
   (let [grouped-errors         (regrouped-errors grouped-errors)
         common-path            (->> grouped-errors
                                     (mapv :path)
@@ -557,6 +576,16 @@
    #"\n$"
    ""))
 
+(defn last-highlighted-range [coll]
+  (let [runs (->> coll
+                  (partition 2 1)
+                  (partition-by #(- (second %) (first %)))
+                  (filter #(= 1 (- (second (first %)) (first (first %))))))]
+    (if (empty? runs)
+      [(last coll)]
+      (let [r (last runs)]
+        (concat [(first (first r))] (map second r))))))
+
 (defn- highlighted-problem-section-body
   [{:keys [select-keys-in-problem-path?
            fallbacks-by-entry  
@@ -577,17 +606,25 @@
         find-opts           (poi-diagram-find-opts path problem narrowed-map)
 
         ;; This is where the form in the poi-diagram gets hifi'd
-
         formatted-form      (hifi+ v {:margin-inline-start 0
                                       :scalar-max-length   66
                                       :find                find-opts})
-        highlight-loc       (bling/highlighted-location formatted-form
-                                                        :error-highlight)
-        form-with-underline (bling/with-ascii-underline
+        highlight-loc       (bling/highlighted-location formatted-form :error-highlight)
+        highlight-is-ml?    (some->> highlight-loc
+                                     :line-indices
+                                     last-highlighted-range
+                                     count
+                                     (< 1))
+
+        ;; This is where underline gets added to highlighted section in form,
+        ;; But only if highlighted section is not multi-line.
+        form-with-underline (if highlight-is-ml? 
                               formatted-form
-                              (assoc highlight-loc
-                                     :text-decoration-weight :bold
-                                     :text-decoration-color  :red))
+                              (bling/with-ascii-underline
+                                formatted-form
+                                (assoc highlight-loc
+                                       :text-decoration-weight :bold
+                                       :text-decoration-color  :red)))
         form-with-label     (bling/with-floating-label
                               form-with-underline
                               #_formatted-form
@@ -621,8 +658,7 @@
                               (let [k (-> problem :in last)]
                                 (bling "Invalid map key" #_"\n\n\n")))]
 
-    (bling problem-summary
-           "\n\n" 
+    (bling (some-> problem-summary (str "\n\n"))
            poi-diagram)))
 
 
@@ -639,6 +675,8 @@
            docs-section-label
            docs-section-body
            omit-sections
+           problem-value-section-label
+           problem-values
            section-opts
            indentation
            hifi+]
@@ -691,14 +729,24 @@
 
      (when-not (contains? omit-sections :problem-value)
        (when-not missing-keys?
-         (section "Problem value:"
-                  ;; TODO - do you need this pre-formatting?
-                  (let [s (hifi+ (:value problem)
-                                 {:find {:path  []
-                                         :class :highlight-error}})]
-                    (if (string/index-of s "\n")
-                      (hifi+ (:value problem))
-                      s))
+         (section (or problem-value-section-label
+                      (str "Problem value"
+                           (when problem-values "s")
+                           ":"))
+                  (if problem-values
+                    (string/join "\n\n"
+                                 (for [problem problem-values]
+                                   (hifi+ problem
+                                          {:display-metadata? false
+                                           :find {:path  []
+                                                  :class :highlight-error}}))) 
+                    (let [s (hifi+ (or problem-values    ; <- user supplied
+                                       (:value problem))
+                                   {:find {:path  []
+                                           :class :highlight-error}})]
+                      (if (string/index-of s "\n")
+                        (hifi+ (:value problem))
+                        s)))
                   section-opts)))
 
      ;; TODO - get example of this working
@@ -708,27 +756,31 @@
                 section-opts))
 
      (when must-satisfy?
-       (section "Must satisfy:"
-                (or (when-not (-> problem ::display-schema?)
-                      (indented-string indentation
-                                       (:composite-error-message problem)))
-                    (let [hifi-printing-opts
-                          {:print-level       3
-                           :truncate?         false
-                           :scalar-max-length 44
-                           :find              {:pred  #(= % :enum)
-                                               :style {:color :blue}}}]
-                      (if-let [junction-form
-                               (when (contains? problem :junction-type)
-                                 (:parent-schema/form problem))]
-                        (hifi+ junction-form 
-                               hifi-printing-opts)
-                        (hifi+ (get-satisfaction problem)
-                               hifi-printing-opts))))
-                section-opts))
+       (when-let [body (or (when-not (-> problem ::display-schema?)
+                             (indented-string indentation
+                                              (:composite-error-message problem)))
+                           (let [hifi-printing-opts
+                                 {:print-level       4
+                                  :truncate?         false
+                                  :scalar-max-length 44
+                                  :find              {:pred  #(contains? malli-schema-kw-tags %)
+                                                      :style {:font-weight :bold}}}]
+                             (if-let [junction-form
+                                      (when (contains? problem :junction-type)
+                                        (:parent-schema/form problem))]
+                               (hifi+ junction-form 
+                                      hifi-printing-opts)
+                               (some-> problem
+                                       get-satisfaction
+                                       (hifi+ hifi-printing-opts)))))]
+         (section "Value must satisfy:"
+                  body
+                  section-opts)))
 
-     (when-let [schema-fq-name (:schema/fq-name problem)]
-       (section "Fails schema:"
+     (when-let [schema-fq-name (or (:schema/fq-name problem) ; <- derived from schemea properties
+                                   (:schema/fq-name opts))   ; <- explicitly passed by user in opts
+                ]
+       (section "Failed schema:"
                 (indented-string indentation (hifi schema-fq-name))
                 section-opts))
 
@@ -806,8 +858,8 @@
        (section "Schema:"
                 (hifi+ (prune-schema-for-display malli-schema)
                        ;; TODO - use new :path/reduce and create subtle :class for :find highlighting to pinpoint section of spec that is offended
-                       #_{:find {:path  [2 2 1 2 1 2 1 2 1]
-                                 :class :highlight-error}})
+                       {:find {:pred  #(contains? malli-schema-kw-tags %)
+                               :style {:font-weight :bold}}})
                 section-opts))
      ;; The result of calling malli.core/explain on the value.
      ;; Defaults to false
@@ -942,27 +994,30 @@
                     (str " (" num-problems ")")))]
 
          (callout
-          (merge {:type                :error
-                  :theme               :sandwich
-                  :border-shape        :round
-                  :label-theme         :tab
-                  :label               callout-label
-                  :side-label          file-info
-                  :margin-top          callout-margin-block
-                  :margin-bottom       callout-margin-block
+          (merge {:type            :error
+                  :theme           :sandwich
+                  :border-shape    :round
+                  :label-theme     :tab
+                  :label           callout-label
+                  :side-label      file-info
+                  :margin-top      callout-margin-block
+                  :margin-bottom   callout-margin-block
                   ;; :min-width           60
-                  :border-notches?     true
-                  :padding-top         callout-padding-block
-                  :padding-bottom      callout-padding-block}
+                  :border-notches? true
+                  :padding-top     callout-padding-block
+                  :padding-bottom  callout-padding-block}
                  callout-opts)
-          (apply str (flatten printed-with-numbering)))
+          (do 
+            (apply str (flatten printed-with-numbering))))
 
          (if return-boolean?
            false
            problems))
 
        ;; If validation was successful, and user supplied a success message
-       (do (when-not (nil? success-message)
+       
+       (do
+         (when-not (nil? success-message)
              (case success-message
                ::explain-malli-success-verbose
                (callout (merge {:colorway       :positive
@@ -1166,6 +1221,11 @@
               {:optional true
                :desc     "The body of the preamble section"}
               :string]
+
+             [:omit-sections
+              {:optional true
+               :desc     "Sections to omit, by keyword"}
+              [:enum :problem-value]]
 
              [:success-message
               {:optional true
