@@ -1600,7 +1600,7 @@
            margin-bottom
            gutter-line-number-style]
     :as   opts}]
-  ;; TODO validate input
+
   (when form
     (let [header-style (or (when-> header-file-info-style map?) {})
           file-info    (file-info-str
@@ -1628,25 +1628,27 @@
                                line])
           gutter       (some-> line str count spaces)
           border       #(bling [:subtle %])
-          diagram      (if (and line column form)
-                         (let [form-with-gutter
-                               (-> form
-                                   (string/split #"\n")
-                                   (->> (map-indexed
-                                         (fn [i ln]
-                                           (str (when (pos? i)
-                                                  (str gutter
-                                                       (border " │  ")))
-                                                ln)))
-                                        (string/join "\n")))]
-                           (-> [mbs
-                                gutter     (border " ┌──── ") file-info "\n"
-                                gutter     (border " │  ") "\n"
-                                gutter-num (border " │  ") form-with-gutter "\n"
-                                gutter     (border " │  ")]
-                               (concat [mbe "\n"])
-                               vec))
-                         form)]
+          file-info-str (or (some->> file-info (str " "))
+                            "──────────────────────")
+          diagram      (if true #_(and line column form)
+                           (let [form-with-gutter
+                                 (-> form
+                                     (string/split #"\n")
+                                     (->> (map-indexed
+                                           (fn [i ln]
+                                             (str (when (pos? i)
+                                                    (str gutter
+                                                         (border " │  ")))
+                                                  ln)))
+                                          (string/join "\n")))]
+                             (-> [mbs
+                                  gutter     (border " ┌────") file-info-str "\n"
+                                  gutter     (border " │  ") "\n"
+                                  gutter-num (border " │  ") form-with-gutter "\n"
+                                  gutter     (border " │  ")]
+                                 (concat [mbe "\n"])
+                                 vec))
+                           form)]
       (apply bling diagram))))
 
 ;; Enriched text public fns and helpers  --------------------------------------
