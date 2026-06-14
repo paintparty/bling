@@ -88,7 +88,9 @@
   (boolean
    (let [in (:in problem)]
      (when (coll? v)
-       (let [vectorized (walk/postwalk #(if (list? %) (vec %) %) v)
+       (let [vectorized (walk/postwalk #(if (seq? %)
+                                          (vec %) %)
+                                       v)
              m          (get-in vectorized (drop-last in))
              [mek mev]  (when (map? m) (find m (last in)))]
          (and (not= mev (:value problem))
@@ -102,7 +104,9 @@
    If the problem is a key in a map-entry, it adds appends a special
    :fireworks.highlight/map-key to the path, which fireworks uses to properly
    highlight the map key"
-  [{:keys [missing-keys? problem v] :as opts}]
+  [{:keys [missing-keys? problem v] 
+    :as   opts}]
+  (!? opts)
   (cond missing-keys?
         (:in problem)
         (or (:target-key? opts) (target-key? problem v))
@@ -554,7 +558,6 @@
             ;; that problem value is mapentry value, and we can hightlight the 
             ;; corrresponding key.
             ;; TODO - make this an configurable option
-
             (when (some-> path
                           last
                           #(and (not= :fireworks.highlight/map-key %)
@@ -645,7 +648,8 @@
                               (let [k (-> problem :in last)]
                                 (bling "Invalid entry for "
                                        [:bold (hifi k
-                                                    {:find {:pred #(= % k)}})]
+                                                    {:find {:pred #(= % k)
+                                                            :class :highlight-info}})]
                                        (when-let [v (some-> fallbacks-by-entry
                                                             (get k)
                                                             (hifi {:bold? true}))]
@@ -888,7 +892,8 @@
      :or   {section-label-style {:font-style :italic :color :subtle}}
      :as   opts}]
 
-   (let [{problems     :errors
+   (let [
+         {problems     :errors
           malli-schema :schema
           :as          malli-ex-data}
          (m/explain schema v)
@@ -1252,3 +1257,24 @@
                                             :column ~column}
                                            ~opts)))))
 (defn tester [x] x)
+
+;; TODO debug this
+;; Must satisfy in explain is wonkey
+
+;; this works fine
+;; [:cat
+;;   [:enum 'at-layer 'at-media 'at-container 'at-scope]
+;;   :string
+;;   [:* [:or
+;;        string? 
+;;        vector?]]]
+
+(explain-malli
+ [:cat
+  [:enum 'at-layer 'at-media 'at-container 'at-scope]
+  :string
+  [:* [:or
+       string? 
+       [:and vector? [:tuple :keyword :map]]]]]
+ '(at-layer "gold" 12 [:p {:color :red}]))
+
