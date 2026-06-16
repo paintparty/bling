@@ -1,5 +1,5 @@
 (ns bling.util
-  (:require [clojure.string :as string]
+  (:require [clojure.string :as str]
             #?(:clj [clojure.java.shell :as shell])))
 
 (defn ^:public when->
@@ -57,12 +57,12 @@
         (str regex-pound (surround-with-quotes as-str))
         as-str)
       (let [ret* (-> as-str
-                     (string/split #"\n")
+                     (str/split #"\n")
                      first)
             ret  (if (< limit (count ret*))
                    (let [ret (->> ret*
                                   (take limit)
-                                  string/join)]
+                                  str/join)]
                      (str (if double-quotes?
                             (str regex-pound (surround-with-quotes ret))
                             ret)
@@ -71,7 +71,7 @@
                    ret*)]
         ret))))
 
-(defn sjr [n s] (string/join (repeat n s)))
+(defn sjr [n s] (str/join (repeat n s)))
 
 (defn concatv
   "Concatenate `xs` and return the result as a vector."
@@ -107,8 +107,8 @@
        (let [{:keys [out exit]} (shell/sh "sh" "-c" "stty size </dev/tty")]
          (if (zero? exit)
            (let [[_ cols] (-> out
-                              clojure.string/trim
-                              (clojure.string/split #" "))]
+                              str/trim
+                              (str/split #" "))]
              (Integer/parseInt cols))
            80)) ; fallback
        (catch Exception e
@@ -120,7 +120,7 @@
   ([coll]
    (join-lines "\n" coll))
   ([sep coll]
-   (string/join sep coll)))
+   (str/join sep coll)))
 
 
 (defn partition-by-pred [pred coll]
@@ -136,7 +136,7 @@
 
 (defn char-repeat [n s]
   (when (pos-int? n)
-    (string/join (repeat n (or s "")))))
+    (str/join (repeat n (or s "")))))
 
 (defn string-of-1? [x]
   (and (string? x) (= 1 (count x))))
@@ -199,4 +199,31 @@
 (defn remove-emojis
   "Strips all emojis and complex grapheme clusters from the string."
   [s]
-  (string/replace (str s) emoji-re ""))
+  (str/replace (str s) emoji-re ""))
+
+;; old version
+#_(defn- indented-str [n s]
+  (when s
+    (str/join "\n"
+                 (map #(str (str/join (repeat (or n 0) " "))  %)
+                      (str/split (str s)
+                                    #"\n")))))
+
+(defn ^:public indented-str [indent s]
+  (let [indentation-str
+        (or (some-> indent
+                    (when-> string?) 
+                    (when-> str/blank?))
+            (some-> indent
+                    (when-> pos-int?)
+                    (repeat  " ")
+                    str/join)
+            "")]
+    (or 
+     (some-> s
+             str
+             (str/split  #"\n")
+             (->> (mapv #(str indentation-str %))
+                  (str/join "\n")))
+     s)))
+
