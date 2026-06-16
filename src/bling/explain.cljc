@@ -2,7 +2,7 @@
   (:require
    [bling.core :as bling :refer [bling callout with-ascii-underline]]
    [bling.hifi :refer [hifi]]
-   [bling.util :as util :refer [when-> when->> insert-at]]
+   [bling.util :as util :refer [when-> when->> insert-at indented-str]]
    [clojure.string :as string]
    [clojure.walk :as walk]
    [fireworks.core :refer [!? ?]]
@@ -76,25 +76,17 @@
              :sym 'neg-int?
              :tag "negative integer"}})
 
-;; TOD0 - consider changing this to accept a str instead of n, for perf
-(defn- indented-string [n s]
-  (when s
-    (string/join "\n"
-                 (map #(str (string/join (repeat (or n 0) " "))  %)
-                      (string/split (str s)
-                                    #"\n")))))
-
-(defn- target-key? [problem v]
+(defn- target-key?
+  [{:keys [value in path] 
+    :as   problem}
+   x]
   (boolean
-   (let [in (:in problem)]
-     (when (coll? v)
-       (let [vectorized (walk/postwalk #(if (seq? %)
-                                          (vec %) %)
-                                       v)
-             m          (get-in vectorized (drop-last in))
-             [mek mev]  (when (map? m) (find m (last in)))]
-         (and (not= mev (:value problem))
-              (= mek (:value problem))))))))
+   (when (coll? x)
+     (let [vectorized (walk/postwalk #(if (seq? %) (vec %) %) x)
+           m          (get-in vectorized (if (seq in) (pop in) []))
+           [k _]      (when (map? m) (find m (peek in)))]
+       (and (= k value)
+            (not= 1 (peek path)))))))
 
 (defn- problem-path
   "This creates a path to the problem value within a data structure.
@@ -109,7 +101,7 @@
   (!? opts)
   (cond missing-keys?
         (:in problem)
-        (or (:target-key? opts) (target-key? problem v))
+        (or (:target-key? opts) (? (target-key? problem v)))
         (conj (:in problem) :fireworks.highlight/map-key)
         :else
         (:in problem)))
@@ -363,8 +355,8 @@
                                             (f acc x))
                                           value)
                                   map?)]
-    [(when map-entry-el? (some-> reduction-path last first (= find)))
-     (when map-entry-el? (some-> reduction-path last first (= get)))]))
+    {:map-entry-key? (when map-entry-el? (some-> reduction-path last first (= find)))
+     :map-entry-value? (when map-entry-el? (some-> reduction-path last first (= get)))}))
 
 (defn- composite-error-message [error-type errors]
   (when-let [messages
@@ -421,22 +413,22 @@
    schema-path-for-group
    grouped-errors
    value]
-  (let [grouped-errors         (regrouped-errors grouped-errors)
-        common-path            (->> grouped-errors
-                                    (mapv :path)
-                                    common-root-path-max)
+  (let [grouped-errors                 (regrouped-errors grouped-errors)
+        common-path                    (->> grouped-errors
+                                            (mapv :path)
+                                            common-root-path-max)
         [parent-schema-form
          parent-schema
-         junction-type]        (parent-schema* schema grouped-errors)
+         junction-type]                (parent-schema* schema grouped-errors)
         [display-schema?
-         parent-schema-form]   (parent-schema-form* parent-schema-form)
-        error-type             junction-type
-        errors                 (mapv error-summary grouped-errors)
-        reduction-path         (reduction-path value
-                                               in-path-for-group
-                                               bad-value)
-        [bad-map-entry-key?
-         bad-map-entry-value?] (map-entry-status reduction-path value)]
+         parent-schema-form]           (parent-schema-form* parent-schema-form)
+        error-type                     junction-type
+        errors                         (mapv error-summary grouped-errors)
+        reduction-path                 (reduction-path value
+                                                       in-path-for-group
+                                                       bad-value)
+        {:keys [bad-map-entry-key?
+                bad-map-entry-value?]} (? (map-entry-status reduction-path value))]
     (merge {:value                   bad-value
             :in                      in-path-for-group
             ;; TODO - Figure this out so you can pinpoint the offensive part of the
@@ -756,12 +748,12 @@
      ;; TODO - get example of this working
      (when error-message?
        (section "Message:"
-                (indented-string indentation error-message)
+                (indented-str indentation error-message)
                 section-opts))
 
      (when must-satisfy?
        (when-let [body (or (when-not (-> problem ::display-schema?)
-                             (indented-string indentation
+                             (indented-str indentation
                                               (:composite-error-message problem)))
                            (let [hifi-printing-opts
                                  {:print-level       4
@@ -785,23 +777,23 @@
                                    (:schema/fq-name opts))   ; <- explicitly passed by user in opts
                 ]
        (section "Failed schema:"
-                (indented-string indentation (hifi schema-fq-name))
+                (indented-str indentation (hifi schema-fq-name))
                 section-opts))
 
      (when usage-examples-body
        (section (or usage-examples-label "Usage examples:")
-                (indented-string indentation usage-examples-body)
+                (indented-str indentation usage-examples-body)
                 section-opts))
 
      (when conclusion-section-body
        (section (or conclusion-section-label
                     "Note:")
-                (indented-string indentation conclusion-section-body)
+                (indented-str indentation conclusion-section-body)
                 section-opts))
 
      (when fallback-value
        (section "Fallback value:"
-                (indented-string indentation
+                (indented-str indentation
                                  (str (hifi fallback-value)
                                       "\n"
                                       fallback-value-desc))
@@ -810,7 +802,7 @@
      (when docs-section-body
        (section (or docs-section-label
                     "Docs:")
-                (indented-string indentation docs-section-body)
+                (indented-str indentation docs-section-body)
                 section-opts))
      
      )))
@@ -888,7 +880,8 @@
             omit-sections
             callout-opts
             hifi-opts
-            spacing]
+            spacing
+            registry]
      :or   {section-label-style {:font-style :italic :color :subtle}}
      :as   opts}]
 
@@ -896,7 +889,9 @@
          {problems     :errors
           malli-schema :schema
           :as          malli-ex-data}
-         (m/explain schema v)
+         (if registry 
+           (m/explain schema v {:registry registry})
+           (m/explain schema v))
 
          indentation
          (or section-body-indentation 2)
@@ -1023,31 +1018,31 @@
        
        (do
          (when-not (nil? success-message)
-             (case success-message
-               ::explain-malli-success-verbose
-               (callout (merge {:colorway       :positive
-                                :label-theme    :simple
-                                :padding-top    1
-                                :padding-bottom 1}
-                               callout-opts
-                               {:label "Malli Schema Validation Success"})
-                        (bling (when file-info-str
-                                 [:p [:italic "Source:"]])
-                               (when file-info-str
-                                 [:p
-                                  indentation-str
-                                  file-info-str])
-                               [:p [:italic "Value:"]]
-                               [:p (hifi v {:margin-inline-start 2})]
-                               [:p [:italic "Schema:"]]
-                               (hifi schema {:margin-inline-start 2})))
-
-               ::explain-malli-success-simple
-               (println (str "Malli schema validation success"
+           (case success-message
+             ::explain-malli-success-verbose
+             (callout (merge {:colorway       :positive
+                              :label-theme    :simple
+                              :padding-top    1
+                              :padding-bottom 1}
+                             callout-opts
+                             {:label "Malli Schema Validation Success"})
+                      (bling (when file-info-str
+                               [:p [:italic "Source:"]])
                              (when file-info-str
-                               (str " @ " file-info-str))))
-               (println success-message)))
-           (when return-boolean? true))))))
+                               [:p
+                                indentation-str
+                                file-info-str])
+                             [:p [:italic "Value:"]]
+                             [:p (hifi v {:margin-inline-start 2})]
+                             [:p [:italic "Schema:"]]
+                             (hifi schema {:margin-inline-start 2})))
+
+             ::explain-malli-success-simple
+             (println (str "Malli schema validation success"
+                           (when file-info-str
+                             (str " @ " file-info-str))))
+             (println success-message)))
+         (when return-boolean? true))))))
 
 (defmacro ^:public explain-malli
   "Prints a Malli validation error callout block via `bling.core/callout`.
@@ -1269,12 +1264,13 @@
 ;;        string? 
 ;;        vector?]]]
 
-(explain-malli
- [:cat
-  [:enum 'at-layer 'at-media 'at-container 'at-scope]
-  :string
-  [:* [:or
-       string? 
-       [:and vector? [:tuple :keyword :map]]]]]
- '(at-layer "gold" 12 [:p {:color :red}]))
 
+;; TODO
+;; The target-key? and map-entry-status are out of sync here
+;; (explain-malli [:vector [:map-of 
+;;                          :keyword
+;;                          [:map-of :int :string]]]
+;;                [{:a {"a" "a"}}])
+
+
+;; (explain-malli [:map-of :int :string] {"a" "a"})
