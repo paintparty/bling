@@ -58,6 +58,75 @@
     [me.flowthing.pp :as pp]))
 
 
+(print-bling 
+ [:bold.white-bg.dark-red " R "]
+ [:bold.black-bg.light-red " R "]
+ [:bold.white-bg.dark-orange " O "]
+ [:bold.black-bg.light-orange " O "]
+ "\n"
+ [:bold.black-bg.light-yellow " Y "]
+ [:bold.white-bg.dark-yellow " Y "]
+ [:bold.black-bg.light-olive " L "]
+ [:bold.white-bg.dark-olive " L "]
+ "\n"
+ [:bold.white-bg.dark-green " G "]
+ [:bold.black-bg.light-green " G "]
+ [:bold.white-bg.dark-blue " B "]
+ [:bold.black-bg.light-blue " B "]
+ "\n"
+ [:bold.black-bg.light-purple " P "]
+ [:bold.white-bg.dark-purple " P "]
+ [:bold.black-bg.light-magenta " M "]
+ [:bold.white-bg.dark-magenta " M "]
+ )
+
+(print-bling 
+ "\n\n"
+ [:bold.red-bg.white " R "]
+ [:bold.black-bg.light-red " R "]
+ [:bold.orange-bg.white " O "]
+ [:bold.black-bg.light-orange " O "]
+ "\n"
+ [:bold.black-bg.light-yellow " Y "]
+ [:bold.yellow-bg.white " Y "]
+ [:bold.black-bg.light-olive " L "]
+ [:bold.olive-bg.white " L "]
+ "\n"
+ [:bold.green-bg.white " G "]
+ [:bold.black-bg.light-green " G "]
+ [:bold.blue-bg.white " B "]
+ [:bold.black-bg.light-blue " B "]
+ "\n"
+ [:bold.black-bg.light-purple " P "]
+ [:bold.purple-bg.white " P "]
+ [:bold.black-bg.light-magenta " M "]
+ [:bold.magenta-bg.white " M "]
+ )
+
+(print-bling 
+ "\n\n"
+ [:bold.light-red-bg.dark-red " * "]
+ [:bold.black-bg.light-red " * "]
+ [:bold.light-orange-bg.dark-orange " * "]
+ [:bold.black-bg.light-orange " * "]
+ "\n"
+ [:bold.black-bg.light-yellow " * "]
+ [:bold.light-yellow-bg.dark-yellow " * "]
+ [:bold.black-bg.light-olive " * "]
+ [:bold.light-olive-bg.dark-olive " * "]
+ "\n"
+ [:bold.light-green-bg.dark-green " * "]
+ [:bold.black-bg.light-green " * "]
+ [:bold.light-blue-bg.dark-blue " * "]
+ [:bold.black-bg.light-blue " * "]
+ "\n"
+ [:bold.black-bg.light-purple " * "]
+ [:bold.light-purple-bg.dark-purple " * "]
+ [:bold.black-bg.light-magenta " * "]
+ [:bold.light-magenta-bg.dark-magenta " * "]
+ )
+
+
 ;; (fireworks.core/config! {:truncate? false})
 ;; (print-bling [:green
 ;;               (str/replace
@@ -116,17 +185,17 @@
 
 
 #_(doseq [sl ["browser.cljs/go:11:11" nil]]
-    (doseq [lt [:marquee :tab :simple]]
-      (println "\n" lt)
-      (doseq [t [:sideline :sandwhich :gutter]]
-        (callout {:type            :error
-                  :theme           t
-                  :label-theme     lt
-                  :side-label      sl
-                  :border-shape    :round
-                  :border-notches? false
-                  :label           "Malli Schema Error"}
-                 (bling [:p "Dude that's cool"])))))
+      (doseq [lt [:marquee :tab :simple]]
+        (println "\n" lt)
+        (doseq [t [:sideline :sandwhich :gutter]]
+          (callout {:type            :error
+                    :theme           t
+                    :label-theme     lt
+                    :side-label      sl
+                    :border-shape    :round
+                    :border-notches? false
+                    :label           "Malli Schema Error"}
+                   (bling [:p "Dude that's cool"])))))
 
 
 
@@ -212,8 +281,6 @@
        #_(? (int? 12N))
        #_(? (tag-map (map inc [1 2 3])))))
 
-
-#_(? cached/numbers)
 
 
 #_(println
