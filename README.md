@@ -1,16 +1,16 @@
-<p align="center"><sub>Many thanks to <a href="https://www.clojuriststogether.org/">Clojurists Together</a> for generously supporting this project!</sub></p>
-
-<!-- TODO - Update images with new colors -->
+<p align="left"><sub>Many thanks to <a href="https://www.clojuriststogether.org/">Clojurists Together</a> for generously supporting this project!</sub></p>
 
 <br>
+<br>
 
-# Bling <img src="resources/bling-logo3.png" height="80px" align="right" />
+<img src="resources/bling-logo3.png" height="70px"/>
+
+# Bling
 
 **Rich text in the console.**  
 
 <br>
 
-<div align="left">
 
 **[Features]**
 &nbsp;•&nbsp;
@@ -33,7 +33,6 @@
 **[Dev]**
 &nbsp;•&nbsp; 
 **[Contributing]**
-</div>
 
 [Features]: #features
 [Setup]: #setup
@@ -49,6 +48,7 @@
 
 <br>
 
+
 <p align="left">
   <a href="https://clojars.org/io.github.paintparty/bling">
     <img src="https://img.shields.io/clojars/v/io.github.paintparty/bling.svg?color=0969da&style=flat&cacheSeconds=3" alt="bling on Clojars"></img>
@@ -57,6 +57,7 @@
 
 <br>
 
+<!-- TODO - Update images with new colors -->
 
 <p align="left">
   <img src="resources/docs/chromed/bling-banner-dark-0.6.0.png" width="700px" />
