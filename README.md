@@ -3,7 +3,7 @@
 <br>
 <br>
 
-<img src="resources/bling-logo3.png" height="70px"/>
+<img src="resources/bling-logo6.png" height="70px"/>
 
 # Bling
 
